@@ -10,7 +10,7 @@ option(BUILD_DEPS "Build project dependencies" OFF)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -pg -fsanitize=undefined -Werror -Wall")
@@ -28,20 +28,24 @@ set(GERRITC_BINARY "gerrit")
 #########################################################################################
 if(BUILD_DEPS)
     message(STATUS "Building project dependencies enabled")
-    set(DOWNLOAD_GSL ON CACHE BOOL "")
     set(DOWNLOAD_GOOGLETEST ON CACHE BOOL "")
+    set(DOWNLOAD_GSL ON CACHE BOOL "")
+    set(DOWNLOAD_ARGPARSE ON CACHE BOOL "")
 else()
     message(STATUS "Trying to use dependencies from system")
 endif()
 
 include(cmake/GSL.cmake)
 add_definitions(${GSL_DEFINITIONS})
+include(cmake/ArgParse.cmake)
+add_definitions(${ARGPARSE_DEFINITIONS})
 
 #########################################################################################
 # Headers
 #########################################################################################
 include_directories(${GERRITC_INCLUDE_DIR})
 include_directories(${GSL_INCLUDE_DIRS})
+include_directories(${ARGPARSE_INCLUDE_DIRS})
 
 #########################################################################################
 # Sub-directories

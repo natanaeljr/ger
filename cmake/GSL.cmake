@@ -20,14 +20,15 @@ endif(NOT DOWNLOAD_GSL)
 # Download GSL locally into the binary directory
 if(DOWNLOAD_GSL)
     message(STATUS "GSL will be downloaded")
-    set(GSL_PREFIX ${CMAKE_BINARY_DIR}/GSL)
+    set(GSL_TARGET GSL)
+    set(GSL_PREFIX ${CMAKE_BINARY_DIR}/${GSL_TARGET})
     set(GSL_INCLUDE_DIR ${GSL_PREFIX}/include)
 
     # Build settings
     set(GSL_TEST OFF)
 
     # Download and build
-    ExternalProject_Add(GSL
+    ExternalProject_Add(${GSL_TARGET}
         GIT_REPOSITORY "https://github.com/Microsoft/GSL"
         GIT_TAG "v2.0.0"
         PREFIX ${GSL_PREFIX}
@@ -39,3 +40,6 @@ endif(DOWNLOAD_GSL)
 # Export Variables
 set(GSL_INCLUDE_DIRS ${GSL_INCLUDE_DIR} CACHE STRING "GSL Include directories")
 set(GSL_DEFINITIONS "" CACHE STRING "GSL Definitions")
+if(GSL_TARGET)
+set(GSL_TARGET ${GSL_TARGET} CACHE STRING "GSL Target to add as dependency")
+endif()

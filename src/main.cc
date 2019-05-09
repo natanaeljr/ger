@@ -1,8 +1,6 @@
-#include <stdio.h>
+extern int gerrit(int argc, char* argv[]);
 
 int main(int argc, char* argv[])
 {
-    printf("Gerrit desktop client!\n");
-    return 0;
+    return gerrit(argc, argv);
 }
-
