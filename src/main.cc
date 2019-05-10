@@ -1,6 +1,6 @@
-extern int gerrit(int argc, char* argv[]);
+#include "gerritc/gerrit.h"
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
-    return gerrit(argc, argv);
+    return gerritc::gerrit(argc, argv);
 }

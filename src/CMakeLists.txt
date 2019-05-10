@@ -7,6 +7,10 @@ add_library(${GERRITC_LIBRARY} STATIC
     gerrit.cc
 )
 
+target_link_libraries(${GERRITC_LIBRARY}
+    ${LIBNOTIFY_LIBRARIES}
+)
+
 set(GERRITC_LIBRARY_DEPS
     ${GSL_TARGET}
     ${ARGPARSE_TARGET}

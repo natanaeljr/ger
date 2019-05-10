@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 #########################################################################################
 # Project
 #########################################################################################
-set(GERRITC_INCLUDE_DIR "include")
+set(GERRITC_INCLUDE_DIRS "include")
 set(GERRITC_LIBRARY "gerritc")
 set(GERRITC_BINARY "gerrit")
 
@@ -35,15 +35,19 @@ else()
     message(STATUS "Trying to use dependencies from system")
 endif()
 
+find_package(LibNotify REQUIRED)
+
 include(cmake/GSL.cmake)
 add_definitions(${GSL_DEFINITIONS})
 include(cmake/ArgParse.cmake)
 add_definitions(${ARGPARSE_DEFINITIONS})
 
+
 #########################################################################################
 # Headers
 #########################################################################################
-include_directories(${GERRITC_INCLUDE_DIR})
+include_directories(${GERRITC_INCLUDE_DIRS})
+include_directories(${LIBNOTIFY_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
 include_directories(${ARGPARSE_INCLUDE_DIRS})
 

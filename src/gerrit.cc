@@ -1,20 +1,61 @@
-#include <stdio.h>
+/**
+ * \file gerrit.cc
+ * \author Natanael Josue Rabello
+ * \brief  Gerrit
+ * \date 2019-05-09
+ * \copyright Copyright (c) 2019
+ */
 
-#include "argparse/argparse.hpp"
+#include <cstdio>
+#include <vector>
+#include <string>
+#include <iostream>
 
-int gerrit(int argc, char* argv[])
+#include <libnotify/notify.h>
+
+/**************************************************************************************/
+
+namespace gerritc {
+
+enum class Command {
+    NONE,
+    HELP,
+    CHANGES,
+};
+
+int gerrit(int argc, const char* argv[])
 {
-    argparse::ArgumentParser program{ "gerrit" };
+    auto command = Command::NONE;
+    const std::vector<std::string_view> args{ &argv[1], &argv[argc] };
 
-    program.add_argument("--changes").help("Show changes").action([](auto a) {
-        return a;
-    });
-    program.parse_args(argc, argv);
+    if (!args.empty()) {
+        auto& arg = args[0];
+        if (arg == "changes") {
+            command = Command::CHANGES;
+        } else {
+            printf("Unknown argment: %s\n", arg.data());
+            command = Command::HELP;
+        }
+    }
 
-    std::string s = program.get("changes");
-    // if (s.empty())
-        // program.print_help();
+    switch (command) {
+        case Command::CHANGES:
+            printf("Gerrit changes\n");
+            break;
+        case Command::HELP:
+        case Command::NONE:
+            printf("Gerrit help\n");
+            break;
+    }
 
-    printf("Gerrit desktop client!\n");
+    notify_init("Gerrit");
+    NotifyNotification* hello = notify_notification_new(
+        "Hello World", "This is an notification example", "dialog-information");
+    notify_notification_show(hello, NULL);
+    g_object_unref(G_OBJECT(hello));
+    notify_uninit();
+
     return 0;
 }
+
+} /* namespace gerritc */

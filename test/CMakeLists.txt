@@ -6,7 +6,7 @@ include_directories(${GOOGLETEST_INCLUDE_DIRS})
 add_definitions(${GOOGLETEST_DEFINITIONS})
 
 add_executable(run-test
-    test.cc
+    command.cc
 )
 
 target_link_libraries(run-test
