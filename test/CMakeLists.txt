@@ -9,12 +9,11 @@ add_executable(${GER_TEST}
 
 target_link_libraries(${GER_TEST}
   ${GER_LIBRARY}
-  ${GTEST_MAIN_LIBRARIES}
-  ${GTEST_LIBRARIES}
-  pthread
 )
 
 add_dependencies(${GER_TEST}
   ${GER_LIBRARY}
-  ${GTEST}
 )
+
+set_target_properties(${GER_TEST} PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

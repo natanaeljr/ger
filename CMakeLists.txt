@@ -23,7 +23,11 @@ set(GER_TEST "ger-test")
 #########################################################################################
 # Dependencies
 #########################################################################################
-include(cmake/Dependencies.cmake.in)
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+include_directories(${CONAN_INCLUDE_DIRS})
+add_definitions(${CONAN_DEFINES})
+link_libraries(${CONAN_LIBS})
 
 #########################################################################################
 # Project
