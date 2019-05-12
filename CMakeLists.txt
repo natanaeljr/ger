@@ -1,13 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
-project(gerritc VERSION 0.1 LANGUAGES CXX C)
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+project(ger VERSION 0.1 LANGUAGES CXX C)
 
 #########################################################################################
-# General
+# Configs
 #########################################################################################
-option(BUILD_DEPS "Build project dependencies" OFF)
-
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
@@ -17,53 +13,26 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -pg -fsanitize=undefined -Werror -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 #########################################################################################
-# Project
+# Global Defines
 #########################################################################################
-set(GERRITC_INCLUDE_DIRS "include")
-set(GERRITC_LIBRARY "gerritc")
-set(GERRITC_BINARY "gerrit")
+set(GER_INCLUDE_DIRS "include")
+set(GER_LIBRARY "gerlib")
+set(GER_BINARY "ger")
+set(GER_TEST "ger-test")
 
 #########################################################################################
 # Dependencies
 #########################################################################################
-if(BUILD_DEPS)
-    message(STATUS "Building project dependencies enabled")
-    set(DOWNLOAD_GOOGLETEST ON CACHE BOOL "")
-    set(DOWNLOAD_GSL ON CACHE BOOL "")
-    set(DOWNLOAD_ARGPARSE ON CACHE BOOL "")
-else()
-    message(STATUS "Trying to use dependencies from system")
-endif()
-
-find_package(LibNotify REQUIRED)
-
-include(cmake/GSL.cmake)
-add_definitions(${GSL_DEFINITIONS})
-include(cmake/ArgParse.cmake)
-add_definitions(${ARGPARSE_DEFINITIONS})
-
+include(cmake/Dependencies.cmake.in)
 
 #########################################################################################
-# Headers
+# Project
 #########################################################################################
-include_directories(${GERRITC_INCLUDE_DIRS})
-include_directories(${LIBNOTIFY_INCLUDE_DIRS})
-include_directories(${GSL_INCLUDE_DIRS})
-include_directories(${ARGPARSE_INCLUDE_DIRS})
-
-#########################################################################################
-# Sub-directories
-#########################################################################################
-add_subdirectory(src)
+include(cmake/Project.cmake.in)
 
 #########################################################################################
 # Testing
 #########################################################################################
 if(BUILD_TESTING)
-    add_subdirectory(test)
-endif(BUILD_TESTING)
-
-#########################################################################################
-# Install
-#########################################################################################
-install(FILES "src/${GERRITC_BINARY}" DESTINATION "bin")
+  include(cmake/Testing.cmake.in)
+endif()

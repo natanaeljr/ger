@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.0)
+include(ExternalProject)
+
+message(STATUS "Dependency GSL - download")
+
+set(GSL GSL CACHE STRING "")
+set(GSL_INSTALL_DIR ${CMAKE_BINARY_DIR} CACHE STRING "")
+set(GSL_INCLUDE_DIRS ${GSL_INSTALL_DIR}/include CACHE STRING "")
+
+ExternalProject_Add(${GSL}
+  GIT_REPOSITORY    https://github.com/Microsoft/GSL
+  GIT_TAG           v2.0.0
+  PREFIX            ${GSL_INSTALL_DIR}
+  CMAKE_ARGS        "-DCMAKE_INSTALL_PREFIX=${GSL_INSTALL_DIR}"
+  BUILD_COMMAND     ""
+  TEST_COMMAND      ""
+  LOG_DOWNLOAD      ON
+  LOG_CONFIGURE     ON
+  LOG_BUILD         ON
+  UPDATE_DISCONNECTED 1
+)

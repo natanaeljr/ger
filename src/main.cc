@@ -1,6 +1,11 @@
-#include "gerritc/gerrit.h"
+#include <cstdio>
+
+namespace ger {
+extern int ger(int argc, const char* argv[]);
+}
 
 int main(int argc, const char* argv[])
 {
-    return gerritc::gerrit(argc, argv);
+    ger::ger(argc, argv);
+    printf("Main\n");
 }

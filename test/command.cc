@@ -7,7 +7,9 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include "gerritc/gerrit.h"
+namespace ger {
+extern int ger(int argc, const char* argv[]);
+}
 
 /**************************************************************************************/
 TEST(Gerrit, NoCommand)
@@ -15,7 +17,7 @@ TEST(Gerrit, NoCommand)
     testing::internal::CaptureStdout();
 
     std::array argv = { "gerrit" };
-    gerritc::gerrit(argv.size(), argv.begin());
+    ger::ger(argv.size(), argv.begin());
 
     std::string output = testing::internal::GetCapturedStdout();
     std::cout << output << std::flush;
@@ -29,7 +31,7 @@ TEST(Gerrit, UnknownCommand)
     testing::internal::CaptureStdout();
 
     std::array argv = { "gerrit", "whitewalker" };
-    gerritc::gerrit(argv.size(), argv.begin());
+    ger::ger(argv.size(), argv.begin());
 
     std::string output = testing::internal::GetCapturedStdout();
     std::cout << output << std::flush;
@@ -46,7 +48,7 @@ TEST(Gerrit, ChangesCommand)
     testing::internal::CaptureStdout();
 
     std::array argv = { "gerrit", "changes" };
-    gerritc::gerrit(argv.size(), argv.begin());
+    ger::ger(argv.size(), argv.begin());
 
     std::string output = testing::internal::GetCapturedStdout();
     std::cout << output << std::flush;

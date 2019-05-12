@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.0)
+include(ExternalProject)
+include(GNUInstallDirs)
+
+message(STATUS "Dependency FMT - download")
+
+set(FMT fmt CACHE STRING "")
+set(FMT_INSTALL_PREFIX ${CMAKE_BINARY_DIR} CACHE STRING "")
+set(FMT_INCLUDE_DIRS ${FMT_INSTALL_PREFIX}/include CACHE STRING "")
+set(FMT_LIBRARIES libfmt.a CACHE STRING "")
+
+list(TRANSFORM FMT_LIBRARIES
+  PREPEND ${FMT_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/
+)
+
+ExternalProject_Add(${FMT}
+  GIT_REPOSITORY    https://github.com/fmtlib/fmt.git
+  GIT_TAG           master
+  PREFIX            ${FMT_INSTALL_PREFIX}
+  CMAKE_ARGS        "-DCMAKE_INSTALL_PREFIX=${FMT_INSTALL_PREFIX}"
+  TEST_COMMAND      ""
+  BUILD_COMMAND     ""
+  LOG_DOWNLOAD      ON
+  LOG_CONFIGURE     ON
+  LOG_BUILD         ON
+  UPDATE_DISCONNECTED 1
+)
