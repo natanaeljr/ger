@@ -6,16 +6,18 @@ find_package(LibSSH REQUIRED)
 
 include(cmake/GSL.cmake.in)
 include(cmake/FMT.cmake.in)
+include(cmake/Abseil.cmake.in)
 include(cmake/GTest.cmake.in)
 
 include_directories(
   ${LIBSSH_INCLUDE_DIRS}
   ${GSL_INCLUDE_DIRS}
   ${FMT_INCLUDE_DIRS}
+  ${ABSEIL_INCLUDE_DIRS}
   ${GTEST_INCLUDE_DIRS}
 )
 
 link_directories(
-  ${CMAKE_BUILD_DIR}/lib
-  ${CMAKE_BUILD_DIR}/lib64
+  ${CMAKE_BINARY_DIR}/lib
+  ${CMAKE_BINARY_DIR}/lib64
 )

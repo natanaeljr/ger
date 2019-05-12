@@ -3,41 +3,27 @@ cmake_minimum_required(VERSION 3.0)
 #########################################################################################
 # Library
 #########################################################################################
-set(GER_LIBRARY_SOURCE_PATH ${CMAKE_SOURCE_DIR}/src)
-set(GER_LIBRARY_SOURCES
-  ger.cc
-)
-list(TRANSFORM GER_LIBRARY_SOURCES
-  PREPEND ${GER_LIBRARY_SOURCE_PATH}/
-)
-
 add_library(${GER_LIBRARY} STATIC
-  ${GER_LIBRARY_SOURCES}
+  ger.cc
 )
 
 target_link_libraries(${GER_LIBRARY}
   ${LIBSSH_LIBRARIES}
   ${FMT_LIBRARIES}
+  absl_strings
 )
 
 add_dependencies(${GER_LIBRARY}
   ${GSL}
   ${FMT}
+  ${ABSEIL}
 )
 
 #########################################################################################
 # Executable
 #########################################################################################
-set(GER_BINARY_SOURCE_PATH ${CMAKE_SOURCE_DIR}/src)
-set(GER_BINARY_SOURCES
-  main.cc
-)
-list(TRANSFORM GER_BINARY_SOURCES
-  PREPEND ${GER_BINARY_SOURCE_PATH}/
-)
-
 add_executable(${GER_BINARY}
-  ${GER_BINARY_SOURCES}
+  main.cc
 )
 
 target_link_libraries(${GER_BINARY}

@@ -1,6 +1,7 @@
 #include <libssh/libssh.h>
 #include "gsl/gsl"
 #include "fmt/core.h"
+#include "absl/strings/str_format.h"
 
 namespace ger {
 

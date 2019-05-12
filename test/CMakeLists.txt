@@ -3,16 +3,8 @@ cmake_minimum_required(VERSION 3.0)
 #########################################################################################
 # Testing
 #########################################################################################
-set(GER_TEST_SOURCE_PATH ${CMAKE_SOURCE_DIR}/test)
-set(GER_TEST_SOURCES
-  command.cc
-)
-list(TRANSFORM GER_TEST_SOURCES
-  PREPEND ${GER_TEST_SOURCE_PATH}/
-)
-
 add_executable(${GER_TEST}
-  ${GER_TEST_SOURCES}
+  command.cc
 )
 
 target_link_libraries(${GER_TEST}
