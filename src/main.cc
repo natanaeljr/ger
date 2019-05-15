@@ -1,11 +1,8 @@
 #include <cstdio>
 
-namespace ger {
-extern int ger(int argc, const char* argv[]);
-}
+#include "ger/ger.h"
 
 int main(int argc, const char* argv[])
 {
-    ger::ger(argc, argv);
-    printf("Main\n");
+    return ger::ger(argc, argv);
 }

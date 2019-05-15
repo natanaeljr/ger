@@ -10,6 +10,8 @@ Poco/1.9.0@pocoproject/stable
 OpenSSL/latest_1.0.2x@conan/stable
 protobuf/3.6.1@bincrafters/stable
 boost/1.70.0@conan/stable
+libcurl/7.64.1@bincrafters/stable
+range-v3/0.5.0@ericniebler/stable
 
 [generators]
 cmake
