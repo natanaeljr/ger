@@ -3,6 +3,8 @@
 
 #include "fmt/core.h"
 #include "fmt/ranges.h"
+#include "fmt/printf.h"
+#include "fmt/format.h"
 #include "gsl/gsl"
 #include "curl/curl.h"
 #include "nlohmann/json.hpp"
@@ -15,12 +17,12 @@ enum class Command {
     CHANGES,
 };
 
-static void print_help()
+static void print_main_help()
 {
     fmt::print("Gerrit terminal client.\n");
     fmt::print("USAGE: ger <command>\n\n");
     fmt::print("Commands:\n");
-    fmt::print("changes - Show all changes\n");
+    fmt::print("change - Show all changes\n");
 }
 
 static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data)
@@ -29,8 +31,13 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
     return size * nmemb;
 }
 
-static void changes(gsl::span<std::string_view> args)
+static void change(gsl::span<std::string_view> args)
 {
+    // no more args for now
+    if (args.size() != 0) {
+        fmt::print("change: takes no arguments.\n", args.size());
+        return;
+    }
     CURL* curl = nullptr;
     CURLcode res;
 
@@ -78,12 +85,44 @@ static void changes(gsl::span<std::string_view> args)
     }
 
     // SUCCESS
-    if (!response_string.compare(0, 3, ")]}'")) {
-        fmt::print(stderr, "Unrecognized response from server");
+    if (response_string.compare(0, 5, ")]}'\n")) {
+        fmt::print(stderr, "Unrecognized response from server:\n\n{}", response_string);
         return;
     }
     auto json = nlohmann::json::parse(response_string.data() + 4);
-    fmt::print("{}\n", json[0].dump(2));
+    // fmt::print("{}\n", json[0].dump(2));
+    if (json.size() == 0) {
+        fmt::print("No changes");
+        return;
+    }
+    struct ChangeBrief {
+        int number;
+        std::string subject;
+        std::string project;
+    };
+    std::vector<ChangeBrief> changes;
+    changes.reserve(json.size());
+    size_t subject_maxlen = 0;
+    for (auto change : json) {
+        changes.emplace_back(ChangeBrief{
+            .number = change.at("_number"),
+            .subject = change.at("subject"),
+            .project = change.at("project"),
+        });
+        auto this_subject_len = changes.back().subject.length();
+        if (this_subject_len > subject_maxlen) {
+            subject_maxlen = this_subject_len;
+        }
+    }
+    fmt::memory_buffer output;
+    for (auto change : changes) {
+        fmt::format_to(output, "* {number} - {subject:<{maxlen}} - {project}\n",
+                       fmt::arg("number", change.number), fmt::arg("subject", change.subject),
+                       fmt::arg("maxlen", subject_maxlen), fmt::arg("project", change.project));
+    }
+    fmt::print("{}", fmt::to_string(output));
+
+    // TODO: make graphs
 }
 
 int ger(int argc, const char* argv[])
@@ -91,20 +130,20 @@ int ger(int argc, const char* argv[])
     auto command = Command::NONE;
 
     if (argc <= 1) {
-        print_help();
-        return 1;
+        print_main_help();
+        return 0;
     }
 
     std::vector<std::string_view> args{ &argv[1], &argv[argc] };
 
     std::string_view cmd_arg{ args[0] };
-    if (cmd_arg == "changes") {
-        gsl::span<std::string_view> span_args{ &*(args.begin()++), &*args.end() };
-        changes(span_args);
+    if (cmd_arg == "change") {
+        gsl::span<std::string_view> span_args{ &*(args.begin() + 1), &*args.end() };
+        change(span_args);
     } else if (cmd_arg == "help") {
-        print_help();
+        print_main_help();
     } else {
-        print_help();
+        print_main_help();
         return 1;
     }
 
