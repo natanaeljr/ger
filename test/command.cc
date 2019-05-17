@@ -7,9 +7,15 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-namespace ger {
-extern int ger(int argc, const char* argv[]);
-}
+#include "ger/ger.h"
+
+/* TODO:
+ger daemon start/stop
+ger daemon status
+ger config daemon notification enable
+ger config daemon notification interval <t>
+--interactive, --no-interactive
+ */
 
 /**************************************************************************************/
 TEST(Gerrit, NoCommand)

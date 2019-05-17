@@ -1,10 +1,13 @@
 #include <vector>
 #include <string>
 
+#include <unistd.h>
+
 #include "fmt/core.h"
 #include "fmt/ranges.h"
 #include "fmt/printf.h"
 #include "fmt/format.h"
+#include "fmt/color.h"
 #include "gsl/gsl"
 #include "curl/curl.h"
 #include "nlohmann/json.hpp"
@@ -114,13 +117,15 @@ static void change(gsl::span<std::string_view> args)
             subject_maxlen = this_subject_len;
         }
     }
-    fmt::memory_buffer output;
     for (auto change : changes) {
-        fmt::format_to(output, "* {number} - {subject:<{maxlen}} - {project}\n",
-                       fmt::arg("number", change.number), fmt::arg("subject", change.subject),
-                       fmt::arg("maxlen", subject_maxlen), fmt::arg("project", change.project));
+        fmt::print("* ");
+        fmt::print(fmt::fg(fmt::terminal_color::yellow), "{}", change.number);
+        fmt::print(" {:<{}} ", change.subject, subject_maxlen);
+        fmt::print(fmt::fg(fmt::terminal_color::magenta), "{}\n", change.project);
+        // fmt::format_to(output, "* {number} - {subject:<{maxlen}} - {project}\n",
+        //                fmt::arg("number", change.number), fmt::arg("subject", change.subject),
+        //                fmt::arg("maxlen", subject_maxlen), fmt::arg("project", change.project));
     }
-    fmt::print("{}", fmt::to_string(output));
 
     // TODO: make graphs
 }
@@ -133,6 +138,9 @@ int ger(int argc, const char* argv[])
         print_main_help();
         return 0;
     }
+
+    // auto tty = isatty(STDOUT_FILENO);
+    // fmt::print(stdout, fmt::fg(fmt::terminal_color::yellow), "Hello");
 
     std::vector<std::string_view> args{ &argv[1], &argv[argc] };
 
