@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.0)
 # Library
 #########################################################################################
 add_library(${GER_LIBRARY} STATIC
-  ger.cc
+  cli/ger.cc
 )
 
 set_target_properties(${GER_LIBRARY} PROPERTIES
@@ -15,7 +15,7 @@ set_target_properties(${GER_LIBRARY} PROPERTIES
 # Executable
 #########################################################################################
 add_executable(${GER_BINARY}
-  main.cc
+  cli/main.cc
 )
 
 target_link_libraries(${GER_BINARY}

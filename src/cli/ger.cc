@@ -1,3 +1,5 @@
+#include "ger/cli/ger.h"
+
 #include <vector>
 #include <string>
 
@@ -30,7 +32,7 @@ static void print_main_help()
 
 static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data)
 {
-    data->append((char*)ptr, size * nmemb);
+    data->append((char*) ptr, size * nmemb);
     return size * nmemb;
 }
 
@@ -54,15 +56,14 @@ static void change(gsl::span<std::string_view> args)
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
-    curl_easy_setopt(curl, CURLOPT_URL,
-                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(curl, CURLOPT_URL, "localhost:8080/a/changes/?q=is:open+owner:self");
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
     curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
-    curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
-    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+                     "admin:doZOEkSyrGIvMiMwwmcuf5oAFHKoBt5Etjhs1IUVaA");
+    // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
+    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
@@ -117,18 +118,30 @@ static void change(gsl::span<std::string_view> args)
             subject_maxlen = this_subject_len;
         }
     }
+    fmt::memory_buffer output;
     for (auto change : changes) {
-        fmt::print("* ");
-        fmt::print(fmt::fg(fmt::terminal_color::yellow), "{}", change.number);
-        fmt::print(" {:<{}} ", change.subject, subject_maxlen);
-        fmt::print(fmt::fg(fmt::terminal_color::magenta), "{}\n", change.project);
-        // fmt::format_to(output, "* {number} - {subject:<{maxlen}} - {project}\n",
-        //                fmt::arg("number", change.number), fmt::arg("subject", change.subject),
-        //                fmt::arg("maxlen", subject_maxlen), fmt::arg("project", change.project));
+        fmt::format_to(
+            output, "* {number} - {subject:<{maxlen}} - {project}\n",
+            fmt::arg("number", fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}",
+                                           change.number)),
+            fmt::arg("subject", change.subject), fmt::arg("maxlen", subject_maxlen),
+            fmt::arg("project", change.project));
     }
+    fmt::print("{}", fmt::to_string(output));
 
     // TODO: make graphs
 }
+
+/* TODO:
+- parse config from file
+  - remote:
+    - host
+    - port
+    - default connection type: http/ssh
+    - username
+    - http password
+- ger profile push/pop from a stack, default uses the ~/.ger file.
+*/
 
 int ger(int argc, const char* argv[])
 {
@@ -148,9 +161,11 @@ int ger(int argc, const char* argv[])
     if (cmd_arg == "change") {
         gsl::span<std::string_view> span_args{ &*(args.begin() + 1), &*args.end() };
         change(span_args);
-    } else if (cmd_arg == "help") {
+    }
+    else if (cmd_arg == "help") {
         print_main_help();
-    } else {
+    }
+    else {
         print_main_help();
         return 1;
     }

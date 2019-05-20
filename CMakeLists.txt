@@ -29,6 +29,10 @@ include_directories(${CONAN_INCLUDE_DIRS})
 add_definitions(${CONAN_DEFINES})
 link_libraries(${CONAN_LIBS})
 
+add_subdirectory(third_party/fmt)
+include_directories(third_party/fmt/include)
+link_libraries(fmt)
+
 #########################################################################################
 # Project
 #########################################################################################

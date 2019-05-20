@@ -1,6 +1,6 @@
 #include <cstdio>
 
-#include "ger/ger.h"
+#include "ger/cli/ger.h"
 
 int main(int argc, const char* argv[])
 {
