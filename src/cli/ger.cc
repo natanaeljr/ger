@@ -32,7 +32,7 @@ static void print_main_help()
 
 static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data)
 {
-    data->append((char*) ptr, size * nmemb);
+    data->append((char*)ptr, size * nmemb);
     return size * nmemb;
 }
 
@@ -40,7 +40,7 @@ static void change(gsl::span<std::string_view> args)
 {
     // no more args for now
     if (args.size() != 0) {
-        fmt::print("change: takes no arguments.\n", args.size());
+        fmt::print("'change' command takes no arguments.\n", args.size());
         return;
     }
     CURL* curl = nullptr;
@@ -56,14 +56,15 @@ static void change(gsl::span<std::string_view> args)
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
-    curl_easy_setopt(curl, CURLOPT_URL, "localhost:8080/a/changes/?q=is:open+owner:self");
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(curl, CURLOPT_URL,
+                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
     curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "admin:doZOEkSyrGIvMiMwwmcuf5oAFHKoBt5Etjhs1IUVaA");
+                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
-    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
@@ -94,7 +95,7 @@ static void change(gsl::span<std::string_view> args)
         return;
     }
     auto json = nlohmann::json::parse(response_string.data() + 4);
-    // fmt::print("{}\n", json[0].dump(2));
+    // fmt::print("{}\n", json[1].dump(2));
     if (json.size() == 0) {
         fmt::print("No changes");
         return;
@@ -103,6 +104,8 @@ static void change(gsl::span<std::string_view> args)
         int number;
         std::string subject;
         std::string project;
+        std::string branch;
+        std::string topic;
     };
     std::vector<ChangeBrief> changes;
     changes.reserve(json.size());
@@ -112,6 +115,8 @@ static void change(gsl::span<std::string_view> args)
             .number = change.at("_number"),
             .subject = change.at("subject"),
             .project = change.at("project"),
+            .branch = change.at("branch"),
+            .topic = change.value("topic", ""),
         });
         auto this_subject_len = changes.back().subject.length();
         if (this_subject_len > subject_maxlen) {
@@ -120,16 +125,27 @@ static void change(gsl::span<std::string_view> args)
     }
     fmt::memory_buffer output;
     for (auto change : changes) {
-        fmt::format_to(
-            output, "* {number} - {subject:<{maxlen}} - {project}\n",
-            fmt::arg("number", fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}",
-                                           change.number)),
-            fmt::arg("subject", change.subject), fmt::arg("maxlen", subject_maxlen),
-            fmt::arg("project", change.project));
+        fmt::format_to(output, "* ");
+        fmt::format_to(output, "{}",
+                       fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.number));
+        fmt::format_to(output, " ");
+        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), "("));
+        fmt::format_to(output, "{}",
+                       fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), change.project));
+        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
+        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}",
+                                                 change.branch));
+        if (!change.topic.empty()) {
+            fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
+            fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::bright_green),
+                                                     "{}", change.topic));
+        }
+        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
+        fmt::format_to(output, " {}\n", change.subject);
     }
     fmt::print("{}", fmt::to_string(output));
 
-    // TODO: make graphs
+    // TODO: alignment (including change.number width)
 }
 
 /* TODO:
@@ -140,6 +156,12 @@ static void change(gsl::span<std::string_view> args)
     - default connection type: http/ssh
     - username
     - http password
+  - ger change display options and filters:
+    - commit-sha1, change-id, project, branch, topic, patch-set number, parent-sha1
+    - status, owner, last-updated, size, code-review, verified
+    - aligned-columns, parent-graph
+    - owner, open, closed, watched, stared, review
+  - label the lists when there is more than one filter
 - ger profile push/pop from a stack, default uses the ~/.ger file.
 */
 
@@ -161,11 +183,9 @@ int ger(int argc, const char* argv[])
     if (cmd_arg == "change") {
         gsl::span<std::string_view> span_args{ &*(args.begin() + 1), &*args.end() };
         change(span_args);
-    }
-    else if (cmd_arg == "help") {
+    } else if (cmd_arg == "help") {
         print_main_help();
-    }
-    else {
+    } else {
         print_main_help();
         return 1;
     }
