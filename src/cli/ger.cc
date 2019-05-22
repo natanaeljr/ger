@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <functional>
 
 #include <unistd.h>
 
@@ -30,12 +31,12 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
     return size * nmemb;
 }
 
-static void change(gsl::span<std::string_view> args)
+static int change(gsl::span<std::string_view> args)
 {
     // no more args for now
     if (args.size() != 0) {
         fmt::print("'change' command takes no arguments.\n", args.size());
-        return;
+        return -2;
     }
     CURL* curl = nullptr;
     CURLcode res;
@@ -46,7 +47,7 @@ static void change(gsl::span<std::string_view> args)
     curl = curl_easy_init();
     if (!curl) {
         fmt::print(stderr, "Failed to init easy curl\n");
-        return;
+        return -1;
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
@@ -80,19 +81,19 @@ static void change(gsl::span<std::string_view> args)
     /* Check for errors */
     if (res != CURLE_OK) {
         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-        return;
+        return -1;
     }
 
     // SUCCESS
     if (response_string.compare(0, 5, ")]}'\n")) {
         fmt::print(stderr, "Unrecognized response from server:\n\n{}", response_string);
-        return;
+        return -2;
     }
     auto json = nlohmann::json::parse(response_string.data() + 4);
     // fmt::print("{}\n", json[1].dump(2));
     if (json.size() == 0) {
         fmt::print("No changes");
-        return;
+        return 0;
     }
     struct ChangeBrief {
         int number;
@@ -139,7 +140,7 @@ static void change(gsl::span<std::string_view> args)
     }
     fmt::print("{}", fmt::to_string(output));
 
-    // TODO: alignment (including change.number width)
+    return 0;
 }
 
 /* TODO:
@@ -162,7 +163,14 @@ static void change(gsl::span<std::string_view> args)
 enum class Command {
     NONE,
     HELP,
-    CHANGES,
+    CHANGE,
+    REVIEW,
+    CONFIG,
+};
+
+struct CmdArg {
+    Command cmd;
+    std::string_view arg;
 };
 
 int ger(int argc, const char* argv[])
@@ -174,18 +182,44 @@ int ger(int argc, const char* argv[])
     }
 
     /* Create argument container as string_view */
-    std::string_view args[argc];
-    std::transform(&argv[0], &argv[argc], &args[0], [](auto a) { return std::string_view{ a }; });
+    std::string_view _args[argc];
+    std::transform(&argv[0], &argv[argc], &_args[0], [](auto a) { return std::string_view{ a }; });
+    gsl::span<std::string_view> args = { std::addressof(_args[0]), std::addressof(_args[argc]) };
 
-    /* Parse the command argument */
-    std::string_view& command_str = args[1];
-    if (command_str == "change") {
-        change({ &args[2], &args[argc] });
-    } else if (command_str == "help") {
-        print_main_help();
-    } else {
-        print_main_help();
-        return 1;
+    /* Available commands */
+    constexpr std::array commands = {
+        CmdArg{ .cmd = Command::HELP, .arg = "help" },
+        CmdArg{ .cmd = Command::CHANGE, .arg = "change" },
+        CmdArg{ .cmd = Command::REVIEW, .arg = "review" },
+        CmdArg{ .cmd = Command::CONFIG, .arg = "config" },
+    };
+
+    /* The actual command */
+    auto cmd = Command::NONE;
+
+    /* Get command */
+    std::string_view& input_command = args[1];
+    for (auto& command : commands) {
+        if (input_command == command.arg) {
+            cmd = command.cmd;
+            break;
+        }
+    }
+
+    /* Dispatch command handling */
+    switch (cmd) {
+        case Command::CHANGE:
+            return change(args.subspan(2));
+        case Command::REVIEW:
+            fmt::print("Not implemented yet\n");
+            return 0;
+        case Command::CONFIG:
+            fmt::print("Not implemented yet\n");
+            return 0;
+        case Command::HELP:
+        case Command::NONE:
+            print_main_help();
+            return 0;
     }
 
     return 0;
