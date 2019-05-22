@@ -16,12 +16,6 @@
 
 namespace ger {
 
-enum class Command {
-    NONE,
-    HELP,
-    CHANGES,
-};
-
 static void print_main_help()
 {
     fmt::print("Gerrit terminal client.\n");
@@ -128,7 +122,8 @@ static void change(gsl::span<std::string_view> args)
         fmt::format_to(output, "* ");
         fmt::format_to(output, "{}",
                        fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.number));
-        fmt::format_to(output, " ");
+        fmt::format_to(output, " {} ", change.subject);
+
         fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), "("));
         fmt::format_to(output, "{}",
                        fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), change.project));
@@ -140,8 +135,7 @@ static void change(gsl::span<std::string_view> args)
             fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::bright_green),
                                                      "{}", change.topic));
         }
-        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
-        fmt::format_to(output, " {}\n", change.subject);
+        fmt::format_to(output, "{}\n", fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
     }
     fmt::print("{}", fmt::to_string(output));
 
@@ -165,25 +159,29 @@ static void change(gsl::span<std::string_view> args)
 - ger profile push/pop from a stack, default uses the ~/.ger file.
 */
 
+enum class Command {
+    NONE,
+    HELP,
+    CHANGES,
+};
+
 int ger(int argc, const char* argv[])
 {
-    auto command = Command::NONE;
-
+    /* Check for arguments */
     if (argc <= 1) {
         print_main_help();
         return 0;
     }
 
-    // auto tty = isatty(STDOUT_FILENO);
-    // fmt::print(stdout, fmt::fg(fmt::terminal_color::yellow), "Hello");
+    /* Create argument container as string_view */
+    std::string_view args[argc];
+    std::transform(&argv[0], &argv[argc], &args[0], [](auto a) { return std::string_view{ a }; });
 
-    std::vector<std::string_view> args{ &argv[1], &argv[argc] };
-
-    std::string_view cmd_arg{ args[0] };
-    if (cmd_arg == "change") {
-        gsl::span<std::string_view> span_args{ &*(args.begin() + 1), &*args.end() };
-        change(span_args);
-    } else if (cmd_arg == "help") {
+    /* Parse the command argument */
+    std::string_view& command_str = args[1];
+    if (command_str == "change") {
+        change({ &args[2], &args[argc] });
+    } else if (command_str == "help") {
         print_main_help();
     } else {
         print_main_help();
