@@ -23,12 +23,17 @@ set(GER_TEST "ger-test")
 #########################################################################################
 # Dependencies
 #########################################################################################
+# Conan
 include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup()
 include_directories(${CONAN_INCLUDE_DIRS})
 add_definitions(${CONAN_DEFINES})
 link_libraries(${CONAN_LIBS})
-
+# Docopt
+add_subdirectory(third_party/docopt)
+include_directories(third_party/docopt)
+link_libraries(docopt)
+# FMT
 add_subdirectory(third_party/fmt)
 include_directories(third_party/fmt/include)
 link_libraries(fmt)

@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <functional>
+#include <type_traits>
 
 #include <unistd.h>
 
@@ -14,6 +15,8 @@
 #include "gsl/gsl"
 #include "curl/curl.h"
 #include "nlohmann/json.hpp"
+
+#include "docopt.h"
 
 namespace ger {
 
@@ -31,7 +34,7 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
     return size * nmemb;
 }
 
-static int change(gsl::span<std::string_view> args)
+static int change(const std::vector<std::string>& args)
 {
     // no more args for now
     if (args.size() != 0) {
@@ -160,6 +163,20 @@ static int change(gsl::span<std::string_view> args)
 - ger profile push/pop from a stack, default uses the ~/.ger file.
 */
 
+static const char kGerMainHelp[] = R"(Gerrit CLI client.
+usage: ger [--version] [-h|--help] [-v|--verbose] [<command>] [<args>...]
+
+commands:
+  help            Show help for a given command or concept.
+  change          List changes in the gerrit server.
+  review          Review changes through the command-line.
+  config          Configure Ger options.
+
+options:
+  -v, --verbose   Enable verbose output.
+  -h, --help      Show this screen.
+  --version       Show version.)";
+
 enum class Command {
     NONE,
     HELP,
@@ -173,53 +190,58 @@ struct CmdArg {
     std::string_view arg;
 };
 
+/* Available commands */
+constexpr std::array kCommands = {
+    CmdArg{ .cmd = Command::HELP, .arg = "help" },
+    CmdArg{ .cmd = Command::CHANGE, .arg = "change" },
+    CmdArg{ .cmd = Command::REVIEW, .arg = "review" },
+    CmdArg{ .cmd = Command::CONFIG, .arg = "config" },
+};
+
 int ger(int argc, const char* argv[])
 {
-    /* Check for arguments */
-    if (argc <= 1) {
-        print_main_help();
+    /* Parse arguments */
+    auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
+                               "Ger version: 0.1-alpha", true);
+
+    fmt::print("{}\n", fmt::join(args, " "));
+
+    /* Check if we have been given a command */
+    if (!args["<command>"]) {
+        fmt::print("{}\n", kGerMainHelp);
         return 0;
     }
 
-    /* Create argument container as string_view */
-    std::string_view _args[argc];
-    std::transform(&argv[0], &argv[argc], &_args[0], [](auto a) { return std::string_view{ a }; });
-    gsl::span<std::string_view> args = { std::addressof(_args[0]), std::addressof(_args[argc]) };
-
-    /* Available commands */
-    constexpr std::array commands = {
-        CmdArg{ .cmd = Command::HELP, .arg = "help" },
-        CmdArg{ .cmd = Command::CHANGE, .arg = "change" },
-        CmdArg{ .cmd = Command::REVIEW, .arg = "review" },
-        CmdArg{ .cmd = Command::CONFIG, .arg = "config" },
-    };
-
-    /* The actual command */
+    /* Final command */
     auto cmd = Command::NONE;
 
     /* Get command */
-    std::string_view& input_command = args[1];
-    for (auto& command : commands) {
+    std::string_view input_command = args["<command>"].asString();
+    for (auto& command : kCommands) {
         if (input_command == command.arg) {
             cmd = command.cmd;
             break;
         }
     }
 
-    /* Dispatch command handling */
+    /* Dispatch command handler */
     switch (cmd) {
-        case Command::CHANGE:
-            return change(args.subspan(2));
-        case Command::REVIEW:
-            fmt::print("Not implemented yet\n");
-            return 0;
-        case Command::CONFIG:
-            fmt::print("Not implemented yet\n");
-            return 0;
+        case Command::CHANGE: {
+            return change(args["<args>"].asStringList());
+        }
+        case Command::REVIEW: {
+            fmt::print("Not yet implemented.\n");
+            break;
+        }
+        case Command::CONFIG: {
+            fmt::print("Not yet implemented.\n");
+            break;
+        }
         case Command::HELP:
-        case Command::NONE:
-            print_main_help();
-            return 0;
+        case Command::NONE: {
+            fmt::print("{}\n", kGerMainHelp);
+            break;
+        }
     }
 
     return 0;
