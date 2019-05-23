@@ -163,22 +163,21 @@ static int change(const std::vector<std::string>& args)
 - ger profile push/pop from a stack, default uses the ~/.ger file.
 */
 
-static const char kGerMainHelp[] = R"(Gerrit CLI client.
-usage: ger [--version] [-h|--help] [-v|--verbose] [<command>] [<args>...]
+static const char kGerMainHelp[] = R"(Gerrit command-line client.
+usage: ger [-h|--help] [--version] [<command> [<args>...]]
 
 commands:
   help            Show help for a given command or concept.
   change          List changes in the gerrit server.
   review          Review changes through the command-line.
-  config          Configure Ger options.
+  config          Configure ger options.
 
 options:
-  -v, --verbose   Enable verbose output.
   -h, --help      Show this screen.
   --version       Show version.)";
 
 enum class Command {
-    NONE,
+    UNKNOWN,
     HELP,
     CHANGE,
     REVIEW,
@@ -204,8 +203,6 @@ int ger(int argc, const char* argv[])
     auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
                                "Ger version: 0.1-alpha", true);
 
-    fmt::print("{}\n", fmt::join(args, " "));
-
     /* Check if we have been given a command */
     if (!args["<command>"]) {
         fmt::print("{}\n", kGerMainHelp);
@@ -213,7 +210,7 @@ int ger(int argc, const char* argv[])
     }
 
     /* Final command */
-    auto cmd = Command::NONE;
+    auto cmd = Command::UNKNOWN;
 
     /* Get command */
     std::string_view input_command = args["<command>"].asString();
@@ -237,10 +234,14 @@ int ger(int argc, const char* argv[])
             fmt::print("Not yet implemented.\n");
             break;
         }
-        case Command::HELP:
-        case Command::NONE: {
+        case Command::HELP: {
             fmt::print("{}\n", kGerMainHelp);
-            break;
+            return 0;
+        }
+        case Command::UNKNOWN: {
+            fmt::print("Unkown command: {}\n\n", input_command);
+            fmt::print("{}\n", kGerMainHelp);
+            return -1;
         }
     }
 
