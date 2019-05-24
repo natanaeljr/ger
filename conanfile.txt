@@ -7,7 +7,6 @@ yaml-cpp/0.6.2@bincrafters/stable
 jsonformoderncpp/3.6.1@vthiery/stable
 Poco/1.9.0@pocoproject/stable
 OpenSSL/latest_1.1.1x@conan/stable
-protobuf/3.6.1@bincrafters/stable
 boost/1.70.0@conan/stable
 libcurl/7.64.1@bincrafters/stable
 range-v3/0.5.0@ericniebler/stable

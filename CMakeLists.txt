@@ -15,7 +15,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 #########################################################################################
 # Global Defines
 #########################################################################################
-set(GER_INCLUDE_DIRS "include")
+set(GER_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(GER_PROTOBUF_INCLUDE_DIR ${CMAKE_BINARY_DIR}/protobuf)
 set(GER_LIBRARY "gerlib")
 set(GER_BINARY "ger")
 set(GER_TEST "ger-test")
@@ -41,7 +42,11 @@ link_libraries(fmt)
 #########################################################################################
 # Project
 #########################################################################################
-include_directories(${GER_INCLUDE_DIRS})
+file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gerrit)
+include_directories(${GER_PROTOBUF_INCLUDE_DIR})
+
+include_directories(${GER_INCLUDE_DIR})
+add_subdirectory(protobuf)
 add_subdirectory(src)
 
 #########################################################################################

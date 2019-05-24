@@ -21,7 +21,7 @@ class GerCli {
     GerCli() = delete;
 
     /**
-     * \brief Launch CLI from main.
+     * \brief Launch CLI from main entrance style.
      * \param argc Argument count.
      * \param argv Argments vector.
      * \return 0 on success, negative if error.

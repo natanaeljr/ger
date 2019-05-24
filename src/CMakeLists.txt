@@ -8,6 +8,16 @@ add_library(${GER_LIBRARY} STATIC
   cli/change_cmd.cc
 )
 
+target_link_libraries(${GER_LIBRARY}
+  ger_protobuf
+  protobuf
+  pthread
+)
+
+add_dependencies(${GER_LIBRARY}
+  ger_protobuf
+)
+
 set_target_properties(${GER_LIBRARY} PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -21,6 +31,9 @@ add_executable(${GER_BINARY}
 
 target_link_libraries(${GER_BINARY}
   ${GER_LIBRARY}
+  ger_protobuf
+  protobuf
+  pthread
 )
 
 add_dependencies(${GER_BINARY}

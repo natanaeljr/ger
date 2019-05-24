@@ -20,11 +20,10 @@
 #include "nlohmann/json.hpp"
 #include "docopt.h"
 
-/************************************************************************************************/
-
 namespace ger {
 
-static constexpr const char kGerMainHelp[] = R"(Ger Change command.
+/************************************************************************************************/
+static constexpr const char kGerChangeCmdHelp[] = R"(Ger Change command.
 usage: change [-h|--help] [<change>]
 
 positional arguments:
@@ -33,16 +32,18 @@ positional arguments:
 options:
   -h, --help      Show this screen.)";
 
+/************************************************************************************************/
 static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data)
 {
     data->append((char*)ptr, size * nmemb);
     return size * nmemb;
 }
 
+/************************************************************************************************/
 int RunChangeCommand(const std::vector<std::string>& argv)
 {
     /* Parse arguments */
-    auto args = docopt::docopt(kGerMainHelp, argv, true, {}, true);
+    auto args = docopt::docopt(kGerChangeCmdHelp, argv, true, {}, true);
 
     if (args["<change>"]) {
         fmt::print("<change> Not yet implemented.\n");

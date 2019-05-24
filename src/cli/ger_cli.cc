@@ -1,10 +1,9 @@
 /**
  * \file ger_cli.cc
- * \author Natanael Josu
+ * \author Natanael Josue Rabello
  * \brief Ger CLI.
  * \date 2019-05-24
  * \copyright Copyright (c) 2019
- *
  */
 
 #include "ger/cli/ger_cli.h"
@@ -19,10 +18,9 @@
 
 #include "ger/cli/commands.h"
 
-/************************************************************************************************/
-
 namespace ger {
 
+/************************************************************************************************/
 static constexpr const char kGerMainHelp[] = R"(Gerrit command-line client.
 usage: ger [-h|--help] [--version] [<command> [<args>...]]
 
@@ -36,13 +34,14 @@ options:
   -h, --help      Show this screen.
   --version       Show version.)";
 
+/************************************************************************************************/
 struct CmdArg {
     Command cmd;
     std::string_view arg;
 };
 
 /* Available commands */
-constexpr std::array kCommands = {
+static constexpr const std::array kCommands = {
     CmdArg{ .cmd = Command::HELP, .arg = "help" },
     CmdArg{ .cmd = Command::CHANGE, .arg = "change" },
     CmdArg{ .cmd = Command::REVIEW, .arg = "review" },

@@ -13,3 +13,12 @@ TODO:
     - owner, open, closed, watched, stared, review
   - label the lists when there is more than one filter
 - ger profile push/pop from a stack, default uses the ~/.ger file.
+
+
+/* TODO:
+ger daemon start/stop
+ger daemon status
+ger config daemon notification enable
+ger config daemon notification interval <t>
+--interactive, --no-interactive
+ */

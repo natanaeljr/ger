@@ -9,14 +9,6 @@
 
 #include "ger/cli/ger_cli.h"
 
-/* TODO:
-ger daemon start/stop
-ger daemon status
-ger config daemon notification enable
-ger config daemon notification interval <t>
---interactive, --no-interactive
- */
-
 /**************************************************************************************/
 TEST(Gerrit, NoCommand)
 {
