@@ -1,9 +1,12 @@
-#include "ger/cli/ger.h"
+/**
+ * \file change_cmd.cc
+ * \author Natanael Josue Rabello
+ * \brief Change command.
+ * \date 2019-05-24
+ * \copyright Copyright (c) 2019
+ */
 
-#include <vector>
-#include <string>
-#include <functional>
-#include <type_traits>
+#include "ger/cli/commands.h"
 
 #include <unistd.h>
 
@@ -15,18 +18,20 @@
 #include "gsl/gsl"
 #include "curl/curl.h"
 #include "nlohmann/json.hpp"
-
 #include "docopt.h"
+
+/************************************************************************************************/
 
 namespace ger {
 
-static void print_main_help()
-{
-    fmt::print("Gerrit terminal client.\n");
-    fmt::print("USAGE: ger <command>\n\n");
-    fmt::print("Commands:\n");
-    fmt::print("change - Show all changes\n");
-}
+static constexpr const char kGerMainHelp[] = R"(Ger Change command.
+usage: change [-h|--help] [<change>]
+
+positional arguments:
+  <change>        Show information about a specific change.
+
+options:
+  -h, --help      Show this screen.)";
 
 static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data)
 {
@@ -34,13 +39,16 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
     return size * nmemb;
 }
 
-static int change(const std::vector<std::string>& args)
+int RunChangeCommand(const std::vector<std::string>& argv)
 {
-    // no more args for now
-    if (args.size() != 0) {
-        fmt::print("'change' command takes no arguments.\n", args.size());
-        return -2;
+    /* Parse arguments */
+    auto args = docopt::docopt(kGerMainHelp, argv, true, {}, true);
+
+    if (args["<change>"]) {
+        fmt::print("<change> Not yet implemented.\n");
+        return -1;
     }
+
     CURL* curl = nullptr;
     CURLcode res;
 
@@ -142,108 +150,6 @@ static int change(const std::vector<std::string>& args)
         fmt::format_to(output, "{}\n", fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
     }
     fmt::print("{}", fmt::to_string(output));
-
-    return 0;
-}
-
-/* TODO:
-- parse config from file
-  - remote:
-    - host
-    - port
-    - default connection type: http/ssh
-    - username
-    - http password
-  - ger change display options and filters:
-    - commit-sha1, change-id, project, branch, topic, patch-set number, parent-sha1
-    - status, owner, last-updated, size, code-review, verified
-    - aligned-columns, parent-graph
-    - owner, open, closed, watched, stared, review
-  - label the lists when there is more than one filter
-- ger profile push/pop from a stack, default uses the ~/.ger file.
-*/
-
-static const char kGerMainHelp[] = R"(Gerrit command-line client.
-usage: ger [-h|--help] [--version] [<command> [<args>...]]
-
-commands:
-  help            Show help for a given command or concept.
-  change          List changes in the gerrit server.
-  review          Review changes through the command-line.
-  config          Configure ger options.
-
-options:
-  -h, --help      Show this screen.
-  --version       Show version.)";
-
-enum class Command {
-    UNKNOWN,
-    HELP,
-    CHANGE,
-    REVIEW,
-    CONFIG,
-};
-
-struct CmdArg {
-    Command cmd;
-    std::string_view arg;
-};
-
-/* Available commands */
-constexpr std::array kCommands = {
-    CmdArg{ .cmd = Command::HELP, .arg = "help" },
-    CmdArg{ .cmd = Command::CHANGE, .arg = "change" },
-    CmdArg{ .cmd = Command::REVIEW, .arg = "review" },
-    CmdArg{ .cmd = Command::CONFIG, .arg = "config" },
-};
-
-int ger(int argc, const char* argv[])
-{
-    /* Parse arguments */
-    auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
-                               "Ger version: 0.1-alpha", true);
-
-    /* Check if we have been given a command */
-    if (!args["<command>"]) {
-        fmt::print("{}\n", kGerMainHelp);
-        return 0;
-    }
-
-    /* Final command */
-    auto cmd = Command::UNKNOWN;
-
-    /* Get command */
-    std::string_view input_command = args["<command>"].asString();
-    for (auto& command : kCommands) {
-        if (input_command == command.arg) {
-            cmd = command.cmd;
-            break;
-        }
-    }
-
-    /* Dispatch command handler */
-    switch (cmd) {
-        case Command::CHANGE: {
-            return change(args["<args>"].asStringList());
-        }
-        case Command::REVIEW: {
-            fmt::print("Not yet implemented.\n");
-            break;
-        }
-        case Command::CONFIG: {
-            fmt::print("Not yet implemented.\n");
-            break;
-        }
-        case Command::HELP: {
-            fmt::print("{}\n", kGerMainHelp);
-            return 0;
-        }
-        case Command::UNKNOWN: {
-            fmt::print("Unkown command: {}\n\n", input_command);
-            fmt::print("{}\n", kGerMainHelp);
-            return -1;
-        }
-    }
 
     return 0;
 }

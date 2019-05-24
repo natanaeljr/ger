@@ -1,0 +1,15 @@
+TODO:
+- parse config from file
+  - remote:
+    - host
+    - port
+    - default connection type: http/ssh
+    - username
+    - http password
+  - ger change display options and filters:
+    - commit-sha1, change-id, project, branch, topic, patch-set number, parent-sha1
+    - status, owner, last-updated, size, code-review, verified
+    - aligned-columns, parent-graph
+    - owner, open, closed, watched, stared, review
+  - label the lists when there is more than one filter
+- ger profile push/pop from a stack, default uses the ~/.ger file.

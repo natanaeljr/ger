@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 #include "gmock/gmock.h"
 
-#include "ger/cli/ger.h"
+#include "ger/cli/ger_cli.h"
 
 /* TODO:
 ger daemon start/stop

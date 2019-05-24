@@ -4,7 +4,8 @@ cmake_minimum_required(VERSION 3.0)
 # Library
 #########################################################################################
 add_library(${GER_LIBRARY} STATIC
-  cli/ger.cc
+  cli/ger_cli.cc
+  cli/change_cmd.cc
 )
 
 set_target_properties(${GER_LIBRARY} PROPERTIES
