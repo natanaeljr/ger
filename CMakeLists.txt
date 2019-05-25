@@ -34,6 +34,8 @@ link_libraries(${CONAN_LIBS})
 add_subdirectory(third_party/docopt)
 include_directories(third_party/docopt)
 link_libraries(docopt)
+# enum_t
+include_directories(third_party/enum_t/include)
 # FMT
 add_subdirectory(third_party/fmt)
 include_directories(third_party/fmt/include)

@@ -4,3 +4,6 @@
 [submodule "third_party/docopt"]
 	path = third_party/docopt
 	url = https://github.com/docopt/docopt.cpp.git
+[submodule "third_party/enum_t"]
+	path = third_party/enum_t
+	url = https://github.com/natanaeljr/enum_t.git
