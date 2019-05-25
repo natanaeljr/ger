@@ -9,7 +9,6 @@
 #include "ger/cli/commands.h"
 
 #include <unistd.h>
-
 #include "fmt/core.h"
 #include "fmt/ranges.h"
 #include "fmt/printf.h"
@@ -35,7 +34,7 @@ options:
 /************************************************************************************************/
 static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* data)
 {
-    data->append((char*)ptr, size * nmemb);
+    data->append((char*) ptr, size * nmemb);
     return size * nmemb;
 }
 
@@ -46,7 +45,7 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     auto args = docopt::docopt(kGerChangeCmdHelp, argv, true, {}, true);
 
     if (args["<change>"]) {
-        fmt::print("<change> Not yet implemented.\n");
+        fmt::print("Arguments not yet implemented.\n");
         return -1;
     }
 
@@ -63,15 +62,18 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
-    curl_easy_setopt(curl, CURLOPT_URL,
-                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    curl_easy_setopt(curl, CURLOPT_URL, "localhost:8080/a/changes/?q=is:open+owner:self");
+    // curl_easy_setopt(curl, CURLOPT_URL,
+    //                  "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
     curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
+                     "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
+    // curl_easy_setopt(curl, CURLOPT_USERPWD,
+    //                  "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
-    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
@@ -133,22 +135,30 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     fmt::memory_buffer output;
     for (auto change : changes) {
         fmt::format_to(output, "* ");
-        fmt::format_to(output, "{}",
-                       fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.number));
+        fmt::format_to(
+            output, "{}",
+            fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.number));
         fmt::format_to(output, " {} ", change.subject);
 
-        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), "("));
         fmt::format_to(output, "{}",
-                       fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), change.project));
-        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
-        fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}",
-                                                 change.branch));
+                       fmt::format(fmt::fg(fmt::terminal_color::yellow), "("));
+        fmt::format_to(
+            output, "{}",
+            fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), change.project));
+        fmt::format_to(output, "{}",
+                       fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
+        fmt::format_to(
+            output, "{}",
+            fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}", change.branch));
         if (!change.topic.empty()) {
-            fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
-            fmt::format_to(output, "{}", fmt::format(fmt::fg(fmt::terminal_color::bright_green),
-                                                     "{}", change.topic));
+            fmt::format_to(output, "{}",
+                           fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
+            fmt::format_to(output, "{}",
+                           fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}",
+                                       change.topic));
         }
-        fmt::format_to(output, "{}\n", fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
+        fmt::format_to(output, "{}\n",
+                       fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
     }
     fmt::print("{}", fmt::to_string(output));
 

@@ -35,6 +35,14 @@ class GerCli {
      * \return 0 on success, negative if error.
      */
     static int RunCommand(Command cmd, const std::vector<std::string>& args);
+
+   private:
+    /**
+     * \brief Parse input command from string to enum format.
+     * \param input_command Command to parse.
+     * \return Corresponding command, or UNKNOWN if command not valid.
+     */
+    static Command ParseCommand(std::string_view input_command);
 };
 
 } /* namespace ger */

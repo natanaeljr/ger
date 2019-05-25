@@ -8,13 +8,12 @@
 
 #include "ger/cli/ger_cli.h"
 
+#include <array>
 #include <vector>
 #include <string>
-#include <type_traits>
-
-#include "fmt/core.h"
-#include "fmt/ranges.h"
 #include "docopt.h"
+#include "fmt/core.h"
+#include "njr/enum_t.h"
 
 #include "ger/cli/commands.h"
 
@@ -35,20 +34,6 @@ options:
   --version       Show version.)";
 
 /************************************************************************************************/
-struct CmdArg {
-    Command cmd;
-    std::string_view arg;
-};
-
-/* Available commands */
-static constexpr const std::array kCommands = {
-    CmdArg{ .cmd = Command::HELP, .arg = "help" },
-    CmdArg{ .cmd = Command::CHANGE, .arg = "change" },
-    CmdArg{ .cmd = Command::REVIEW, .arg = "review" },
-    CmdArg{ .cmd = Command::CONFIG, .arg = "config" },
-};
-
-/************************************************************************************************/
 int GerCli::Launch(int argc, const char* argv[])
 {
     /* Parse arguments */
@@ -56,27 +41,31 @@ int GerCli::Launch(int argc, const char* argv[])
                                "Ger version: 0.1-alpha", true);
 
     /* Check if we have been given a command */
-    if (!args["<command>"]) {
+    if (not args["<command>"]) {
         fmt::print("{}\n", kGerMainHelp);
         return 0;
     }
 
-    /* Final command */
-    auto cmd = Command::UNKNOWN;
+    /* Get command in enum format and pass it to runner */
+    Command command = ParseCommand(args["<command>"].asString());
 
-    /* Get command */
-    std::string_view input_command = args["<command>"].asString();
-    for (auto& command : kCommands) {
-        if (input_command == command.arg) {
-            cmd = command.cmd;
+    return RunCommand(command, args["<args>"].asStringList());
+}
+
+/************************************************************************************************/
+Command GerCli::ParseCommand(std::string_view input_command)
+{
+    Command ret = Command::UNKNOWN;
+
+    /* Find matching command and return it */
+    for (auto command : njr::enum_t<Command>::values::array()) {
+        if (input_command == command.name()) {
+            ret = command;
             break;
         }
     }
 
-    /* Run the command */
-    RunCommand(cmd, args["<args>"].asStringList());
-
-    return 0;
+    return ret;
 }
 
 /************************************************************************************************/
@@ -100,7 +89,7 @@ int GerCli::RunCommand(Command cmd, const std::vector<std::string>& args)
             return 0;
         }
         case Command::UNKNOWN: {
-            fmt::print("Unkown command.\n\n");
+            fmt::print("Unknown command.\n\n");
             fmt::print("{}\n", kGerMainHelp);
             return -1;
         }

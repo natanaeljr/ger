@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <string>
+#include "njr/enum_t.h"
 
 /************************************************************************************************/
 
@@ -34,3 +35,23 @@ enum class Command {
 int RunChangeCommand(const std::vector<std::string>& argv);
 
 } /* namespace ger */
+
+/************************************************************************************************/
+
+/**
+ * \brief Translate Command enumerators to string.
+ * \return command name.
+ */
+template<>
+constexpr const char* ::njr::enum_t<ger::Command>::name() const
+{
+    using ger::Command;
+    switch (enum_) {
+        case Command::UNKNOWN: return "unknown";
+        case Command::HELP: return "help";
+        case Command::CHANGE: return "change";
+        case Command::REVIEW: return "review";
+        case Command::CONFIG: return "config";
+    }
+    return nullptr;
+}
