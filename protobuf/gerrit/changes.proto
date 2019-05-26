@@ -1,0 +1,195 @@
+syntax = "proto3";
+import "google/protobuf/struct.proto";
+import "gerrit/accounts.proto";
+
+package gerrit.changes;
+
+option csharp_namespace = "Gerrit.Changes";
+option cc_enable_arenas = true;
+// option go_package = "github.com/gerrit/changes";
+option java_package = "gerrit.changes";
+option java_outer_classname = "ChangesProto";
+option java_multiple_files = true;
+option objc_class_prefix = "GC";
+
+
+enum HttpMethod {
+  HTTP_METHOD_UNSPECIFIED = 0;
+  GET = 1;
+  POST = 2;
+  PUT = 3;
+  DELETE = 4;
+}
+
+message ActionInfo {
+  HttpMethod method = 1;
+  string label = 2;
+  string title = 3;
+  bool enabled = 4;
+}
+
+message VotingRangeInfo {
+  sint32 min = 1;
+  sint32 max = 2;
+}
+
+message ApprovalInfo {
+  uint32 _account_id = 1;
+  string name = 2;
+  string email = 3;
+  string username = 4;
+  sint32 value = 5;
+  VotingRangeInfo permitted_voting_range = 6;
+  string date = 7;
+  string tag = 8;
+  bool post_submit = 9;
+}
+
+enum RequirementStatus {
+  REQUIREMENT_STATUS_UNSPECIFIED = 0;
+  OK = 1;
+  NOT_READY = 2;
+  RULE_ERROR = 3;
+}
+
+message Requirement {
+  RequirementStatus status = 1;
+  string fallbackText = 2;
+  string type = 3;
+  map<string, string> data = 4;
+}
+
+message LabelInfo {
+  bool optional = 1;
+  accounts.AccountInfo approved = 2;
+  accounts.AccountInfo rejected = 3;
+  accounts.AccountInfo recommended = 4;
+  accounts.AccountInfo disliked = 5;
+  bool blocking = 6;
+  string value = 7;
+  sint32 default_value = 8;
+  repeated ApprovalInfo all = 9;
+  map<string, string> values = 10;
+}
+
+enum ReviewerState {
+  REVIEWER_STATE_UNSPECIFIED = 0;
+  REVIEWER = 1;
+  CC = 2;
+  REMOVED = 3;
+}
+
+message ReviewerUpdateInfo {
+  string updated = 1;
+  accounts.AccountInfo updated_by = 2;
+  accounts.AccountInfo reviewer = 3;
+  ReviewerState state = 4;
+}
+
+message ChangeMessageInfo {
+  string id = 1;
+  accounts.AccountInfo author = 2;
+  accounts.AccountInfo real_author = 3;
+  string date = 4;
+  string message = 5;
+  string tag = 6;
+  uint32 _revision_number = 7;
+}
+
+enum RevisionKind {
+  REVISION_KIND_UNSPECIFIED = 0;
+  REWORK = 1;
+  TRIVIAL_REBASE = 2;
+  MERGE_FIRST_PARENT_UPDATE = 3;
+  NO_CODE_CHANGE = 4;
+  NO_CHANGE = 5;
+}
+
+message RevisionInfo {
+  bool draft = 1;
+  RevisionKind kind = 2;
+  string _number = 3;
+  string created = 4;
+  accounts.AccountInfo uploader = 5;
+  string ref = 6;
+  //  map<string, FetchInfo> fetch = 7;
+  //  CommitInfo commit = 8;
+  //  map<string, FileInfo> files = 9;
+  map<string, ActionInfo> actions = 10;
+  bool reviewed = 11;
+  string messagWithFooter = 12;
+  //  PushCertificateInfo push_certificate = 13;
+  string description = 14;
+}
+
+message TrackingIdInfo {
+  string system = 1;
+  string id = 2;
+}
+
+enum ProblemStatus {
+  PROBLEM_STATUS_UNSPECIFIED = 0;
+  FIXED = 1;
+  FIX_FAILED = 2;
+}
+
+message ProblemInfo {
+  string message = 1;
+  ProblemStatus status = 2;
+  string outcome = 3;
+}
+
+enum ChangeStatus {
+  option allow_alias = true;
+  CHANGE_STATUS_UNSPECIFIED = 0;
+  NEW = 0;
+  MERGED = 1;
+  ABANDONED = 2;
+  DRAFT = 3;
+}
+
+message ChangeInfo {
+  string id = 1;
+  string project = 2;
+  string branch = 3;
+  string topic = 4;
+  accounts.AccountInfo assignee = 5;
+  repeated string hashtags = 6;
+  string change_id = 7;
+  string subject = 8;
+  ChangeStatus status = 9;
+  string created = 10;
+  string updated = 11;
+  string submitted = 12;
+  accounts.AccountInfo submitter = 13;
+  bool starred = 14;
+  repeated string stars = 15;
+  bool reviewed = 16;
+  string submit_type = 17;
+  bool mergeable = 18;
+  uint32 insertions = 19;
+  uint32 deletions = 20;
+  uint32 total_comment_count = 22;
+  uint32 unresolved_comment_count = 23;
+  uint32 _number = 24;
+  accounts.AccountInfo owner = 25;
+  map<string, ActionInfo> actions = 26;
+  repeated Requirement requirements = 27;
+  map<string, LabelInfo> labels = 28;
+  map<string, google.protobuf.ListValue> permitted_labels = 29;
+  repeated accounts.AccountInfo removable_reviewers = 30;
+  map<string, google.protobuf.ListValue> reviewers = 31;
+  map<string, google.protobuf.ListValue> pending_reviewers = 32;
+  map<string, ReviewerUpdateInfo> reviewer_updates = 33;
+  repeated ChangeMessageInfo messages = 34;
+  string current_revision = 35;
+  map<string, RevisionInfo> revisions = 36;
+  repeated TrackingIdInfo tracking_ids = 37;
+  bool _more_changes = 38;
+  repeated ProblemInfo problems = 39;
+  bool is_private = 40;
+  bool work_in_progress = 41;
+  bool has_review_started = 42;
+  string revert_of = 43;
+  string base_change = 44;
+};

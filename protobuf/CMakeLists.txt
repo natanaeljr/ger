@@ -8,7 +8,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "")
 # Generate protobuf files and LIM L2 protobuf lib
 ################################################################################
 set(GER_PROTOBUF_FILES
-    gerrit/change
+    gerrit/accounts
+    gerrit/changes
 )
 
 foreach(proto_file ${GER_PROTOBUF_FILES})

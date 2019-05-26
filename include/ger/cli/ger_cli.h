@@ -1,7 +1,7 @@
 /**
  * \file ger_cli.h
  * \author Natanael Josue Rabello
- * \brief Gerrit terminal client.
+ * \brief Gerrit command-line client.
  * \date 2019-05-14
  */
 
@@ -23,7 +23,7 @@ class GerCli {
     /**
      * \brief Launch CLI from main entrance style.
      * \param argc Argument count.
-     * \param argv Argments vector.
+     * \param argv Argument list.
      * \return 0 on success, negative if error.
      */
     static int Launch(int argc, const char* argv[]);
