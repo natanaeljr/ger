@@ -9,6 +9,10 @@ add_library(${GER_LIBRARY} STATIC
 )
 
 target_link_libraries(${GER_LIBRARY}
+  ger_capnproto
+  capnp-json
+  capnp
+  kj
   ger_protobuf
   protobuf
   pthread
@@ -31,9 +35,6 @@ add_executable(${GER_BINARY}
 
 target_link_libraries(${GER_BINARY}
   ${GER_LIBRARY}
-  ger_protobuf
-  protobuf
-  pthread
 )
 
 add_dependencies(${GER_BINARY}

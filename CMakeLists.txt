@@ -44,10 +44,11 @@ link_libraries(fmt)
 #########################################################################################
 # Project
 #########################################################################################
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/gerrit)
 include_directories(${GER_PROTOBUF_INCLUDE_DIR})
+include_directories(${CMAKE_BINARY_DIR}/capnproto)
 
 include_directories(${GER_INCLUDE_DIR})
+add_subdirectory(capnproto)
 add_subdirectory(protobuf)
 add_subdirectory(src)
 
