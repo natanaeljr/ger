@@ -9,17 +9,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb -pg -fsanitize=undefined -Werror -Wall")
+set(CMAKE_CXX_FLAGS "-pg -fsanitize=undefined -Werror -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -ggdb")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 #########################################################################################
 # Global Defines
 #########################################################################################
 set(GER_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
-set(GER_PROTOBUF_INCLUDE_DIR ${CMAKE_BINARY_DIR}/protobuf)
 set(GER_LIBRARY "gerlib")
 set(GER_BINARY "ger")
 set(GER_TEST "ger-test")
+
+set(GER_CAPNP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/capnp)
+set(GER_CAPNP_LIB ger_capnp)
 
 #########################################################################################
 # Dependencies
@@ -44,12 +47,12 @@ link_libraries(fmt)
 #########################################################################################
 # Project
 #########################################################################################
-include_directories(${GER_PROTOBUF_INCLUDE_DIR})
-include_directories(${CMAKE_BINARY_DIR}/capnproto)
-
+# Cap'n Proto
+add_subdirectory(capnp)
+include_directories(${GER_CAPNP_OUTPUT_DIR})
+link_libraries(${GER_CAPNP_LIB})
+# Source code
 include_directories(${GER_INCLUDE_DIR})
-add_subdirectory(capnproto)
-add_subdirectory(protobuf)
 add_subdirectory(src)
 
 #########################################################################################

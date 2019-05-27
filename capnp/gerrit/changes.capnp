@@ -15,10 +15,6 @@ struct ListMap(Key, Value) {
  }
 }
 
-interface Node {
-  isDirectory @0 () -> (result :Bool);
-}
-
 enum ChangeStatus {
   new @0 $Json.name("NEW");
   merged @1 $Json.name("MERGED");

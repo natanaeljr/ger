@@ -40,7 +40,8 @@ static constexpr const char kGerVersionStr[] = "ger version 0.1-alpha";
 int GerCli::Launch(int argc, const char* argv[])
 {
     /* Parse arguments */
-    auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true, kGerVersionStr, true);
+    auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
+                               kGerVersionStr, true);
 
     /* Check if we have been given a command */
     if (not args["<command>"]) {

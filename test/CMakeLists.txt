@@ -14,7 +14,6 @@ target_link_libraries(${GER_TEST}
 
 add_dependencies(${GER_TEST}
   ${GER_LIBRARY}
-  ger_protobuf
 )
 
 set_target_properties(${GER_TEST} PROPERTIES

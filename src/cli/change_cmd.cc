@@ -9,7 +9,6 @@
 #include "ger/cli/commands.h"
 
 #include <unistd.h>
-// #include <google/protobuf/util/json_util.h>
 #include <capnp/compat/json.h>
 
 #include "fmt/core.h"
@@ -22,8 +21,6 @@
 #include "nlohmann/json.hpp"
 #include "docopt.h"
 
-// #include "gerrit/changes.pb.h"
-// #include "gerrit/accounts.pb.h"
 #include "gerrit/changes.capnp.h"
 
 namespace capnp {
@@ -131,35 +128,6 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
     return size * nmemb;
 }
 
-/*
-static google::protobuf::util::Status ConvertProtobufMessages(
-    const google::protobuf::Message& from_msg, google::protobuf::Message* to_msg)
-{
-    std::string json;
-    auto status = google::protobuf::util::MessageToJsonString(from_msg, &json);
-    if (not status.ok()) {
-        return status;
-    }
-    status = google::protobuf::util::JsonStringToMessage(json, to_msg);
-    return status;
-}
-
-template<typename T>
-static google::protobuf::util::Status ConvertProtobufMessages(
-    const google::protobuf::ListValue& list_value,
-    google::protobuf::RepeatedPtrField<T>* msgs)
-
-{
-    for (auto& value : list_value.values()) {
-        auto status = ConvertProtobufMessages(value, msgs->Add());
-        if (not status.ok()) {
-            return status;
-        }
-    }
-    return {};
-}
-*/
-
 /************************************************************************************************/
 int RunChangeCommand(const std::vector<std::string>& argv)
 {
@@ -184,19 +152,19 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
-    curl_easy_setopt(curl, CURLOPT_URL,
-                     "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
     // curl_easy_setopt(curl, CURLOPT_URL,
-    //                  "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    //                  "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
+    curl_easy_setopt(curl, CURLOPT_URL,
+                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-    curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
     // curl_easy_setopt(curl, CURLOPT_USERPWD,
-    //                  "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
+    //                  "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
+    curl_easy_setopt(curl, CURLOPT_USERPWD,
+                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
-    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
@@ -227,32 +195,11 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         return -2;
     }
     auto json = nlohmann::json::parse(response_string.data() + 4);
-    fmt::print("{}\n", json[0].dump(2));
+    // fmt::print("{}\n", json[0].dump(2));
     if (json.size() == 0) {
         fmt::print("No changes");
         return 0;
     }
-
-    /*{
-        using google::protobuf::ListValue;
-        using google::protobuf::RepeatedPtrField;
-
-        google::protobuf::ListValue change_list;
-        auto sts = google::protobuf::util::JsonStringToMessage(response_string.data() + 4,
-                                                               &change_list);
-        if (not sts.ok()) {
-            fmt::print("sts({}):{}\n", __LINE__, sts.ToString());
-            return -3;
-        }
-        // change_list.PrintDebugString();
-        google::protobuf::RepeatedPtrField<gerrit::changes::ChangeInfo> changes;
-        sts = ConvertProtobufMessages(change_list, &changes);
-        if (not sts.ok()) {
-            fmt::print("sts({}):{}\n", __LINE__, sts.ToString());
-            return -3;
-        }
-        changes.begin()->PrintDebugString();
-    }*/
 
     {
         capnp::MallocMessageBuilder message;
