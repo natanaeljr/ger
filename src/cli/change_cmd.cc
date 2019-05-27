@@ -252,6 +252,9 @@ int RunChangeCommand(const std::vector<std::string>& argv)
             subject_maxlen = this_subject_len;
         }
     }
+
+    // TODO: output all in bold: (project/branch/topic)
+    // TODO: place (project/branch/topic) before subject, link git
     fmt::memory_buffer output;
     for (auto change : changes) {
         fmt::format_to(output, "* ");
