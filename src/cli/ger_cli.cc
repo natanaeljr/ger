@@ -21,24 +21,26 @@ namespace ger {
 
 /************************************************************************************************/
 static constexpr const char kGerMainHelp[] = R"(Gerrit command-line client.
-usage: ger [-h|--help] [--version] [<command> [<args>...]]
+usage: ger [options] [<command> [<args>...]]
 
 commands:
   help            Show help for a given command or concept.
   change          List changes in the gerrit server.
   review          Review changes through the command-line.
   config          Configure ger options.
+  version         Show version.
 
 options:
   -h, --help      Show this screen.
   --version       Show version.)";
 
+static constexpr const char kGerVersionStr[] = "ger version 0.1-alpha";
+
 /************************************************************************************************/
 int GerCli::Launch(int argc, const char* argv[])
 {
     /* Parse arguments */
-    auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
-                               "Ger version: 0.1-alpha", true);
+    auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true, kGerVersionStr, true);
 
     /* Check if we have been given a command */
     if (not args["<command>"]) {
@@ -86,6 +88,10 @@ int GerCli::RunCommand(Command cmd, const std::vector<std::string>& args)
         }
         case Command::HELP: {
             fmt::print("{}\n", kGerMainHelp);
+            return 0;
+        }
+        case Command::VERSION: {
+            fmt::print("{}\n", kGerVersionStr);
             return 0;
         }
         case Command::UNKNOWN: {

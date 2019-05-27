@@ -25,6 +25,7 @@ enum class Command {
     CHANGE,
     REVIEW,
     CONFIG,
+    VERSION,
 };
 
 /**
@@ -52,6 +53,7 @@ constexpr const char* ::njr::enum_t<ger::Command>::name() const
         case Command::CHANGE: return "change";
         case Command::REVIEW: return "review";
         case Command::CONFIG: return "config";
+        case Command::VERSION: return "version";
     }
     return nullptr;
 }
