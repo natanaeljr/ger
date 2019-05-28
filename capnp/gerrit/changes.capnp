@@ -2,18 +2,8 @@
 
 using Cxx = import "/capnp/c++.capnp";
 using Json = import "/capnp/compat/json.capnp";
+using ListMap = import "/util/listmap.capnp".ListMap;
 $Cxx.namespace("gerrit::changes");
-
-struct ListMap(Key, Value) {
- # ListMap is parsed a map in JSON
- # Key must be of type: (Text, enum)
- # Value can be of any type
- entries @0 :List(Node);
- struct Node {
-  key @0 :Key;
-  value @1 :Value;
- }
-}
 
 enum ChangeStatus {
   new @0 $Json.name("NEW");

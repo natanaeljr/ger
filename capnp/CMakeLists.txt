@@ -5,6 +5,7 @@ project(ger-capnp LANGUAGES CXX)
 # Generate Cap'n Proto files
 ##################################################################################################
 set(GER_CAPNP_FILES
+    util/listmap
     gerrit/changes
 )
 

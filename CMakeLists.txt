@@ -21,6 +21,7 @@ set(GER_LIBRARY "gerlib")
 set(GER_BINARY "ger")
 set(GER_TEST "ger-test")
 
+set(GER_CAPNP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/capnp)
 set(GER_CAPNP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/capnp)
 set(GER_CAPNP_LIB ger_capnp)
 
@@ -48,8 +49,9 @@ link_libraries(fmt)
 # Project
 #########################################################################################
 # Cap'n Proto
-add_subdirectory(capnp)
+include_directories(${GER_CAPNP_SOURCE_DIR})
 include_directories(${GER_CAPNP_OUTPUT_DIR})
+add_subdirectory(capnp)
 link_libraries(${GER_CAPNP_LIB})
 # Source code
 include_directories(${GER_INCLUDE_DIR})

@@ -22,92 +22,7 @@
 #include "docopt.h"
 
 #include "gerrit/changes.capnp.h"
-
-namespace capnp {
-class MapJsonCodeHandler : public JsonCodec::Handler<DynamicStruct> {
-    // Almost identical to Style::STRUCT except that we pass the struct type to decode().
-
-   public:
-    virtual void encode(const JsonCodec& codec, DynamicStruct::Reader input,
-                        JsonValue::Builder output) const override
-    {
-        auto fields = input.getSchema().getFields();
-        auto items = output.initObject(1);
-        auto id_field = fields[0];
-        items[0].setName(input.get(id_field).as<capnp::Text>());
-
-        int number = 0;
-        for (auto field = fields.begin() + 1; field != fields.end(); field++) {
-            if (input.has(*field)) {
-                number++;
-            }
-        }
-
-        auto value = items[0].initValue().initObject(number);
-
-        auto index = 0;
-        for (auto field = fields.begin() + 1; field != fields.end(); field++) {
-            // KJ_REQUIRE(field->getIndex() <= value.size());
-            if (input.has(*field)) {
-                auto item = value[index++];
-                item.setName(field->getProto().getName());
-                codec.encode(input.get(*field), field->getType(), item.initValue());
-            }
-            // else {
-            //     item.setNull();
-            // }
-        }
-    }
-    virtual void decode(const JsonCodec& codec, JsonValue::Reader input,
-                        DynamicStruct::Builder output) const override
-    {
-        auto orphanage = Orphanage::getForMessageContaining(output);
-        auto fields = output.getSchema().getFields();
-        auto items = input.getArray();
-        for (auto field : fields) {
-            KJ_REQUIRE(field.getIndex() < items.size());
-            auto item = items[field.getIndex()];
-            if (!item.isNull()) {
-                output.adopt(field, codec.decode(item, field.getType(), orphanage));
-            }
-        }
-    }
-
-   private:
-    //   void encodeBase(const JsonCodec& codec, DynamicValue::Reader input,
-    //                   JsonValue::Builder output) const override final {
-    //     encode(codec, input.as<DynamicStruct>(), output);
-    //   }
-    //   Orphan<DynamicValue> decodeBase(const JsonCodec& codec, JsonValue::Reader input,
-    //                                   Type type, Orphanage orphanage) const override
-    //                                   final {
-    //     return decode(codec, input, type.asStruct(), orphanage);
-    //   }
-    //   void decodeStructBase(const JsonCodec& codec, JsonValue::Reader input,
-    //                         DynamicStruct::Builder output) const override final {
-    //     decode(codec, input, output.as<DynamicStruct>());
-    //   }
-    friend class JsonCodec;
-};
-
-class MyMapJsonCodeHandler : public JsonCodec::Handler<gerrit::changes::ChangeInfo> {
-   public:
-    void encode(const JsonCodec& codec, gerrit::changes::ChangeInfo::Reader input,
-                JsonValue::Builder output) const override
-    {
-        dynamicHandler.encode(codec, input, output);
-    }
-
-    void decode(const JsonCodec& codec, JsonValue::Reader input,
-                gerrit::changes::ChangeInfo::Builder output) const override
-    {
-        dynamicHandler.decode(codec, input, output);
-    }
-
-   private:
-    MapJsonCodeHandler dynamicHandler;
-};
-}  // namespace capnp
+#include "util/listmap_handler.h"
 
 namespace ger {
 
@@ -209,8 +124,9 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         capnp::JsonCodec json_codec;
         json_codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
         // json_codec.setPrettyPrint(true);
-        auto more = capnp::MyMapJsonCodeHandler();
-        json_codec.addTypeHandler(more);
+        auto listmap_handler =
+            capnp::JsonCodec::Handler<util::ListMap<capnp::Text, capnp::Text>>();
+        json_codec.addTypeHandler(listmap_handler);
 
         // const char input[] = R"({"id": "other", "_number": 404, "status": "draft"})";
         // json_codec.decode(input, change_build);
@@ -226,7 +142,7 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         // change_build.initAne().initAs<gerrit::changes::ChangeInfo>();
 
         kj::String string = json_codec.encode(change_build.asReader());
-        fmt::print("encode:\n{}\n", string.cStr());
+        fmt::print("encode: {}\n", string.cStr());
     }
 
     struct ChangeBrief {
