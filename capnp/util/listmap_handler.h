@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <tuple>
+#include <type_traits>
 #include <capnp/compat/json.h>
 #include "util/listmap.capnp.h"
 
@@ -15,60 +17,71 @@
 
 namespace capnp {
 
-template<>
-class JsonCodec::Handler<::util::ListMap<capnp::Text, capnp::Text>>
-    : public capnp::JsonCodec::Handler<DynamicStruct> {
+template<typename Key, typename Value>
+class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
+    : public JsonCodec::Handler<DynamicStruct> {
 
-    using Type = ::util::ListMap<capnp::Text, capnp::Text>;
+    static_assert(kind<Key>() == Kind::STRUCT || kind<Key>() == Kind::BLOB,
+                  "ListMap::Key type must be pointer type");
+
+    using ListMapType = ::util::ListMap<Key, Value>;
+
+    virtual void encode(const JsonCodec& codec, DynamicStruct::Reader input,
+                        JsonValue::Builder output) const override
+    {
+        encode(codec, input.as<ListMapType>(), output);
+    }
+    virtual void decode(const JsonCodec& codec, JsonValue::Reader input,
+                        DynamicStruct::Builder output) const override
+    {
+        decode(codec, input, output.as<ListMapType>());
+    }
+
+    friend class JsonCodec;
 
    public:
-    void encode(const capnp::JsonCodec& codec, DynamicStruct::Reader input,
-                capnp::JsonValue::Builder output) const override
+    inline void GetKeyString(const JsonCodec& codec, DynamicValue::Reader field,
+                             JsonValue::Builder output) const
     {
-        //     auto fields = input.getSchema().getFields();
-        //     auto items = output.initObject(1);
-        //     auto id_field = fields[0];
-        //     items[0].setName(input.get(id_field).as<capnp::Text>());
-
-        //     int number = 0;
-        //     for (auto field = fields.begin() + 1; field != fields.end(); field++) {
-        //         if (input.has(*field)) {
-        //             number++;
-        //         }
-        //     }
-
-        //     auto value = items[0].initValue().initObject(number);
-
-        //     auto index = 0;
-        //     for (auto field = fields.begin() + 1; field != fields.end(); field++) {
-        //         // KJ_REQUIRE(field->getIndex() <= value.size());
-        //         if (input.has(*field)) {
-        //             auto item = value[index++];
-        //             item.setName(field->getProto().getName());
-        //             codec.encode(input.get(*field), field->getType(),
-        //             item.initValue());
-        //         }
-        //         // else {
-        //         //     item.setNull();
-        //         // }
-        //     }
+        switch (field.getType()) {
+            case DynamicValue::TEXT: {
+                codec.encode(field.as<Text>(), output);
+            }
+            case DynamicValue::ENUM: {
+                codec.encode(field.as<DynamicEnum>(), output);
+            }
+            case DynamicValue::STRUCT: {
+                auto s = field.as<DynamicStruct>();
+                auto fs = s.getSchema().getFields();
+                GetKeyString(codec,s.get(*fs.begin()), output);
+            }
+            default: break;
+        }
     }
 
-    void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
-                DynamicStruct::Builder output) const override
+    inline void encode(const JsonCodec& codec, typename ListMapType::Reader input,
+                       JsonValue::Builder output) const
     {
-        //     auto orphanage = capnp::Orphanage::getForMessageContaining(output);
-        //     auto fields = output.getSchema().getFields();
-        //     auto items = input.getArray();
-        //     for (auto field : fields) {
-        //         KJ_REQUIRE(field.getIndex() < items.size());
-        //         auto item = items[field.getIndex()];
-        //         if (!item.isNull()) {
-        //             output.adopt(field, codec.decode(item, field.getType(),
-        //             orphanage));
-        //         }
-        //     }
+        if (input.hasEntries()) {
+            auto entries = input.getEntries();
+            auto out_entries = output.initObject(entries.size());
+            for (size_t i = 0; i < entries.size(); ++i) {
+                auto o = Orphanage();
+                auto x = o.newOrphan<JsonValue>().get();
+                GetKeyString(codec, entries[i].getKey(), x);
+                codec.encode(entries[i].getValue(), out_entries[i].initValue());
+            }
+        }
+    }
+
+    inline void decode(const JsonCodec& codec, JsonValue::Reader input,
+                       typename ListMapType::Builder output) const
+    {
     }
 };
+
+template<typename Key, typename Value>
+using ListMapJsonCodecHandler =
+    JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>;
 
 } /* namespace capnp */
