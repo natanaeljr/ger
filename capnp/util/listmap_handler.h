@@ -40,20 +40,23 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
     friend class JsonCodec;
 
    public:
-    inline void GetKeyString(const JsonCodec& codec, DynamicValue::Reader field,
+    inline void SetKeyString(const JsonCodec& codec, DynamicValue::Reader field,
                              JsonValue::Builder output) const
     {
         switch (field.getType()) {
             case DynamicValue::TEXT: {
-                codec.encode(field.as<Text>(), output);
+                codec.encode(field, Schema::from<Text>(), output);
+                break;
             }
             case DynamicValue::ENUM: {
-                codec.encode(field.as<DynamicEnum>(), output);
+                codec.encode(field, field.as<DynamicEnum>().getSchema(), output);
+                break;
             }
             case DynamicValue::STRUCT: {
                 auto s = field.as<DynamicStruct>();
                 auto fs = s.getSchema().getFields();
-                GetKeyString(codec,s.get(*fs.begin()), output);
+                SetKeyString(codec, s.get(*fs.begin()), output);
+                break;
             }
             default: break;
         }
@@ -63,13 +66,14 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
                        JsonValue::Builder output) const
     {
         if (input.hasEntries()) {
-            auto entries = input.getEntries();
-            auto out_entries = output.initObject(entries.size());
-            for (size_t i = 0; i < entries.size(); ++i) {
-                auto o = Orphanage();
-                auto x = o.newOrphan<JsonValue>().get();
-                GetKeyString(codec, entries[i].getKey(), x);
-                codec.encode(entries[i].getValue(), out_entries[i].initValue());
+            auto in_entries = input.getEntries();
+            auto out_entries = output.initObject(in_entries.size());
+            for (size_t i = 0; i < in_entries.size(); ++i) {
+                auto orphanage = Orphanage::getForMessageContaining(output);
+                auto orphan = orphanage.newOrphan<JsonValue>();
+                SetKeyString(codec, in_entries[i].getKey(), orphan.get());
+                out_entries[i].setName(orphan.get().asReader().getString());
+                codec.encode(in_entries[i].getValue(), out_entries[i].initValue());
             }
         }
     }

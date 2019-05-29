@@ -22,6 +22,11 @@ struct ReviewerStateKey {
   key @0 :ReviewerState;
 }
 
+struct AccountInfo {
+  id @0 :UInt32;
+  name @1 :Text;
+}
+
 struct ChangeInfo {
   id @0 :Text;
   project @1 :Text;
@@ -29,5 +34,6 @@ struct ChangeInfo {
   topic @3 :Text;
   status @4 :ChangeStatus;
   number @5 :UInt32 $Json.name("_number");
-  reviewers @6 :ListMap(ReviewerStateKey, List(Text));
+  reviewers @6 :ListMap(ReviewerStateKey, List(AccountInfo));
+  others @7 :ListMap(Text, Text);
 }

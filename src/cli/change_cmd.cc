@@ -67,19 +67,19 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
-    curl_easy_setopt(curl, CURLOPT_URL,
-                     "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
     // curl_easy_setopt(curl, CURLOPT_URL,
-    //                  "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    //                  "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
+    curl_easy_setopt(curl, CURLOPT_URL,
+                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-    curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
     // curl_easy_setopt(curl, CURLOPT_USERPWD,
-    //                  "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
+    //                  "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
+    curl_easy_setopt(curl, CURLOPT_USERPWD,
+                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
+    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
-    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
 
@@ -125,9 +125,13 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         json_codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
         json_codec.handleByAnnotation<gerrit::changes::ReviewerState>();
         // json_codec.setPrettyPrint(true);
-        auto listmap_handler =
-            capnp::ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey, ::capnp::List<::capnp::Text>>();
-        json_codec.addTypeHandler(listmap_handler);
+        auto listmap_handler1 =
+            capnp::ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
+                                           ::capnp::List<gerrit::changes::AccountInfo>>();
+        auto listmap_handler2 =
+            capnp::ListMapJsonCodecHandler<::capnp::Text, ::capnp::Text>();
+        json_codec.addTypeHandler(listmap_handler1);
+        json_codec.addTypeHandler(listmap_handler2);
 
         // const char input[] = R"({"id": "other", "_number": 404, "status": "draft"})";
         // json_codec.decode(input, change_build);
@@ -140,13 +144,31 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         change_build.setId("mydumbid");
         change_build.setProject("mydrone");
         auto reviewers = change_build.initReviewers();
-        auto entries = reviewers.initEntries(2);
-        entries[0].initKey().setKey(::gerrit::changes::ReviewerState::REVIEWER);
-        entries[0].initValue(1).set(0, "hi");
-        entries[1].initKey().setKey(::gerrit::changes::ReviewerState::CC);
-        auto two = entries[1].initValue(2);
-        two.set(0, "bye");
-        two.set(1, "tchau");
+        {
+            auto entries = reviewers.initEntries(2);
+            entries[0].initKey().setKey(::gerrit::changes::ReviewerState::REVIEWER);
+            {
+                auto values = entries[0].initValue(1);
+                values[0].setId(1);
+                values[0].setName("joao");
+            }
+            entries[1].initKey().setKey(::gerrit::changes::ReviewerState::CC);
+            {
+                auto values = entries[1].initValue(2);
+                values[0].setId(1);
+                values[0].setName("marcos");
+                values[1].setId(2);
+                values[1].setName("lucas");
+            }
+        }
+        auto others = change_build.initOthers();
+        {
+            auto entries = others.initEntries(2);
+            entries[0].setKey("kkkkk");
+            entries[0].setValue("hello world");
+            entries[1].setKey("ttttt");
+            entries[1].setValue("hello world");
+        }
 
         kj::String string = json_codec.encode(change_build.asReader());
         // fmt::print("encode: {}\n", string.cStr());
