@@ -204,31 +204,34 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     // TODO: place (project/branch/topic) before subject, link git
     fmt::memory_buffer output;
     for (auto change : changes) {
+        /* number */
         fmt::format_to(output, "* ");
         fmt::format_to(
-            output, "{}",
+            output, "{} ",
             fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.number));
-        fmt::format_to(output, " {} ", change.subject);
 
+        /* project/branch/topic */
         fmt::format_to(output, "{}",
                        fmt::format(fmt::fg(fmt::terminal_color::yellow), "("));
         fmt::format_to(
             output, "{}",
-            fmt::format(fmt::fg(fmt::terminal_color::bright_cyan), change.project));
-        fmt::format_to(output, "{}",
-                       fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
+            fmt::format(fmt::fg(fmt::terminal_color::bright_cyan) | fmt::emphasis::bold,
+                        change.project));
         fmt::format_to(
             output, "{}",
-            fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}", change.branch));
+            fmt::format(fmt::fg(fmt::terminal_color::bright_green) | fmt::emphasis::bold,
+                        "{}", "/" + change.branch));
         if (!change.topic.empty()) {
             fmt::format_to(output, "{}",
-                           fmt::format(fmt::fg(fmt::terminal_color::yellow), "/"));
-            fmt::format_to(output, "{}",
-                           fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}",
-                                       change.topic));
+                           fmt::format(fmt::fg(fmt::terminal_color::bright_green) |
+                                           fmt::emphasis::bold,
+                                       "{}", "/" + change.topic));
         }
-        fmt::format_to(output, "{}\n",
+        fmt::format_to(output, "{}",
                        fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
+
+        /* subject */
+        fmt::format_to(output, " {}\n", change.subject);
     }
     fmt::print("{}", fmt::to_string(output));
 
