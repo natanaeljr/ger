@@ -38,8 +38,8 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
     friend class JsonCodec;
 
    public:
-    inline void SetKeyString(const JsonCodec& codec, DynamicValue::Reader field,
-                             JsonValue::Builder output) const
+    inline void encode_key(const JsonCodec& codec, DynamicValue::Reader field,
+                           JsonValue::Builder output) const
     {
         switch (field.getType()) {
             case DynamicValue::TEXT: {
@@ -53,8 +53,22 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
             case DynamicValue::STRUCT: {
                 auto s = field.as<DynamicStruct>();
                 auto fs = s.getSchema().getFields();
-                SetKeyString(codec, s.get(*fs.begin()), output);
+                encode_key(codec, s.get(*fs.begin()), output);
                 break;
+            }
+            default: break;
+        }
+    }
+
+    inline void decode_key(const JsonCodec& codec, DynamicValue::Reader field,
+                           JsonValue::Builder output) const
+    {
+        switch (field.getType()) {
+            case DynamicValue::TEXT: {
+            }
+            case DynamicValue::ENUM: {
+            }
+            case DynamicValue::STRUCT: {
             }
             default: break;
         }
@@ -69,7 +83,7 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
             for (size_t i = 0; i < in_entries.size(); ++i) {
                 auto orphanage = Orphanage::getForMessageContaining(output);
                 auto orphan = orphanage.newOrphan<JsonValue>();
-                SetKeyString(codec, in_entries[i].getKey(), orphan.get());
+                encode_key(codec, in_entries[i].getKey(), orphan.get());
                 out_entries[i].setName(orphan.get().asReader().getString());
                 codec.encode(in_entries[i].getValue(), out_entries[i].initValue());
             }
@@ -79,6 +93,24 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
     inline void decode(const JsonCodec& codec, JsonValue::Reader input,
                        typename ListMapType::Builder output) const
     {
+        if (input.hasObject()) {
+            auto in_fields = input.getObject();
+            auto out_entries = output.initEntries(in_fields.size());
+            auto out_entry = out_entries.begin();
+            for (auto in_field : in_fields) {
+                switch (Type::from<Key>().which()) {
+                    case schema::Type::Which::TEXT: {
+                    }
+                    case schema::Type::Which::STRUCT: {
+                        break;
+                    }
+                    default: break;
+                }
+                // decode_key(codec, in_field.getName(), out_entry.initKey()
+
+                out_entry++;
+            }
+        }
     }
 };
 

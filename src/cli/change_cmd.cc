@@ -125,12 +125,12 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         json_codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
         json_codec.handleByAnnotation<gerrit::changes::ReviewerState>();
         // json_codec.setPrettyPrint(true);
-        auto listmap_handler1 =
-            capnp::ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
-                                           ::capnp::List<gerrit::changes::AccountInfo>>();
+        // auto listmap_handler1 =
+        //     capnp::ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
+        //                                    ::capnp::List<gerrit::changes::AccountInfo>>();
         auto listmap_handler2 =
             capnp::ListMapJsonCodecHandler<::capnp::Text, ::capnp::Text>();
-        json_codec.addTypeHandler(listmap_handler1);
+        // json_codec.addTypeHandler(listmap_handler1);
         json_codec.addTypeHandler(listmap_handler2);
 
         // const char input[] = R"({"id": "other", "_number": 404, "status": "draft"})";
@@ -173,7 +173,15 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         kj::String string = json_codec.encode(change_build.asReader());
         // fmt::print("encode: {}\n", string.cStr());
         auto json = nlohmann::json::parse(string.cStr());
-        fmt::print("{}\n", json.dump(2));
+        fmt::print("ENCODE:\n{}\n", json.dump(2));
+
+        {
+            auto change_out = message.initRoot<gerrit::changes::ChangeInfo>();
+            json_codec.decode(string, change_out);
+            kj::String string = json_codec.encode(change_out.asReader());
+            auto json = nlohmann::json::parse(string.cStr());
+            fmt::print("DECODE:\n{}\n", json.dump(2));
+        }
     }
 
     struct ChangeBrief {
