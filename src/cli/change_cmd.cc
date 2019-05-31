@@ -175,6 +175,11 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         auto json = nlohmann::json::parse(string.cStr());
         fmt::print("ENCODE:\n{}\n", json.dump(2));
 
+        auto orphanage = capnp::Orphanage::getForMessageContaining(change_build);
+        auto orphan =
+            json_codec.decode("hi", capnp::Type::from<capnp::Text>(), orphanage);
+        orphan.get().as<capnp::Text>();
+
         {
             auto change_out = message.initRoot<gerrit::changes::ChangeInfo>();
             json_codec.decode(string, change_out);
