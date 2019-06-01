@@ -67,18 +67,18 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
-    // curl_easy_setopt(curl, CURLOPT_URL,
-    //                  "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
     curl_easy_setopt(curl, CURLOPT_URL,
-                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+                     "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
+    // curl_easy_setopt(curl, CURLOPT_URL,
+    //                  "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-    // curl_easy_setopt(curl, CURLOPT_USERPWD,
-    //                  "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
     curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
-    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+                     "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
+    // curl_easy_setopt(curl, CURLOPT_USERPWD,
+    //                  "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
+    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
@@ -125,12 +125,12 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         json_codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
         json_codec.handleByAnnotation<gerrit::changes::ReviewerState>();
         // json_codec.setPrettyPrint(true);
-        // auto listmap_handler1 =
-        //     capnp::ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
-        //                                    ::capnp::List<gerrit::changes::AccountInfo>>();
+        auto listmap_handler1 =
+            capnp::ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
+                                           ::capnp::List<gerrit::changes::AccountInfo>>();
         auto listmap_handler2 =
             capnp::ListMapJsonCodecHandler<::capnp::Text, ::capnp::Text>();
-        // json_codec.addTypeHandler(listmap_handler1);
+        json_codec.addTypeHandler(listmap_handler1);
         json_codec.addTypeHandler(listmap_handler2);
 
         // const char input[] = R"({"id": "other", "_number": 404, "status": "draft"})";
@@ -175,17 +175,31 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         auto json = nlohmann::json::parse(string.cStr());
         fmt::print("ENCODE:\n{}\n", json.dump(2));
 
-        auto orphanage = capnp::Orphanage::getForMessageContaining(change_build);
-        auto orphan =
-            json_codec.decode("hi", capnp::Type::from<capnp::Text>(), orphanage);
-        orphan.get().as<capnp::Text>();
-
         {
             auto change_out = message.initRoot<gerrit::changes::ChangeInfo>();
             json_codec.decode(string, change_out);
             kj::String string = json_codec.encode(change_out.asReader());
             auto json = nlohmann::json::parse(string.cStr());
             fmt::print("DECODE:\n{}\n", json.dump(2));
+
+            auto reviewers = change_out.getReviewers();
+            auto entries = reviewers.getEntries();
+            assert(entries.size() == 2);
+            assert(entries[0].getKey().getKey() ==
+                   gerrit::changes::ReviewerState::REVIEWER);
+            {
+                auto values = entries[0].getValue();
+                assert(values[0].getId() == 1);
+                assert(values[0].getName() == "joao");
+            }
+            assert(entries[1].getKey().getKey() == gerrit::changes::ReviewerState::CC);
+            {
+                auto values = entries[1].getValue();
+                assert(values[0].getId() == 1);
+                assert(values[0].getName() == "marcos");
+                assert(values[1].getId() == 2);
+                assert(values[1].getName() == "lucas");
+            }
         }
     }
 

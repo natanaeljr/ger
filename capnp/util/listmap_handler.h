@@ -11,6 +11,8 @@
 #include <capnp/compat/json.h>
 #include "util/listmap.capnp.h"
 
+#include <assert.h>
+
 /************************************************************************************************/
 
 namespace capnp {
@@ -60,15 +62,26 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
         }
     }
 
-    inline void decode_key(const JsonCodec& codec, DynamicValue::Reader field,
-                           JsonValue::Builder output) const
+    inline void decode_key(const JsonCodec& codec, Text::Reader text,
+                           DynamicStruct::Builder output) const
     {
-        switch (field.getType()) {
-            case DynamicValue::TEXT: {
+        auto field = *output.getSchema().getFields().begin();
+        switch (field.getType().which()) {
+            case schema::Type::Which::TEXT: {
+                auto orphanage = Orphanage::getForMessageContaining(output);
+                output.adopt(field, orphanage.newOrphanCopy(text));
+                break;
             }
-            case DynamicValue::ENUM: {
+            case schema::Type::Which::ENUM: {
+                auto orphanage = Orphanage::getForMessageContaining(output);
+                auto j = orphanage.newOrphan<JsonValue>();
+                j.get().setString(text);
+                output.adopt(field, codec.decode(j.get(), field.getType(), orphanage));
+                break;
             }
-            case DynamicValue::STRUCT: {
+            case schema::Type::Which::STRUCT: {
+                decode_key(codec, text, output.init(field).as<DynamicStruct>());
+                break;
             }
             default: break;
         }
@@ -98,16 +111,11 @@ class JsonCodec::Handler<::util::ListMap<Key, Value>, Style::STRUCT>
             auto out_entries = output.initEntries(in_fields.size());
             auto out_entry = out_entries.begin();
             for (auto in_field : in_fields) {
-                switch (Type::from<Key>().which()) {
-                    case schema::Type::Which::TEXT: {
-                    }
-                    case schema::Type::Which::STRUCT: {
-                        break;
-                    }
-                    default: break;
-                }
-                // decode_key(codec, in_field.getName(), out_entry.initKey()
-
+                decode_key(codec, in_field.getName(), *out_entry);
+                auto d = DynamicStruct::Builder(*out_entry);
+                auto orphanage = Orphanage::getForMessageContaining(output);
+                d.adopt("value", codec.decode(in_field.getValue(), Type::from<Value>(),
+                                              orphanage));
                 out_entry++;
             }
         }
