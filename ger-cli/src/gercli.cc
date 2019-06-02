@@ -6,7 +6,7 @@
  * \copyright Copyright (c) 2019
  */
 
-#include "ger/cli/ger_cli.h"
+#include "ger/cli/gercli.h"
 
 #include <array>
 #include <vector>
@@ -18,6 +18,7 @@
 #include "ger/cli/commands.h"
 
 namespace ger {
+namespace cli {
 
 /************************************************************************************************/
 static constexpr const char kGerMainHelp[] = R"(Gerrit command-line client.
@@ -105,4 +106,5 @@ int GerCli::RunCommand(Command cmd, const std::vector<std::string>& args)
     return 0;
 }
 
+} /* namespace cli */
 } /* namespace ger */

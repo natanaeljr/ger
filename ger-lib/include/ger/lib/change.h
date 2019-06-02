@@ -1,15 +1,25 @@
 /**
- * \file change.cc
+ * \file change.h
  * \author Natanael Josue Rabello
- * \brief Change.
+ * \brief Change
  * \date 2019-05-24
  * \copyright Copyright (c) 2019
  */
 
-#include "ger/client/change.h"
+#pragma once
 
 /**************************************************************************************/
 
 namespace ger {
+namespace lib {
 
+class Change {
+   public:
+    /**
+     * \brief Deleted constructor. Change is static class.
+     */
+    Change() = delete;
+};
+
+} /* namespace lib */
 } /* namespace ger */

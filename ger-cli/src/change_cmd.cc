@@ -25,6 +25,7 @@
 #include "util/listmap_handler.h"
 
 namespace ger {
+namespace cli {
 
 /************************************************************************************************/
 static constexpr const char kGerChangeCmdHelp[] = R"(Ger Change command.
@@ -265,4 +266,5 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     return 0;
 }
 
+} /* namespace cli */
 } /* namespace ger */

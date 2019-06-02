@@ -1,18 +1,17 @@
 /**
- * \file main.cc
+ * \file dummy.cc
  * \author Natanael Josue Rabello
- * \brief
- * \date 2019-05-24
+ * \brief 
+ * \date 2019-06-01
  * \copyright Copyright (c) 2019
  */
 
-#include <cstdio>
-
-#include "ger/cli/ger_cli.h"
+#include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
 /************************************************************************************************/
 
-int main(int argc, const char* argv[])
+TEST(Dummy, Test)
 {
-    return ger::GerCli::Launch(argc, argv);
+    EXPECT_TRUE(true);
 }

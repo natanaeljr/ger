@@ -12,6 +12,7 @@
 /************************************************************************************************/
 
 namespace ger {
+namespace cli {
 
 class GerCli {
    public:
@@ -45,4 +46,5 @@ class GerCli {
     static Command ParseCommand(std::string_view input_command);
 };
 
+} /* namespace cli */
 } /* namespace ger */

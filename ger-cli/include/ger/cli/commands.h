@@ -15,6 +15,7 @@
 /************************************************************************************************/
 
 namespace ger {
+namespace cli {
 
 /**
  * Available Commands.
@@ -35,6 +36,7 @@ enum class Command {
  */
 int RunChangeCommand(const std::vector<std::string>& argv);
 
+} /* namespace cli */
 } /* namespace ger */
 
 /************************************************************************************************/
@@ -44,9 +46,9 @@ int RunChangeCommand(const std::vector<std::string>& argv);
  * \return command name.
  */
 template<>
-constexpr const char* ::njr::enum_t<ger::Command>::name() const
+constexpr const char* ::njr::enum_t<ger::cli::Command>::name() const
 {
-    using ger::Command;
+    using ger::cli::Command;
     switch (enum_) {
         case Command::UNKNOWN: return "unknown";
         case Command::HELP: return "help";

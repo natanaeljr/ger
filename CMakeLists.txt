@@ -16,14 +16,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 #########################################################################################
 # Global Defines
 #########################################################################################
-set(GER_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
-set(GER_LIBRARY "gerlib")
-set(GER_BINARY "ger")
-set(GER_TEST "ger-test")
+set(GERLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/ger-lib/include)
+set(GERCLI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/ger-cli/include)
+set(GERLIB_LIBRARY "gerlib")
+set(GERCLI_LIBRARY "gercli")
+set(GERCLI_BINARY "ger")
 
 set(GER_CAPNP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/capnp)
 set(GER_CAPNP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/capnp)
-set(GER_CAPNP_LIB ger_capnp)
+set(GER_CAPNP_LIB "ger_capnp")
 
 #########################################################################################
 # Dependencies
@@ -38,7 +39,7 @@ link_libraries(${CONAN_LIBS})
 add_subdirectory(third_party/docopt)
 include_directories(third_party/docopt)
 link_libraries(docopt)
-# enum_t
+# njr::enum_t
 include_directories(third_party/enum_t/include)
 # FMT
 add_subdirectory(third_party/fmt)
@@ -53,13 +54,7 @@ include_directories(${GER_CAPNP_SOURCE_DIR})
 include_directories(${GER_CAPNP_OUTPUT_DIR})
 add_subdirectory(capnp)
 link_libraries(${GER_CAPNP_LIB})
-# Source code
-include_directories(${GER_INCLUDE_DIR})
-add_subdirectory(src)
 
-#########################################################################################
-# Testing
-#########################################################################################
-if(BUILD_TESTING)
-  add_subdirectory(test)
-endif()
+# Ger
+add_subdirectory(ger-lib)
+add_subdirectory(ger-cli)
