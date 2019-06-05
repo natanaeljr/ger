@@ -68,18 +68,18 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
-    curl_easy_setopt(curl, CURLOPT_URL,
-                     "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
     // curl_easy_setopt(curl, CURLOPT_URL,
-    //                  "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    // curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    //                  "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
+    curl_easy_setopt(curl, CURLOPT_URL,
+                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-    curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
     // curl_easy_setopt(curl, CURLOPT_USERPWD,
-    //                  "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
-    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+    //                  "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
+    curl_easy_setopt(curl, CURLOPT_USERPWD,
+                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
+    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
@@ -142,66 +142,6 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         // auto json = change_build.initJson();
         // json.setName("CC");
         // json.initValue().setNumber(5);
-        change_build.setId("mydumbid");
-        change_build.setProject("mydrone");
-        auto reviewers = change_build.initReviewers();
-        {
-            auto entries = reviewers.initEntries(2);
-            entries[0].initKey().setKey(::gerrit::changes::ReviewerState::REVIEWER);
-            {
-                auto values = entries[0].initValue(1);
-                values[0].setId(1);
-                values[0].setName("joao");
-            }
-            entries[1].initKey().setKey(::gerrit::changes::ReviewerState::CC);
-            {
-                auto values = entries[1].initValue(2);
-                values[0].setId(1);
-                values[0].setName("marcos");
-                values[1].setId(2);
-                values[1].setName("lucas");
-            }
-        }
-        auto others = change_build.initOthers();
-        {
-            auto entries = others.initEntries(2);
-            entries[0].setKey("kkkkk");
-            entries[0].setValue("hello world");
-            entries[1].setKey("ttttt");
-            entries[1].setValue("hello world");
-        }
-
-        kj::String string = json_codec.encode(change_build.asReader());
-        // fmt::print("encode: {}\n", string.cStr());
-        auto json = nlohmann::json::parse(string.cStr());
-        fmt::print("ENCODE:\n{}\n", json.dump(2));
-
-        {
-            auto change_out = message.initRoot<gerrit::changes::ChangeInfo>();
-            json_codec.decode(string, change_out);
-            kj::String string = json_codec.encode(change_out.asReader());
-            auto json = nlohmann::json::parse(string.cStr());
-            fmt::print("DECODE:\n{}\n", json.dump(2));
-
-            auto reviewers = change_out.getReviewers();
-            auto entries = reviewers.getEntries();
-            assert(entries.size() == 2);
-            assert(entries[0].getKey().getKey() ==
-                   gerrit::changes::ReviewerState::REVIEWER);
-            {
-                auto values = entries[0].getValue();
-                assert(values[0].getId() == 1);
-                assert(values[0].getName() == "joao");
-            }
-            assert(entries[1].getKey().getKey() == gerrit::changes::ReviewerState::CC);
-            {
-                auto values = entries[1].getValue();
-                assert(values[0].getId() == 1);
-                assert(values[0].getName() == "marcos");
-                assert(values[1].getId() == 2);
-                assert(values[1].getName() == "lucas");
-            }
-        }
     }
 
     struct ChangeBrief {

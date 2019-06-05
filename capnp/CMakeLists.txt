@@ -6,6 +6,7 @@ project(ger-capnp LANGUAGES CXX)
 ##################################################################################################
 set(GER_CAPNP_FILES
     util/listmap
+    gerrit/accounts
     gerrit/changes
 )
 
