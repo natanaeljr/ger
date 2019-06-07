@@ -29,7 +29,7 @@ namespace cli {
 
 /************************************************************************************************/
 static constexpr const char kGerChangeCmdHelp[] = R"(Ger Change command.
-usage: change [-h|--help] [<change>]
+usage: change [options] [<change>]
 
 positional arguments:
   <change>        Show information about a specific change.
@@ -45,16 +45,8 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
 }
 
 /************************************************************************************************/
-int RunChangeCommand(const std::vector<std::string>& argv)
+static std::string RequestChangesJson()
 {
-    /* Parse arguments */
-    auto args = docopt::docopt(kGerChangeCmdHelp, argv, true, {}, true);
-
-    if (args["<change>"]) {
-        fmt::print("Arguments not yet implemented.\n");
-        return -1;
-    }
-
     CURL* curl = nullptr;
     CURLcode res;
 
@@ -64,14 +56,15 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     curl = curl_easy_init();
     if (!curl) {
         fmt::print(stderr, "Failed to init easy curl\n");
-        return -1;
+        return {};
     }
     auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
 
     // curl_easy_setopt(curl, CURLOPT_URL,
     //                  "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
-    curl_easy_setopt(curl, CURLOPT_URL,
-                     "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self");
+    curl_easy_setopt(
+        curl, CURLOPT_URL,
+        "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self&n=25");
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
@@ -102,106 +95,70 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     /* Check for errors */
     if (res != CURLE_OK) {
         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        return {};
+    }
+
+    return response_string;
+}
+
+static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ProcessChanges(
+    std::string_view json_input, capnp::Orphanage orphanage)
+{
+    capnp::JsonCodec codec;
+    codec.handleByAnnotation<gerrit::changes::HttpMethod>();
+    codec.handleByAnnotation<gerrit::changes::ApprovalInfo>();
+    codec.handleByAnnotation<gerrit::changes::RequirementStatus>();
+    codec.handleByAnnotation<gerrit::changes::ReviewValue>();
+    codec.handleByAnnotation<gerrit::changes::LabelInfo>();
+    codec.handleByAnnotation<gerrit::changes::ReviewerState>();
+    codec.handleByAnnotation<gerrit::changes::ReviewerUpdateInfo>();
+    codec.handleByAnnotation<gerrit::changes::ChangeMessageInfo>();
+    codec.handleByAnnotation<gerrit::changes::RevisionKind>();
+    codec.handleByAnnotation<gerrit::changes::ProblemStatus>();
+    codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
+    codec.handleByAnnotation<gerrit::changes::ChangeInfo>();
+
+    auto orphan = codec.decode<capnp::List<gerrit::changes::ChangeInfo>>(
+        { json_input.begin(), json_input.end() }, orphanage);
+
+    return orphan;
+}
+
+/************************************************************************************************/
+int RunChangeCommand(const std::vector<std::string>& argv)
+{
+    /* Parse arguments */
+    auto args = docopt::docopt(kGerChangeCmdHelp, argv, true, {}, true);
+    if (args["<change>"]) {
+        fmt::print("Arguments not yet implemented.\n");
         return -1;
     }
 
-    // SUCCESS
-    if (response_string.compare(0, 5, ")]}'\n")) {
-        fmt::print(stderr, "Unrecognized response from server:\n\n{}", response_string);
-        return -2;
+    std::string response = RequestChangesJson();
+    if (response.empty()) {
+        return -1;
     }
-    auto json = nlohmann::json::parse(response_string.data() + 4);
-    // fmt::print("{}\n", json[0].dump(2));
-    if (json.size() == 0) {
-        fmt::print("No changes");
+
+    if (response.compare(0, 5, ")]}'\n")) {
+        fmt::print(stderr, "Unrecognized response from server:\n\n{}", response);
+        return -1;
+    }
+
+    capnp::MallocMessageBuilder arena;
+    auto orphan = ProcessChanges(response.data() + 5, arena.getOrphanage());
+    auto changes = orphan.getReader();
+
+    if (changes.size() == 0) {
+        fmt::print("No changes.");
         return 0;
     }
 
-    {
-        capnp::MallocMessageBuilder message;
-        auto change_build = message.initRoot<gerrit::changes::ChangeInfo>();
-        // change_build.setId("abcde");
-        // change_build.setNumber(12345);
-        capnp::JsonCodec json_codec;
-        json_codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
-        json_codec.handleByAnnotation<gerrit::changes::ReviewerState>();
-        // json_codec.setPrettyPrint(true);
-        auto listmap_handler1 =
-            capnp::ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
-                                           ::capnp::List<gerrit::changes::AccountInfo>>();
-        auto listmap_handler2 =
-            capnp::ListMapJsonCodecHandler<::capnp::Text, ::capnp::Text>();
-        json_codec.addTypeHandler(listmap_handler1);
-        json_codec.addTypeHandler(listmap_handler2);
-
-        // const char input[] = R"({"id": "other", "_number": 404, "status": "draft"})";
-        // json_codec.decode(input, change_build);
-        // auto values = change_build.initValues(2);
-        // values.set(0, "first");
-        // values.set(1, "second");
-        // auto json = change_build.initJson();
-        // json.setName("CC");
-        // json.initValue().setNumber(5);
-    }
-
-    struct ChangeBrief {
-        int number;
-        std::string subject;
-        std::string project;
-        std::string branch;
-        std::string topic;
-    };
-    std::vector<ChangeBrief> changes;
-    changes.reserve(json.size());
-    size_t subject_maxlen = 0;
-    for (auto change : json) {
-        changes.emplace_back(ChangeBrief{
-            .number = change.at("_number"),
-            .subject = change.at("subject"),
-            .project = change.at("project"),
-            .branch = change.at("branch"),
-            .topic = change.value("topic", ""),
-        });
-        auto this_subject_len = changes.back().subject.length();
-        if (this_subject_len > subject_maxlen) {
-            subject_maxlen = this_subject_len;
-        }
-    }
-
-    // TODO: output all in bold: (project/branch/topic)
-    // TODO: place (project/branch/topic) before subject, link git
-    fmt::memory_buffer output;
     for (auto change : changes) {
-        /* number */
-        fmt::format_to(output, "* ");
-        fmt::format_to(
-            output, "{} ",
-            fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.number));
-
-        /* project/branch/topic */
-        fmt::format_to(output, "{}",
-                       fmt::format(fmt::fg(fmt::terminal_color::yellow), "("));
-        fmt::format_to(
-            output, "{}",
-            fmt::format(fmt::fg(fmt::terminal_color::bright_cyan) | fmt::emphasis::bold,
-                        change.project));
-        fmt::format_to(
-            output, "{}",
-            fmt::format(fmt::fg(fmt::terminal_color::bright_green) | fmt::emphasis::bold,
-                        "{}", "/" + change.branch));
-        if (!change.topic.empty()) {
-            fmt::format_to(output, "{}",
-                           fmt::format(fmt::fg(fmt::terminal_color::bright_green) |
-                                           fmt::emphasis::bold,
-                                       "{}", "/" + change.topic));
-        }
-        fmt::format_to(output, "{}",
-                       fmt::format(fmt::fg(fmt::terminal_color::yellow), ")"));
-
-        /* subject */
-        fmt::format_to(output, " {}\n", change.subject);
+        fmt::print("* {0} {1} ({2}/{3}{4}{5})\n", change.getNumber(),
+                   change.getSubject().cStr(), change.getProject().cStr(),
+                   change.getBranch().cStr(), change.hasTopic() ? "/" : "",
+                   change.getTopic().cStr());
     }
-    fmt::print("{}", fmt::to_string(output));
 
     return 0;
 }
