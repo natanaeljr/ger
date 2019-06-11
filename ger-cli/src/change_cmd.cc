@@ -101,7 +101,7 @@ static std::string RequestChangesJson()
     return response_string;
 }
 
-static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ProcessChanges(
+static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ParseChanges(
     std::string_view json_input, capnp::Orphanage orphanage)
 {
     capnp::JsonCodec codec;
@@ -145,7 +145,7 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     }
 
     capnp::MallocMessageBuilder arena;
-    auto orphan = ProcessChanges(response.data() + 5, arena.getOrphanage());
+    auto orphan = ParseChanges(response.data() + 5, arena.getOrphanage());
     auto changes = orphan.getReader();
 
     if (changes.size() == 0) {
