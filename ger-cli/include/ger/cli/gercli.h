@@ -37,7 +37,6 @@ class GerCli {
      */
     static int RunCommand(Command cmd, const std::vector<std::string>& args);
 
-   private:
     /**
      * \brief Parse input command from string to enum format.
      * \param input_command Command to parse.
