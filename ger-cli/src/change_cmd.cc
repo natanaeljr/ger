@@ -6,7 +6,7 @@
  * \copyright Copyright (c) 2019
  */
 
-#include "ger/cli/commands.h"
+#include "ger/cli/command.h"
 
 #include <unistd.h>
 #include <capnp/compat/json.h>

@@ -1,7 +1,7 @@
 /**
- * \file commands.h
+ * \file command.h
  * \author Natanael Josue Rabello
- * \brief Commands
+ * \brief Command.
  * \date 2019-05-24
  * \copyright Copyright (c) 2019
  */

@@ -15,7 +15,7 @@
 #include "fmt/core.h"
 #include "njr/enum_t.h"
 
-#include "ger/cli/commands.h"
+#include "ger/cli/command.h"
 
 namespace ger {
 namespace cli {
@@ -59,17 +59,14 @@ int GerCli::Launch(int argc, const char* argv[])
 /************************************************************************************************/
 Command GerCli::ParseCommand(std::string_view input_command)
 {
-    Command ret = Command::UNKNOWN;
-
     /* Find matching command and return it */
     for (auto command : njr::enum_t<Command>::values::array()) {
         if (input_command == command.name()) {
-            ret = command;
-            break;
+            return command;
         }
     }
 
-    return ret;
+    return Command::UNKNOWN;
 }
 
 /************************************************************************************************/
