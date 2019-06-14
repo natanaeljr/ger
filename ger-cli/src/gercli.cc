@@ -16,6 +16,7 @@
 #include "njr/enum_t.h"
 
 #include "ger/cli/command.h"
+#include "ger/cli/config.h"
 
 namespace ger {
 namespace cli {
@@ -43,6 +44,15 @@ int GerCli::Launch(int argc, const char* argv[])
     /* Parse arguments */
     auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
                                kGerVersionStr, true);
+
+    const char* config_home_path = getenv("XDG_CONFIG_HOME");
+    if (not config_home_path || config_home_path[0] == '\0') {
+        config_home_path = getenv("HOME");
+    }
+    std::string config_file = config_home_path + std::string("/ger.yml");
+    // fmt::print("config file: {}", config_file);
+    // fflush(stdout);
+    Config config{ config_file };
 
     /* Check if we have been given a command */
     if (not args["<command>"]) {

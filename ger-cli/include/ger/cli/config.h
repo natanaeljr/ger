@@ -1,6 +1,6 @@
 /**
  * \file config.h
- * \author your name
+ * \author Natanael Josue Rabello
  * \brief Config.
  * \date 2019-06-12
  * \copyright Copyright (c) 2019
