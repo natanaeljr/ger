@@ -33,7 +33,7 @@ commands:
   version         Show version.
 
 options:
-  -h, --help      Show this screen.
+  --help          Show this screen.
   --version       Show version.)";
 
 static constexpr const char kGerVersionStr[] = "ger version 0.1-alpha";

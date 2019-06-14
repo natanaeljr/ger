@@ -139,7 +139,8 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         return -1;
     }
 
-    if (response.compare(0, 5, ")]}'\n")) {
+    constexpr std::string_view kMagicPrefix = ")]}'\n";
+    if (response.compare(0, kMagicPrefix.length(), kMagicPrefix) != 0) {
         fmt::print(stderr, "Unrecognized response from server:\n\n{}", response);
         return -1;
     }
