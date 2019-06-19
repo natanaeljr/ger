@@ -23,7 +23,7 @@ namespace cli {
 
 /************************************************************************************************/
 static constexpr const char kGerMainHelp[] = R"(Gerrit command-line client.
-usage: ger [options] [<command> [<args>...]]
+usage: ger [options] <command> [<args>...]
 
 commands:
   help            Show help for a given command or concept.
