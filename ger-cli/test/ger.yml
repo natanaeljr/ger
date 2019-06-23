@@ -1,16 +1,15 @@
 ---
 
 remotes:
-  - name: 'host1'
+  - name: 'main-gerrit'
     url: 'localhost'
-    port: 8080
-    username: 'dummy'
-    http-password: ''
+    username: 'natanaeljr'
+    http-password: 'ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w'
 
   - name: 'host2'
     url: 'ped'
     port: 8080
     username: 'tester'
-    http-password: ''
+    http-password: 'nothing'
 
 ...

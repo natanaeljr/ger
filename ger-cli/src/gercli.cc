@@ -49,10 +49,23 @@ int GerCli::Launch(int argc, const char* argv[])
     if (not config_home_path || config_home_path[0] == '\0') {
         config_home_path = getenv("HOME");
     }
-    std::string config_file = config_home_path + std::string("/ger.yml");
+    std::string config_filepath = config_home_path + std::string("/ger.yml");
     // fmt::print("config file: {}", config_file);
     // fflush(stdout);
-    Config config{ config_file };
+    try {
+        Config config = ConfigParser().Read(config_filepath);
+        for (auto remote : config.remotes) {
+            fmt::print(
+                "name: '{}', url: '{}', port: '{}', username: '{}', http-password: "
+                "'{}'\n",
+                remote.name, remote.url, remote.port, remote.username,
+                remote.http_password);
+        }
+    }
+    catch (const std::runtime_error& e) {
+        fmt::print("Failed to read config file: {}\n", e.what());
+        return -2;
+    }
 
     /* Check if we have been given a command */
     if (not args["<command>"]) {
