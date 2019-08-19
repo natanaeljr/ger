@@ -43,6 +43,14 @@ class GerCli {
      * \return Corresponding command, or UNKNOWN if command not valid.
      */
     static Command ParseCommand(std::string_view input_command);
+
+    /**
+     * \brief Read configuration file.
+     * \param config_filepath   Alternate configuration filepath.
+     * \param verbose           Verbose output.
+     * \return 0 on success, negative if error.
+     */
+    static int ReadConfig(std::string_view config_filepath, bool verbose);
 };
 
 } /* namespace cli */

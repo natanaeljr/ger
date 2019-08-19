@@ -11,6 +11,7 @@
 #include <cassert>
 #include "yaml-cpp/yaml.h"
 #include "fmt/core.h"
+#include "fmt/color.h"
 
 namespace ger {
 namespace cli {
@@ -55,7 +56,7 @@ std::vector<Remote> ConfigParser::ParseRemotes(const YAML::Node yaml)
                 .url = yaml_remote["url"].as<std::string>(),
                 .username = yaml_remote["username"].as<std::string>(),
                 .http_password = yaml_remote["http-password"].as<std::string>(),
-                .port = yaml_remote["port"].as<uint16_t>(),
+                .port = yaml_remote["port"].as<uint16_t>(8080),
             });
         }
     }

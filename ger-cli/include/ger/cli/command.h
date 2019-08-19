@@ -18,7 +18,7 @@ namespace ger {
 namespace cli {
 
 /**
- * Available Commands.
+ * Available CLI Commands.
  */
 enum class Command {
     UNKNOWN,
@@ -43,7 +43,7 @@ int RunChangeCommand(const std::vector<std::string>& argv);
 
 /**
  * \brief Translate Command enumerators to string.
- * \return command name.
+ * \return Stringfied command name.
  */
 template<>
 constexpr const char* ::njr::enum_t<ger::cli::Command>::name() const

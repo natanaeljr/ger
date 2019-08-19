@@ -13,6 +13,7 @@
 #include <string>
 #include "docopt.h"
 #include "fmt/core.h"
+#include "fmt/color.h"
 #include "njr/enum_t.h"
 
 #include "ger/cli/command.h"
@@ -22,19 +23,23 @@ namespace ger {
 namespace cli {
 
 /************************************************************************************************/
-static constexpr const char kGerMainHelp[] = R"(Gerrit command-line client.
-usage: ger [options] <command> [<args>...]
+static constexpr const char kGerMainHelp[] =
+    R"(usage: ger [options] [<command>] [<args>...]
+
+Gerrit command-line client.
 
 commands:
-  help            Show help for a given command or concept.
-  change          List changes in the gerrit server.
-  review          Review changes through the command-line.
-  config          Configure ger options.
-  version         Show version.
+  help                      Show help for a given command or concept.
+  change                    List changes in the gerrit server.
+  review                    Review changes through the command-line.
+  config                    Configure ger options.
+  version                   Show version.
 
 options:
-  --help          Show this screen.
-  --version       Show version.)";
+  -c, --config-file <path>  Specifiy an alternate configuration file path.
+  -v, --verbose             Verbose output.
+  --version                 Show version.
+  --help                    Show this screen.)";
 
 static constexpr const char kGerVersionStr[] = "ger version 0.1-alpha";
 
@@ -45,26 +50,15 @@ int GerCli::Launch(int argc, const char* argv[])
     auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
                                kGerVersionStr, true);
 
-    const char* config_home_path = getenv("XDG_CONFIG_HOME");
-    if (not config_home_path || config_home_path[0] == '\0') {
-        config_home_path = getenv("HOME");
-    }
-    std::string config_filepath = config_home_path + std::string("/ger.yml");
-    // fmt::print("config file: {}", config_file);
-    // fflush(stdout);
-    try {
-        Config config = ConfigParser().Read(config_filepath);
-        for (auto remote : config.remotes) {
-            fmt::print(
-                "name: '{}', url: '{}', port: '{}', username: '{}', http-password: "
-                "'{}'\n",
-                remote.name, remote.url, remote.port, remote.username,
-                remote.http_password);
-        }
-    }
-    catch (const std::runtime_error& e) {
-        fmt::print("Failed to read config file: {}\n", e.what());
-        return -2;
+    bool verbose = [&] {
+        auto it = args["--verbose"];
+        return it ? it.asBool() : false;
+    }();
+
+    /* Read configuration file */
+    {
+        auto& config_file = args["--config-file"];
+        ReadConfig(config_file ? config_file.asString() : "", verbose);
     }
 
     /* Check if we have been given a command */
@@ -126,5 +120,49 @@ int GerCli::RunCommand(Command cmd, const std::vector<std::string>& args)
     return 0;
 }
 
-} /* namespace cli */
+/************************************************************************************************/
+int GerCli::ReadConfig(std::string_view config_filepath, bool verbose)
+{
+    std::string config_file;
+
+    if (config_filepath.empty()) {
+        const char* config_filename = "ger.yml";
+        const char* config_home_path = getenv("XDG_CONFIG_HOME");
+        if (not config_home_path || config_home_path[0] == '\0') {
+            config_filename = ".ger.yml";
+            config_home_path = getenv("HOME");
+        }
+        config_file = fmt::format("{}/{}", config_home_path, config_filename);
+    }
+    else {
+        config_file = config_filepath;
+    }
+
+    if (verbose) {
+        fmt::print("+ config-file: {}\n", config_file);
+    }
+
+    try {
+        Config config = ConfigParser().Read(config_file);
+        if (verbose) {
+            fmt::print("+ Remotes:\n");
+            for (auto remote : config.remotes) {
+                fmt::print(
+                    "+ name: '{}', url: '{}', port: '{}', username: '{}', "
+                    "http-password: '{}'\n",
+                    remote.name, remote.url, remote.port, remote.username,
+                    remote.http_password);
+            }
+        }
+    }
+    catch (const std::runtime_error& e) {
+        fmt::print(fmt::fg(fmt::terminal_color::red), "Failed to read config file: {}\n",
+                   e.what());
+        return -2;
+    }
+
+    return 0;
+}  // namespace cli
+
+}  // namespace cli
 } /* namespace ger */
