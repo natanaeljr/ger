@@ -29,11 +29,11 @@ static constexpr const char kGerMainHelp[] =
 Gerrit command-line client.
 
 commands:
-  help                      Show help for a given command or concept.
   change                    List changes in the gerrit server.
   review                    Review changes through the command-line.
   config                    Configure ger options.
   version                   Show version.
+  help                      Show help for a given command or concept.
 
 options:
   -c, --config-file <path>  Specifiy an alternate configuration file path.
@@ -50,15 +50,17 @@ int GerCli::Launch(int argc, const char* argv[])
     auto args = docopt::docopt(kGerMainHelp, { argv + 1, argv + argc }, true,
                                kGerVersionStr, true);
 
-    bool verbose = [&] {
+    const bool verbose = [&] {
         auto it = args["--verbose"];
         return it ? it.asBool() : false;
     }();
 
     /* Read configuration file */
-    {
-        auto& config_file = args["--config-file"];
+    auto& config_file = args["--config-file"];
+    std::optional<Config> config =
         ReadConfig(config_file ? config_file.asString() : "", verbose);
+    if (!config) {
+        return -2;
     }
 
     /* Check if we have been given a command */
@@ -70,7 +72,7 @@ int GerCli::Launch(int argc, const char* argv[])
     /* Get command in enum format and pass it to runner */
     Command command = ParseCommand(args["<command>"].asString());
 
-    return RunCommand(command, args["<args>"].asStringList());
+    return RunCommand(command, args["<args>"].asStringList(), *config, verbose);
 }
 
 /************************************************************************************************/
@@ -87,12 +89,17 @@ Command GerCli::ParseCommand(std::string_view input_command)
 }
 
 /************************************************************************************************/
-int GerCli::RunCommand(Command cmd, const std::vector<std::string>& args)
+int GerCli::RunCommand(Command cmd, const std::vector<std::string>& args,
+                       const Config& config, const bool verbose)
 {
     /* Dispatch to command handler */
     switch (cmd) {
         case Command::CHANGE: {
-            return RunChangeCommand(args);
+            if (config.remotes.empty()) {
+                fmt::print(fmt::fg(fmt::terminal_color::red), "no remote configured\n");
+                return -2;
+            }
+            return RunChangeCommand(args, *config.remotes.begin(), verbose);
         }
         case Command::REVIEW: {
             fmt::print("Not yet implemented.\n");
@@ -121,8 +128,9 @@ int GerCli::RunCommand(Command cmd, const std::vector<std::string>& args)
 }
 
 /************************************************************************************************/
-int GerCli::ReadConfig(std::string_view config_filepath, bool verbose)
+std::optional<Config> GerCli::ReadConfig(std::string_view config_filepath, bool verbose)
 {
+    Config config;
     std::string config_file;
 
     if (config_filepath.empty()) {
@@ -143,12 +151,12 @@ int GerCli::ReadConfig(std::string_view config_filepath, bool verbose)
     }
 
     try {
-        Config config = ConfigParser().Read(config_file);
+        config = ConfigParser().Read(config_file);
         if (verbose) {
             fmt::print("+ Remotes:\n");
             for (auto remote : config.remotes) {
                 fmt::print(
-                    "+ name: '{}', url: '{}', port: '{}', username: '{}', "
+                    "+ - name: '{}', url: '{}', port: '{}', username: '{}', "
                     "http-password: '{}'\n",
                     remote.name, remote.url, remote.port, remote.username,
                     remote.http_password);
@@ -158,10 +166,10 @@ int GerCli::ReadConfig(std::string_view config_filepath, bool verbose)
     catch (const std::runtime_error& e) {
         fmt::print(fmt::fg(fmt::terminal_color::red), "Failed to read config file: {}\n",
                    e.what());
-        return -2;
+        return std::nullopt;
     }
 
-    return 0;
+    return config;
 }  // namespace cli
 
 }  // namespace cli

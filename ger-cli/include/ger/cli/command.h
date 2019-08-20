@@ -12,6 +12,8 @@
 #include <string>
 #include "njr/enum_t.h"
 
+#include "ger/cli/config.h"
+
 /************************************************************************************************/
 
 namespace ger {
@@ -31,10 +33,13 @@ enum class Command {
 
 /**
  * \brief Change command handler.
- * \param argv Argument list.
+ * \param argv      Argument list.
+ * \param remote    Remote server information.
+ * \param verbose   Verbose output.
  * \return 0 on success, negative if error.
  */
-int RunChangeCommand(const std::vector<std::string>& argv);
+int RunChangeCommand(const std::vector<std::string>& argv, const Remote& remote,
+                     const bool verbose);
 
 } /* namespace cli */
 } /* namespace ger */

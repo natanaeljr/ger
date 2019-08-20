@@ -8,7 +8,6 @@
 
 #include "ger/cli/config.h"
 
-#include <cassert>
 #include "yaml-cpp/yaml.h"
 #include "fmt/core.h"
 #include "fmt/color.h"

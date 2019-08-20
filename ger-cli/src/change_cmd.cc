@@ -28,8 +28,9 @@ namespace ger {
 namespace cli {
 
 /************************************************************************************************/
-static constexpr const char kGerChangeCmdHelp[] = R"(Ger Change command.
-usage: change [options] [<change>]
+static constexpr const char kGerChangeCmdHelp[] = R"(usage: change [options] [<change>]
+
+List changes in the gerrit server.
 
 positional arguments:
   <change>        Show information about a specific change.
@@ -45,7 +46,7 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
 }
 
 /************************************************************************************************/
-static std::string RequestChangesJson()
+static std::string RequestChangesJson(const Remote& remote, const bool verbose)
 {
     CURL* curl = nullptr;
     CURLcode res;
@@ -58,20 +59,30 @@ static std::string RequestChangesJson()
         fmt::print(stderr, "Failed to init easy curl\n");
         return {};
     }
-    auto _clean_easy_curl = gsl::finally([&] { curl_easy_cleanup(curl); });
+    auto _clean_easy_curl = gsl::finally([curl] { curl_easy_cleanup(curl); });
+
+    std::string server_url =
+        fmt::format("{}/{}", remote.url, "a/changes/?q=is:open+owner:self&n=25");
+    if (verbose) {
+        fmt::print("quering server at {}\n", server_url);
+        fflush(stdout);
+    }
 
     // curl_easy_setopt(curl, CURLOPT_URL,
     //                  "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
-    curl_easy_setopt(
-        curl, CURLOPT_URL,
-        "https://gerrit.ped.datacom.ind.br/a/changes/?q=is:open+owner:self&n=25");
+    curl_easy_setopt(curl, CURLOPT_URL, server_url.c_str());
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
+    std::string userpwd = fmt::format("{}:{}", remote.username, remote.http_password);
+    if (verbose) {
+        fmt::print("authentication: {}\n", userpwd);
+        fflush(stdout);
+    }
+
     // curl_easy_setopt(curl, CURLOPT_USERPWD,
     //                  "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
-    curl_easy_setopt(curl, CURLOPT_USERPWD,
-                     "natanael.rabello.cwi:9of//kYGdM8g3PDcYL2JAHncMRwQ2algDYlgE2CsdA");
+    curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd.c_str());
     curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
@@ -125,7 +136,8 @@ static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ParseChanges(
 }
 
 /************************************************************************************************/
-int RunChangeCommand(const std::vector<std::string>& argv)
+int RunChangeCommand(const std::vector<std::string>& argv, const Remote& remote,
+                     const bool verbose)
 {
     /* Parse arguments */
     auto args = docopt::docopt(kGerChangeCmdHelp, argv, true, {}, true);
@@ -134,7 +146,7 @@ int RunChangeCommand(const std::vector<std::string>& argv)
         return -1;
     }
 
-    std::string response = RequestChangesJson();
+    std::string response = RequestChangesJson(remote, verbose);
     if (response.empty()) {
         return -1;
     }
@@ -155,10 +167,13 @@ int RunChangeCommand(const std::vector<std::string>& argv)
     }
 
     for (auto change : changes) {
-        fmt::print("* {0} {1} ({2}/{3}{4}{5})\n", change.getNumber(),
-                   change.getSubject().cStr(), change.getProject().cStr(),
-                   change.getBranch().cStr(), change.hasTopic() ? "/" : "",
-                   change.getTopic().cStr());
+        fmt::print(
+            "{}  {}  {}\n",
+            fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.getNumber()),
+            fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}",
+                        change.getBranch().cStr()),
+            fmt::format(fmt::fg(fmt::terminal_color::cyan), "{}",
+                        change.getSubject().cStr()));
     }
 
     return 0;
