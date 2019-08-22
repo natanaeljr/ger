@@ -27,6 +27,9 @@
 namespace ger {
 namespace cli {
 
+struct QueryOpts {
+};
+
 /************************************************************************************************/
 static constexpr const char kGerChangeCmdHelp[] = R"(usage: change [options] [<change>]
 
@@ -46,7 +49,8 @@ static size_t writeFunction(void* ptr, size_t size, size_t nmemb, std::string* d
 }
 
 /************************************************************************************************/
-static std::string RequestChangesJson(const Remote& remote, const bool verbose)
+static std::string RequestJson(std::string_view url, std::string_view userauth,
+                               const bool verbose)
 {
     CURL* curl = nullptr;
     CURLcode res;
@@ -61,28 +65,25 @@ static std::string RequestChangesJson(const Remote& remote, const bool verbose)
     }
     auto _clean_easy_curl = gsl::finally([curl] { curl_easy_cleanup(curl); });
 
-    std::string server_url =
-        fmt::format("{}/{}", remote.url, "a/changes/?q=is:open+owner:self&n=25");
     if (verbose) {
-        fmt::print("quering server at {}\n", server_url);
+        fmt::print("quering server at {}\n", url);
         fflush(stdout);
     }
 
     // curl_easy_setopt(curl, CURLOPT_URL,
     //                  "localhost:8080/a/changes/?q=is:open+owner:self&o=DETAILED_LABELS");
-    curl_easy_setopt(curl, CURLOPT_URL, server_url.c_str());
+    curl_easy_setopt(curl, CURLOPT_URL, url.data());
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
 
-    std::string userpwd = fmt::format("{}:{}", remote.username, remote.http_password);
     if (verbose) {
-        fmt::print("authentication: {}\n", userpwd);
+        fmt::print("user authentication: {}\n", userauth);
         fflush(stdout);
     }
 
     // curl_easy_setopt(curl, CURLOPT_USERPWD,
     //                  "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
-    curl_easy_setopt(curl, CURLOPT_USERPWD, userpwd.c_str());
+    curl_easy_setopt(curl, CURLOPT_USERPWD, userauth.data());
     curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
@@ -94,12 +95,12 @@ static std::string RequestChangesJson(const Remote& remote, const bool verbose)
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_string);
     curl_easy_setopt(curl, CURLOPT_HEADERDATA, &header_string);
 
-    char* url;
+    char* effect_url;
     long response_code;
     double elapsed;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
     curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &elapsed);
-    curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url);
+    curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effect_url);
 
     /* Perform the request, res will get the return code */
     res = curl_easy_perform(curl);
@@ -136,17 +137,15 @@ static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ParseChanges(
 }
 
 /************************************************************************************************/
-int RunChangeCommand(const std::vector<std::string>& argv, const Remote& remote,
-                     const bool verbose)
+int RequestOneChange(uint32_t number, const Remote& remote, const bool verbose)
 {
-    /* Parse arguments */
-    auto args = docopt::docopt(kGerChangeCmdHelp, argv, true, {}, true);
-    if (args["<change>"]) {
-        fmt::print("Arguments not yet implemented.\n");
-        return -1;
-    }
 
-    std::string response = RequestChangesJson(remote, verbose);
+    std::string url = fmt::format(
+        "{}/a/changes/?q=change:{}&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES",
+        remote.url, number);
+    std::string userauth = fmt::format("{}:{}", remote.username, remote.http_password);
+
+    std::string response = RequestJson(url, userauth, verbose);
     if (response.empty()) {
         return -1;
     }
@@ -156,6 +155,8 @@ int RunChangeCommand(const std::vector<std::string>& argv, const Remote& remote,
         fmt::print(stderr, "Unrecognized response from server:\n\n{}", response);
         return -1;
     }
+
+    fmt::print("{}", response);
 
     capnp::MallocMessageBuilder arena;
     auto orphan = ParseChanges(response.data() + 5, arena.getOrphanage());
@@ -167,13 +168,30 @@ int RunChangeCommand(const std::vector<std::string>& argv, const Remote& remote,
     }
 
     for (auto change : changes) {
-        fmt::print(
-            "{}  {}  {}\n",
-            fmt::format(fmt::fg(fmt::terminal_color::yellow), "{}", change.getNumber()),
-            fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}",
-                        change.getBranch().cStr()),
-            fmt::format(fmt::fg(fmt::terminal_color::cyan), "{}",
-                        change.getSubject().cStr()));
+        assert(change.getRevisions().hasEntries());
+        auto current_revision = change.getRevisions().getEntries().begin()->getValue();
+        fmt::print("{} {}\n{}\n",
+                   fmt::format(fmt::fg(fmt::terminal_color::yellow), "change {}",
+                               change.getNumber()),
+                   fmt::format(fmt::fg(fmt::terminal_color::bright_green), "{}",
+                               change.getBranch().cStr()),
+                   current_revision.getMessageWithFooter().cStr());
+    }
+
+    return 0;
+}
+
+/************************************************************************************************/
+int RunChangeCommand(const std::vector<std::string>& argv, const Remote& remote,
+                     const bool verbose)
+{
+    /* Parse arguments */
+    auto args = docopt::docopt(kGerChangeCmdHelp, argv, true, {}, true);
+    if (args["<change>"]) {
+        RequestOneChange(args["<change>"].asLong(), remote, verbose);
+    }
+    else {
+        fmt::print(stderr, "work in progress");
     }
 
     return 0;
