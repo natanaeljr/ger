@@ -1,5 +1,5 @@
-Gerritc
-=======
+GER
+===
 
-Reliable Gerrit desktop client for Linux OS.
+Reliable Gerrit command-line client for Linux OS.
 
