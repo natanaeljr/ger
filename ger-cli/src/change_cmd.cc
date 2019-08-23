@@ -129,6 +129,11 @@ static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ParseChanges(
     codec.handleByAnnotation<gerrit::changes::ProblemStatus>();
     codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
     codec.handleByAnnotation<gerrit::changes::ChangeInfo>();
+    codec.handleByAnnotation<gerrit::changes::WebLinkInfo>();
+    codec.handleByAnnotation<gerrit::changes::FileStatus>();
+    codec.handleByAnnotation<gerrit::changes::FileInfo>();
+    codec.handleByAnnotation<gerrit::changes::CommitInfo>();
+    codec.handleByAnnotation<gerrit::changes::RevisionInfo>();
 
     auto orphan = codec.decode<capnp::List<gerrit::changes::ChangeInfo>>(
         { json_input.begin(), json_input.end() }, orphanage);

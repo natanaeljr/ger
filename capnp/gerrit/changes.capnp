@@ -110,6 +110,58 @@ enum RevisionKind {
   noChange @4 $Json.name("NO_CHANGE");
 }
 
+struct GitPersonInfo {
+  name @0 :Text;
+  email @1 :Text;
+  date @2 :Text;
+  tz @3 :Int32;
+}
+
+struct WebLinkInfo {
+  name @0 :Text;
+  url @1 :Text;
+  imageUrl @2 :Text $Json.name("image_url");
+}
+
+enum FileStatus {
+  modified @0 $Json.name("M");
+  added @1 $Json.name("A");
+  deleted @2 $Json.name("D");
+  renamed @3 $Json.name("R");
+  copied @4 $Json.name("C");
+  rewritten @5 $Json.name("W");
+}
+
+struct FetchInfo {
+  url @0 :Text;
+  ref @1 :Text;
+  commands @2 :ListMap(Text, Text);
+}
+
+struct CommitInfo {
+  commit @0 :Text;
+  parents @1 :List(CommitInfo);
+  author @2 :GitPersonInfo;
+  committer @3 :GitPersonInfo;
+  subject @4 :Text;
+  message @5 :Text;
+  webLinks @6 :List(WebLinkInfo) $Json.name("web_links");
+}
+
+struct FileInfo {
+  status @0 :FileStatus;
+  binary @1 :Bool;
+  oldPath @2 :Text $Json.name("old_path");
+  linesInserted @3 :UInt32 $Json.name("lines_inserted");
+  linesDeleted @4 :UInt32 $Json.name("lines_deleted");
+  sizeDelta @5 :UInt32 $Json.name("size_delta");
+}
+
+struct PushCertificateInfo {
+  certificate @0 :Text;
+  key @1 :Accounts.GpgKeyInfo;
+}
+
 struct RevisionInfo {
   draft @0 :Bool;
   kind @1 :RevisionKind;
@@ -117,14 +169,14 @@ struct RevisionInfo {
   created @3 :Text;
   uploader @4 :Accounts.AccountInfo;
   ref @5 :Text;
-  # fetch @6 :ListMap(Text, FetchInfo);
-  # commit @7 :CommitInfo;
-  # files @8 :ListMap(Text, FileInfo);
-  actions @6 :ListMap(Text, ActionInfo);
-  reviewed @7 :Bool;
-  messageWithFooter @8 :Text;
-  # push_certificate @9 :PushCertificateInfo;
-  description @9 :Text;
+  fetch @6 :ListMap(Text, FetchInfo);
+  commit @7 :CommitInfo;
+  files @8 :ListMap(Text, FileInfo);
+  actions @9 :ListMap(Text, ActionInfo);
+  reviewed @10 :Bool;
+  messageWithFooter @11 :Text;
+  pushCertificate @12 :PushCertificateInfo $Json.name("push_certificate");
+  description @13 :Text;
 }
 
 struct TrackingIdInfo {

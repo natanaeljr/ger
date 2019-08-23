@@ -13,3 +13,18 @@ struct AccountInfo {
   email @2 :Text;
   username @3 :Text;
 }
+
+enum GpgKeyStatus {
+  bad @0 $Json.name("BAD");
+  ok @1 $Json.name("OK");
+  trusted @2 $Json.name("TRUSTED");
+}
+
+struct GpgKeyInfo {
+  id @0 :Text;
+  fingerprint @1 :Text;
+  userIds @2 :Text;
+  key @3 :Text;
+  status @4 :GpgKeyStatus;
+  problems @5 :List(Text);
+}
