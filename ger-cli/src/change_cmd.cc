@@ -84,7 +84,7 @@ static std::string RequestJson(std::string_view url, std::string_view userauth,
     // curl_easy_setopt(curl, CURLOPT_USERPWD,
     //                  "natanaeljr:ot+XfXZockCTMWs9A0yfPtnUgMT52rbQ2NZaG9M17w");
     curl_easy_setopt(curl, CURLOPT_USERPWD, userauth.data());
-    curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
+    // curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_DIGEST);
     // curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.42.0");
     // curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 50L);
     // curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
@@ -135,6 +135,27 @@ static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ParseChanges(
     codec.handleByAnnotation<gerrit::changes::CommitInfo>();
     codec.handleByAnnotation<gerrit::changes::RevisionInfo>();
 
+    using capnp::List;
+    using capnp::ListMapJsonCodecHandler;
+    using capnp::Text;
+
+    auto listmap_handler1 =
+        ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
+                                List<gerrit::accounts::AccountInfo>>();
+    auto listmap_handler2 = ListMapJsonCodecHandler<Text, Text>();
+    auto listmap_handler3 =
+        ListMapJsonCodecHandler<Text, gerrit::changes::RevisionInfo>();
+    auto listmap_handler4 = ListMapJsonCodecHandler<Text, gerrit::changes::FetchInfo>();
+    auto listmap_handler5 = ListMapJsonCodecHandler<Text, gerrit::changes::FileInfo>();
+    auto listmap_handler6 = ListMapJsonCodecHandler<Text, gerrit::changes::ActionInfo>();
+
+    codec.addTypeHandler(listmap_handler1);
+    codec.addTypeHandler(listmap_handler2);
+    codec.addTypeHandler(listmap_handler3);
+    codec.addTypeHandler(listmap_handler4);
+    codec.addTypeHandler(listmap_handler5);
+    codec.addTypeHandler(listmap_handler6);
+
     auto orphan = codec.decode<capnp::List<gerrit::changes::ChangeInfo>>(
         { json_input.begin(), json_input.end() }, orphanage);
 
@@ -146,8 +167,9 @@ int RequestOneChange(uint32_t number, const Remote& remote, const bool verbose)
 {
 
     std::string url = fmt::format(
-        "{}/a/changes/?q=change:{}&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES",
-        remote.url, number);
+        "{}:{}/a/changes/"
+        "?q=change:{}&o=CURRENT_REVISION&o=CURRENT_COMMIT&o=CURRENT_FILES",
+        remote.url, remote.port, number);
     std::string userauth = fmt::format("{}:{}", remote.username, remote.http_password);
 
     std::string response = RequestJson(url, userauth, verbose);

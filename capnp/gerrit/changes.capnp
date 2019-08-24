@@ -155,17 +155,17 @@ struct FileInfo {
   linesInserted @3 :UInt32 $Json.name("lines_inserted");
   linesDeleted @4 :UInt32 $Json.name("lines_deleted");
   sizeDelta @5 :UInt32 $Json.name("size_delta");
+  size @6 :UInt32;
 }
 
 struct PushCertificateInfo {
   certificate @0 :Text;
-  key @1 :Accounts.GpgKeyInfo;
-}
+  key @1 :Accounts.GpgKeyInfo; }
 
 struct RevisionInfo {
   draft @0 :Bool;
   kind @1 :RevisionKind;
-  number @2 :Text;
+  number @2 :Text $Json.name("_number");
   created @3 :Text;
   uploader @4 :Accounts.AccountInfo;
   ref @5 :Text;
@@ -202,9 +202,13 @@ enum ChangeStatus {
   draft @3 $Json.name("DRAFT");
 }
 
-struct AccountInfo {
-  id @0 :UInt32;
-  name @1 :Text;
+enum SubmitType {
+  mergeIfNecessary @0 $Json.name("MERGE_IF_NECESSARY");
+  fastForwardOnly @1 $Json.name("FAST_FORWARD_ONLY");
+  rebaseIfNecessary @2 $Json.name("REBASE_IF_NECESSARY");
+  rebaseAlways @3 $Json.name("REBASE_ALWAYS");
+  mergeAlways @4 $Json.name("MERGE_ALWAYS");
+  cherryPick @5 $Json.name("CHERRY_PICK");
 }
 
 struct ChangeInfo {
@@ -224,7 +228,7 @@ struct ChangeInfo {
   starred @13 :Bool;
   stars @14 :List(Text);
   reviewed @15 :Bool;
-  submitType @16 :Text;
+  submitType @16 :SubmitType $Json.name("submit_type");
   mergeable @17 :Bool;
   insertions @18 :UInt32;
   deletions @19 :UInt32;
