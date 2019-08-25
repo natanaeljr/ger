@@ -1,29 +1,23 @@
 cmake_minimum_required(VERSION 3.0)
-project(ger-cli LANGUAGES CXX)
+project(gerlib LANGUAGES CXX)
 
 #########################################################################################
-# Object Library
+# Cap'n Proto
 #########################################################################################
-add_library(${GERCLI_OBJECT} OBJECT)
-target_include_directories(${GERCLI_OBJECT} PUBLIC include)
-target_link_libraries(${GERCLI_OBJECT}
-  PRIVATE
-  ${GERLIB_LIBRARY}
+add_subdirectory(capnp)
+
+#########################################################################################
+# Library
+#########################################################################################
+add_library(${GERLIB_LIBRARY})
+target_include_directories(${GERLIB_LIBRARY} PUBLIC include)
+target_link_libraries(${GERLIB_LIBRARY}
+  PUBLIC
+  ${GERCAPNP_LIBRARY}
 )
-set_target_properties(${GERCLI_OBJECT} PROPERTIES
+set_target_properties(${GERLIB_LIBRARY} PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-#########################################################################################
-# Executable
-#########################################################################################
-add_executable(${GERCLI_BINARY})
-target_link_libraries(${GERCLI_BINARY}
-  PRIVATE
-  ${GERCLI_OBJECT}
-)
-set_target_properties(${GERCLI_BINARY} PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 #########################################################################################
 # Sources

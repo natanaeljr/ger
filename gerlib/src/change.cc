@@ -6,7 +6,7 @@
  * \copyright Copyright (c) 2019
  */
 
-#include "ger/lib/change.h"
+#include "ger/change.h"
 
 /**************************************************************************************/
 

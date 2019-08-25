@@ -16,15 +16,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 #########################################################################################
 # Global Defines
 #########################################################################################
-set(GERLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/ger-lib/include)
-set(GERCLI_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/ger-cli/include)
 set(GERLIB_LIBRARY "gerlib")
-set(GERCLI_LIBRARY "gercli")
+set(GERCAPNP_LIBRARY "ger_capnp")
+set(GERCLI_OBJECT "ger-cli")
 set(GERCLI_BINARY "ger")
-
-set(GER_CAPNP_SOURCE_DIR ${CMAKE_SOURCE_DIR}/capnp)
-set(GER_CAPNP_OUTPUT_DIR ${CMAKE_BINARY_DIR}/capnp)
-set(GER_CAPNP_LIB "ger_capnp")
 
 #########################################################################################
 # Dependencies
@@ -49,12 +44,5 @@ link_libraries(fmt)
 #########################################################################################
 # Project
 #########################################################################################
-# Cap'n Proto
-include_directories(${GER_CAPNP_SOURCE_DIR})
-include_directories(${GER_CAPNP_OUTPUT_DIR})
-add_subdirectory(capnp)
-link_libraries(${GER_CAPNP_LIB})
-
-# Ger
-add_subdirectory(ger-lib)
+add_subdirectory(gerlib)
 add_subdirectory(ger-cli)

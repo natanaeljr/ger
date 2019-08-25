@@ -113,8 +113,9 @@ static std::string RequestJson(std::string_view url, std::string_view userauth,
     return response_string;
 }
 
-static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ParseChanges(
-    std::string_view json_input, capnp::Orphanage orphanage)
+template<typename CapnpType>
+static capnp::Orphan<CapnpType> ParseJsonCapnp(std::string_view json_input,
+                                               capnp::Orphanage orphanage)
 {
     capnp::JsonCodec codec;
     codec.handleByAnnotation<gerrit::changes::HttpMethod>();
@@ -156,8 +157,8 @@ static capnp::Orphan<capnp::List<gerrit::changes::ChangeInfo>> ParseChanges(
     codec.addTypeHandler(listmap_handler5);
     codec.addTypeHandler(listmap_handler6);
 
-    auto orphan = codec.decode<capnp::List<gerrit::changes::ChangeInfo>>(
-        { json_input.begin(), json_input.end() }, orphanage);
+    auto orphan =
+        codec.decode<CapnpType>({ json_input.begin(), json_input.end() }, orphanage);
 
     return orphan;
 }
@@ -186,7 +187,8 @@ int RequestOneChange(uint32_t number, const Remote& remote, const bool verbose)
     fmt::print("{}", response);
 
     capnp::MallocMessageBuilder arena;
-    auto orphan = ParseChanges(response.data() + 5, arena.getOrphanage());
+    auto orphan = ParseJsonCapnp<capnp::List<gerrit::changes::ChangeInfo>>(
+        response.data() + 5, arena.getOrphanage());
     auto changes = orphan.getReader();
 
     if (changes.size() == 0) {

@@ -1,19 +1,19 @@
 cmake_minimum_required(VERSION 3.0)
-project(test-gercli)
+project(test-gerlib)
 
-set(GERCLI_TEST ${PROJECT_NAME})
+set(GERLIB_TEST ${PROJECT_NAME})
 
 #########################################################################################
 # Testing
 #########################################################################################
-add_executable(${GERCLI_TEST})
-target_sources(${GERCLI_TEST}
+add_executable(${GERLIB_TEST})
+target_sources(${GERLIB_TEST}
   PRIVATE
   dummy.cc
 )
-target_link_libraries(${GERCLI_TEST}
+target_link_libraries(${GERLIB_TEST}
   PRIVATE
-  ${GERCLI_LIBRARY}
+  ${GERLIB_LIBRARY}
 )
-set_target_properties(${GERCLI_TEST} PROPERTIES
+set_target_properties(${GERLIB_TEST} PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
