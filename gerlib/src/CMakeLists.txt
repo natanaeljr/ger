@@ -7,5 +7,5 @@ cmake_policy(SET CMP0076 NEW)
 #########################################################################################
 target_sources(${GERLIB_LIBRARY}
   PRIVATE
-  change.cc
+  json.cc
 )

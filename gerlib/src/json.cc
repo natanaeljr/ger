@@ -1,17 +1,15 @@
 /**
- * \file change.cc
+ * \file
  * \author Natanael Josue Rabello
- * \brief Change.
+ * \brief Json Codec.
  * \date 2019-05-24
  * \copyright Copyright (c) 2019
  */
 
-#include "ger/change.h"
+#include "ger/json.h"
 
 /**************************************************************************************/
 
 namespace ger {
-namespace lib {
 
-} /* namespace lib */
 } /* namespace ger */

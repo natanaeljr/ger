@@ -10,6 +10,7 @@ add_executable(${GERLIB_TEST})
 target_sources(${GERLIB_TEST}
   PRIVATE
   dummy.cc
+  json.cc
 )
 target_link_libraries(${GERLIB_TEST}
   PRIVATE

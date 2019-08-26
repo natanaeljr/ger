@@ -24,11 +24,10 @@
 #include "gerrit/changes.capnp.h"
 #include "util/listmap_handler.h"
 
+#include "ger/json.h"
+
 namespace ger {
 namespace cli {
-
-struct QueryOpts {
-};
 
 /************************************************************************************************/
 static constexpr const char kGerChangeCmdHelp[] = R"(usage: change [options] [<change>]
@@ -117,45 +116,7 @@ template<typename CapnpType>
 static capnp::Orphan<CapnpType> ParseJsonCapnp(std::string_view json_input,
                                                capnp::Orphanage orphanage)
 {
-    capnp::JsonCodec codec;
-    codec.handleByAnnotation<gerrit::changes::HttpMethod>();
-    codec.handleByAnnotation<gerrit::changes::ApprovalInfo>();
-    codec.handleByAnnotation<gerrit::changes::RequirementStatus>();
-    codec.handleByAnnotation<gerrit::changes::ReviewValue>();
-    codec.handleByAnnotation<gerrit::changes::LabelInfo>();
-    codec.handleByAnnotation<gerrit::changes::ReviewerState>();
-    codec.handleByAnnotation<gerrit::changes::ReviewerUpdateInfo>();
-    codec.handleByAnnotation<gerrit::changes::ChangeMessageInfo>();
-    codec.handleByAnnotation<gerrit::changes::RevisionKind>();
-    codec.handleByAnnotation<gerrit::changes::ProblemStatus>();
-    codec.handleByAnnotation<gerrit::changes::ChangeStatus>();
-    codec.handleByAnnotation<gerrit::changes::ChangeInfo>();
-    codec.handleByAnnotation<gerrit::changes::WebLinkInfo>();
-    codec.handleByAnnotation<gerrit::changes::FileStatus>();
-    codec.handleByAnnotation<gerrit::changes::FileInfo>();
-    codec.handleByAnnotation<gerrit::changes::CommitInfo>();
-    codec.handleByAnnotation<gerrit::changes::RevisionInfo>();
-
-    using capnp::List;
-    using capnp::ListMapJsonCodecHandler;
-    using capnp::Text;
-
-    auto listmap_handler1 =
-        ListMapJsonCodecHandler<gerrit::changes::ReviewerStateKey,
-                                List<gerrit::accounts::AccountInfo>>();
-    auto listmap_handler2 = ListMapJsonCodecHandler<Text, Text>();
-    auto listmap_handler3 =
-        ListMapJsonCodecHandler<Text, gerrit::changes::RevisionInfo>();
-    auto listmap_handler4 = ListMapJsonCodecHandler<Text, gerrit::changes::FetchInfo>();
-    auto listmap_handler5 = ListMapJsonCodecHandler<Text, gerrit::changes::FileInfo>();
-    auto listmap_handler6 = ListMapJsonCodecHandler<Text, gerrit::changes::ActionInfo>();
-
-    codec.addTypeHandler(listmap_handler1);
-    codec.addTypeHandler(listmap_handler2);
-    codec.addTypeHandler(listmap_handler3);
-    codec.addTypeHandler(listmap_handler4);
-    codec.addTypeHandler(listmap_handler5);
-    codec.addTypeHandler(listmap_handler6);
+    ger::JsonCodec codec;
 
     auto orphan =
         codec.decode<CapnpType>({ json_input.begin(), json_input.end() }, orphanage);

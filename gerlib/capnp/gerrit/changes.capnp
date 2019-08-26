@@ -256,3 +256,7 @@ struct ChangeInfo {
   revertOf @41 :Text $Json.name("revert_of");
   baseChange @42 :Text $Json.name("base_change");
 }
+
+struct ChangeTest {
+  status @0 :ChangeStatus;
+}
