@@ -1,26 +1,20 @@
 #[macro_use]
 extern crate clap;
 
-fn command_change(matches: &clap::ArgMatches) {
-    if let Some(change_id) = matches.value_of("id") {
-        println!("Change ID: {}", change_id);
-    } else {
-        println!("List of changes not implemented yet");
-    }
-}
+fn command_change(args: Option<&clap::ArgMatches>) {}
+
+fn command_project(args: Option<&clap::ArgMatches>) {}
+
+fn command_config(args: Option<&clap::ArgMatches>) {}
 
 fn main() {
     let yaml = load_yaml!("cli.yml");
-    let app = clap::App::from_yaml(yaml);
-    let matches = app.get_matches();
+    let args = clap::App::from_yaml(yaml).get_matches();
 
-    println!("{:#?}", matches);
-
-    match matches.subcommand_name() {
-        Some("change") => command_change(matches.subcommand_matches("change").unwrap()),
-        None => {
-            println!("{}", matches.usage());
-        }
-        _ => println!("Command unimplemented"),
+    match args.subcommand() {
+        ("change", subargs) => command_change(subargs),
+        ("project", subargs) => command_project(subargs),
+        ("config", subargs) => command_config(subargs),
+        _ => (),
     }
 }
