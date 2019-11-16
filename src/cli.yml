@@ -1,0 +1,35 @@
+name: ger
+version: '0.1.0'
+about: Gerrit command-line interface.
+
+args:
+    - verbose:
+        short: v
+        long: verbose
+        global: true
+        multiple: true
+        help: Set level of verbosity (up to 3)
+
+    - config:
+        long: config
+        value_name: FILE
+        takes_value: true
+        help: Specify alternate configuration file.
+
+subcommands:
+    - change:
+        about: List changes from the gerrit server.
+        args:
+            - ID:
+                required: false
+                help: Change number.
+
+    - config:
+        about: Configure settings.
+
+    - project:
+        about: List projects from the gerrit server.
+        args:
+            - name:
+                required: false
+                help: Project name.
