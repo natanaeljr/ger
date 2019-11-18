@@ -28,6 +28,8 @@ pub struct ChangeInfo {
     pub subject: String,
     /// The status of the change.
     pub status: ChangeStatus,
+    /// The timestamp of when the change was last updated.
+    pub updated: String,
     /// The legacy numeric ID of the change.
     pub _number: u32,
 }

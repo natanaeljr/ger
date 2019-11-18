@@ -29,12 +29,13 @@ fn command_change(
         let number = format!("{}", change._number);
         writeln!(
             out,
-            "{} {} {} {}",
+            "{} {} {} {} {}",
             if true {
                 Color::Yellow.paint(number).to_string()
             } else {
                 number
             },
+            Color::Blue.paint(&change.updated),
             Color::Cyan.paint(&change.project),
             Color::Green.bold().paint(format!("{:?}", change.status)),
             ansi_term::Style::default().paint(&change.subject)

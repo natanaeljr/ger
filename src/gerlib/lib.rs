@@ -10,6 +10,7 @@ pub fn get_changes() -> Result<Vec<changes::ChangeInfo>, failure::Error> {
         "branch": "master",
         "subject": "Show reverted changes when clicking \"Revert Submission\"",
         "status": "NEW",
+        "updated": "2019-10-05 02:28:07.000000000",
         "_number": 245633
     },
     {
@@ -18,6 +19,7 @@ pub fn get_changes() -> Result<Vec<changes::ChangeInfo>, failure::Error> {
         "branch": "devolop",
         "subject": "RetryHelper#formatCause: Unwrap exceptions wrapped in ExecutionException",
         "status": "DRAFT",
+        "updated": "2019-11-18 22:19:54.000000000",
         "_number": 145953
     }
 ]
