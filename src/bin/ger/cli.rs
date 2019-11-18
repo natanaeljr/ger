@@ -2,9 +2,13 @@ use ansi_term::Color;
 use failure::ResultExt;
 
 /// Ger CLI main entrance
-pub fn cli_main(out: impl std::io::Write) -> Result<(), failure::Error> {
+pub fn cli<I, T>(iter: I, out: &mut impl std::io::Write) -> Result<(), failure::Error>
+where
+    I: IntoIterator<Item = T>,
+    T: Into<std::ffi::OsString> + Clone,
+{
     let yaml = load_yaml!("cli.yml");
-    let args = clap::App::from_yaml(yaml).get_matches();
+    let args = clap::App::from_yaml(yaml).get_matches_from(iter);
 
     match args.subcommand() {
         ("change", subargs) => command_change(subargs, out),
@@ -17,7 +21,7 @@ pub fn cli_main(out: impl std::io::Write) -> Result<(), failure::Error> {
 
 fn command_change(
     _args: Option<&clap::ArgMatches>,
-    mut out: impl std::io::Write,
+    out: &mut impl std::io::Write,
 ) -> Result<(), failure::Error> {
     let changes = gerlib::get_changes().context("failed to get changes")?;
 
@@ -41,20 +45,15 @@ fn command_change(
 
 fn command_project(
     _args: Option<&clap::ArgMatches>,
-    mut out: impl std::io::Write,
+    out: &mut impl std::io::Write,
 ) -> Result<(), failure::Error> {
-    writeln!(
-        out,
-        "{} {}",
-        Color::Purple.paint("Ger"),
-        Color::Purple.bold().paint("PROJECT")
-    )?;
+    writeln!(out, "Ger PROJECT",)?;
     Ok(())
 }
 
 fn command_config(
     _args: Option<&clap::ArgMatches>,
-    mut out: impl std::io::Write,
+    out: &mut impl std::io::Write,
 ) -> Result<(), failure::Error> {
     writeln!(
         out,
@@ -63,4 +62,19 @@ fn command_config(
         Color::Blue.bold().paint("CONFIG")
     )?;
     Ok(())
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[cfg(test)]
+mod tests {
+
+    /// Test output from CLI subcommand 'project'.
+    #[test]
+    fn cli_project() {
+        let mut writer = Vec::new();
+        let args = vec!["ger", "project"];
+        super::cli(args, &mut writer).unwrap();
+        let output = std::str::from_utf8(writer.as_slice()).unwrap();
+        assert_eq!(output, "Ger PROJECT\n");
+    }
 }

@@ -7,6 +7,6 @@ extern crate failure;
 mod cli;
 
 fn main() -> Result<(), exitfailure::ExitFailure> {
-    let result = cli::cli_main(&mut std::io::stdout());
-    Ok(result?)
+    let result = cli::cli(&mut std::env::args_os(), &mut std::io::stdout())?;
+    Ok(result)
 }
