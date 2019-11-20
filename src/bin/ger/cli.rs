@@ -1,4 +1,5 @@
 use ansi_term::Color;
+use chrono::{DateTime, TimeZone, Utc};
 use failure::ResultExt;
 
 /// Ger CLI main entrance
@@ -35,7 +36,7 @@ fn command_change(
             } else {
                 number
             },
-            Color::Blue.paint(&change.updated),
+            Color::Blue.paint(format_short_datetime(&change.updated)),
             Color::Cyan.paint(&change.project),
             Color::Green.bold().paint(format!("{:?}", change.status)),
             ansi_term::Style::default().paint(&change.subject)
@@ -64,6 +65,31 @@ fn command_config(
         Color::Blue.bold().paint("CONFIG")
     )?;
     Ok(())
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/// UTILS
+fn format_short_datetime(from_utc: &DateTime<Utc>) -> String {
+    use chrono::format::{Fixed, Item, Numeric, Pad};
+    use chrono::offset::Local;
+
+    let from_local = Local.from_utc_datetime(&from_utc.naive_utc());
+    let now_local = Local::now();
+    let duration = now_local - from_local;
+    let mut format_items = Vec::<Item>::new();
+
+    // TODO: present hour::min AM/PM instead
+
+    if duration.num_days() >= 1 {
+        // TODO: substitute push functions
+        format_items.push(Item::Fixed(Fixed::ShortMonthName));
+        format_items.push(Item::Literal("-"));
+        format_items.push(Item::Numeric(Numeric::Day, Pad::Zero));
+    }
+    // TODO: add year
+
+    from_local
+        .format_with_items(format_items.into_iter())
+        .to_string()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

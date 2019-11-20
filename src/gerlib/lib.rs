@@ -1,5 +1,6 @@
 pub mod accounts;
 pub mod changes;
+pub mod details;
 
 pub fn get_changes() -> Result<Vec<changes::ChangeInfo>, failure::Error> {
     let json = r#"

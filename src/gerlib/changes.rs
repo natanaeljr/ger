@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde_derive::{Deserialize, Serialize};
 
 /// The status of the change.
@@ -29,7 +30,8 @@ pub struct ChangeInfo {
     /// The status of the change.
     pub status: ChangeStatus,
     /// The timestamp of when the change was last updated.
-    pub updated: String,
+    #[serde(with = "super::details::serde_timestamp")]
+    pub updated: DateTime<Utc>,
     /// The legacy numeric ID of the change.
     pub _number: u32,
 }
