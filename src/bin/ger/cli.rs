@@ -1,5 +1,4 @@
 use ansi_term::Color;
-use chrono::{DateTime, TimeZone, Utc};
 use failure::ResultExt;
 
 /// Ger CLI main entrance
@@ -36,7 +35,7 @@ fn command_change(
             } else {
                 number
             },
-            Color::Blue.paint(format_short_datetime(&change.updated)),
+            Color::Blue.paint(utils::format_short_datetime(&change.updated)),
             Color::Cyan.paint(&change.project),
             Color::Green.bold().paint(format!("{:?}", change.status)),
             ansi_term::Style::default().paint(&change.subject)
@@ -68,31 +67,46 @@ fn command_config(
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// UTILS
-fn format_short_datetime(from_utc: &DateTime<Utc>) -> String {
-    use chrono::format::{Fixed, Item, Numeric, Pad};
-    use chrono::offset::Local;
+mod utils {
+    use chrono::{DateTime, TimeZone, Utc};
 
-    let from_local = Local.from_utc_datetime(&from_utc.naive_utc());
-    let now_local = Local::now();
-    let duration = now_local - from_local;
-    let mut format_items = Vec::<Item>::new();
+    /// Dynamic short format for DataTime
+    pub fn format_short_datetime(from_utc: &DateTime<Utc>) -> String {
+        use chrono::format::{Fixed, Item, Numeric, Pad};
+        use chrono::offset::Local;
+        use chrono::Datelike;
 
-    // TODO: present hour::min AM/PM instead
+        let from_local = Local.from_utc_datetime(&from_utc.naive_utc());
+        let now_local = Local::now();
+        let duration = now_local - from_local;
 
-    if duration.num_days() >= 1 {
-        // TODO: substitute push functions
-        format_items.push(Item::Fixed(Fixed::ShortMonthName));
-        format_items.push(Item::Literal("-"));
-        format_items.push(Item::Numeric(Numeric::Day, Pad::Zero));
+        let mut format_items = Vec::new();
+        if (duration.num_days() == 0) && (from_local.day() == now_local.day()) {
+            format_items.reserve(5);
+            format_items.push(Item::Numeric(Numeric::Hour12, Pad::Zero));
+            format_items.push(Item::Literal(":"));
+            format_items.push(Item::Numeric(Numeric::Minute, Pad::Zero));
+            format_items.push(Item::Literal("_"));
+            format_items.push(Item::Fixed(Fixed::UpperAmPm));
+        } else {
+            format_items.reserve(5);
+            format_items.push(Item::Fixed(Fixed::ShortMonthName));
+            format_items.push(Item::Literal("_"));
+            format_items.push(Item::Numeric(Numeric::Day, Pad::Zero));
+            if from_local.year() != now_local.year() {
+                format_items.push(Item::Literal(","));
+                format_items.push(Item::Numeric(Numeric::Year, Pad::Zero));
+            }
+        }
+
+        from_local
+            .format_with_items(format_items.into_iter())
+            .to_string()
     }
-    // TODO: add year
-
-    from_local
-        .format_with_items(format_items.into_iter())
-        .to_string()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+/// TESTS
 #[cfg(test)]
 mod tests {
 
