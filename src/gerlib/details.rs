@@ -1,3 +1,9 @@
+use super::changes;
+
+pub struct QueryOpts {
+    pub status: Option<changes::ChangeStatus>
+}
+
 /// This uses the chrono crate to serialize and deserialize JSON data
 /// containing a Gerrit's custom timestamp format.
 /// The with attribute (as in #[serde(with="serde_timestamp")]) is used

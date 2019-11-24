@@ -1,5 +1,5 @@
 use ansi_term::Color;
-use failure::ResultExt;
+use gerlib::Gerrit;
 
 /// Ger CLI main entrance
 pub fn cli<I, T>(iter: I, out: &mut impl std::io::Write) -> Result<(), failure::Error>
@@ -11,19 +11,37 @@ where
     let args = clap::App::from_yaml(yaml).get_matches_from(iter);
 
     match args.subcommand() {
-        ("change", subargs) => command_change(subargs, out),
-        ("project", subargs) => command_project(subargs, out),
-        ("config", subargs) => command_config(subargs, out),
+        ("change", Some(subargs)) => command_change(&subargs, out),
+        ("project", Some(subargs)) => command_project(&subargs, out),
+        ("config", Some(subargs)) => command_config(&subargs, out),
         _ => failure::bail!("invalid subcommand"),
     }?;
     Ok(())
 }
 
 fn command_change(
-    _args: Option<&clap::ArgMatches>,
+    args: &clap::ArgMatches,
     out: &mut impl std::io::Write,
 ) -> Result<(), failure::Error> {
-    let changes = gerlib::get_changes().context("failed to get changes")?;
+    let max_count = match args.value_of("max-count").unwrap_or("25").parse::<u32>() {
+        Ok(n) => n,
+        Err(_) => {
+            return Err(failure::err_msg(
+                "argument of '-n|--max-count' isn't a positive number",
+            ))
+        }
+    };
+
+    let gerrit = Gerrit::new("https://gerrit-review.googlesource.com")
+        .username("")
+        .password("");
+
+    let changes = gerrit.get_changes(max_count)?;
+
+    if changes.is_empty() {
+        writeln!(out, "no changes")?;
+        return Ok(());
+    }
 
     for change in changes.iter() {
         let number = format!("{}", change._number);
@@ -37,7 +55,7 @@ fn command_change(
             },
             Color::Blue.paint(utils::format_short_datetime(&change.updated)),
             Color::Cyan.paint(&change.project),
-            Color::Green.bold().paint(format!("{:?}", change.status)),
+            get_change_status_style(&change.status).paint(format!("{:?}", change.status)),
             ansi_term::Style::default().paint(&change.subject)
         )?;
     }
@@ -45,8 +63,18 @@ fn command_change(
     Ok(())
 }
 
+fn get_change_status_style(status: &gerlib::changes::ChangeStatus) -> ansi_term::Style {
+    use gerlib::changes::ChangeStatus;
+    match status {
+        ChangeStatus::NEW => Color::Green.bold(),
+        ChangeStatus::MERGED => Color::Red.bold(),
+        ChangeStatus::ABANDONED => Color::Black.bold(),
+        ChangeStatus::DRAFT => Color::White.bold().dimmed(),
+    }
+}
+
 fn command_project(
-    _args: Option<&clap::ArgMatches>,
+    _args: &clap::ArgMatches,
     out: &mut impl std::io::Write,
 ) -> Result<(), failure::Error> {
     writeln!(out, "Ger PROJECT",)?;
@@ -54,7 +82,7 @@ fn command_project(
 }
 
 fn command_config(
-    _args: Option<&clap::ArgMatches>,
+    _args: &clap::ArgMatches,
     out: &mut impl std::io::Write,
 ) -> Result<(), failure::Error> {
     writeln!(

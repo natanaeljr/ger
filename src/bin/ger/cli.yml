@@ -24,10 +24,21 @@ args:
 subcommands:
     - change:
         about: List changes from the gerrit server.
+        settings:
+            - unifiedhelpmessage
         args:
-            - NUMBER:
+            - max-count:
+                short: n
+                long: max-count
+                value_name: NUMBER
+                takes_value: true
+                default_value: "25"
+                help: Limit the number of changes to output.
+            - CHANGE:
                 required: false
-                help: Change number.
+                multiple: true
+                help: "Specify changes to look for.\nCan be either a legacy numerical id (e.g. 15813),
+                       full or abbreviated Change-Id (e.g. Ic0ff33) or commit SHA-1 (e.g. d81b32ef)."
 
     - project:
         about: List projects from the gerrit server.
