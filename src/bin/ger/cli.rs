@@ -32,11 +32,20 @@ fn command_change(
         }
     };
 
-    let gerrit = Gerrit::new("https://gerrit-review.googlesource.com")
-        .username("git-natanaeljrabello.gmail.com")
-        .password("1//051m9TvuxT1C2CgYIARAAGAUSNwF-L9IrwlzbgR9P3KJYyfb2qGv8PVTXMR5uWjoCWeU6y_dYCP9c3mbSYm5M4y-ZXDdLh1J1LuI");
+    let gerrit = Gerrit::new("")
+        .username("")
+        .password("");
 
-    let change_opts = gerlib::changes::ChangeOptions::new().limit(max_count);
+    let query_opts = vec![
+        // gerlib::changes::QueryOpt::Owner(gerlib::changes::Owner::_Self_),
+        gerlib::changes::QueryOpt::Is(gerlib::changes::ChangeIs::Open),
+        gerlib::changes::QueryOpt::Is(gerlib::changes::ChangeIs::Reviewer),
+    ];
+    let queries = vec![gerlib::changes::Query(query_opts)];
+    let change_opts = gerlib::changes::ChangeOptions::new()
+        .limit(max_count)
+        .queries(queries);
+    // println!("{}", change_opts.to_query_string());
 
     let changes = gerrit.get_changes(change_opts)?;
 
@@ -69,7 +78,7 @@ fn get_change_status_style(status: &gerlib::changes::ChangeStatus) -> ansi_term:
     use gerlib::changes::ChangeStatus;
     match status {
         ChangeStatus::NEW => Color::Green.bold(),
-        ChangeStatus::MERGED => Color::Red.bold(),
+        ChangeStatus::MERGED => Color::Purple.bold(),
         ChangeStatus::ABANDONED => Color::Black.bold(),
         ChangeStatus::DRAFT => Color::White.bold().dimmed(),
     }

@@ -39,6 +39,7 @@ pub struct ChangeInfo {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug)]
 pub struct ChangeOptions {
     pub queries: Vec<Query>,
     pub additional_opts: Vec<AddiotionalOpt>,
@@ -75,12 +76,43 @@ impl ChangeOptions {
         self.start = Some(start);
         self
     }
+
+    pub fn to_query_string(&self) -> String {
+        use std::fmt::Write;
+        let mut result = String::new();
+        for query in &self.queries {
+            let sym = if result.is_empty() { '?' } else { '&' };
+            let q_str = query.to_query_string();
+            if !q_str.is_empty() {
+                write!(result, "{}q={}", sym, query.to_query_string()).unwrap();
+            }
+        }
+        let sym = if result.is_empty() { '?' } else { '&' };
+        if let Some(limit) = self.limit {
+            write!(result, "{}n={}", sym, limit).unwrap();
+        }
+        result
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-pub struct Query(Vec<QueryOpt>);
+#[derive(Debug)]
+pub struct Query(pub Vec<QueryOpt>);
+
+impl Query {
+    pub fn to_query_string(&self) -> String {
+        use std::fmt::Write;
+        let mut result = String::new();
+        for opt in self.0.iter() {
+            let add = if result.is_empty() { "" } else { "+" };
+            write!(result, "{}{}", add, opt).unwrap();
+        }
+        result
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug)]
 pub enum QueryOpt {
     Is(ChangeIs),
     Topic(String),
@@ -89,10 +121,25 @@ pub enum QueryOpt {
     Owner(Owner),
     Change(String),
     Limit(u32),
-    Not,
+    // Not,
+}
+
+impl std::fmt::Display for QueryOpt {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            QueryOpt::Is(i) => write!(f, "is:{}", i),
+            QueryOpt::Topic(s) => write!(f, "topic:{}", s),
+            QueryOpt::Branch(s) => write!(f, "branch:{}", s),
+            QueryOpt::Project(s) => write!(f, "project:{}", s),
+            QueryOpt::Owner(o) => write!(f, "owner:{}", o),
+            QueryOpt::Change(s) => write!(f, "change:{}", s),
+            QueryOpt::Limit(u) => write!(f, "limit:{}", u),
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug)]
 pub enum AddiotionalOpt {
     Labels,
     DetailedLabels,
@@ -103,6 +150,7 @@ pub enum AddiotionalOpt {
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug)]
 pub enum ChangeIs {
     Assigned,
     Unassigned,
@@ -125,8 +173,24 @@ pub enum ChangeIs {
     WIP,
 }
 
+impl std::fmt::Display for ChangeIs {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(format!("{:?}", self).to_lowercase().as_str())
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug)]
 pub enum Owner {
     _Self_,
     Other(String),
+}
+
+impl std::fmt::Display for Owner {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Owner::_Self_ => f.write_str("self"),
+            Owner::Other(s) => f.write_str(s.as_str()),
+        }
+    }
 }

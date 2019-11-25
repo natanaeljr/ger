@@ -32,7 +32,7 @@ subcommands:
                 long: max-count
                 value_name: NUMBER
                 takes_value: true
-                default_value: "25"
+                default_value: "20"
                 help: Limit the number of changes to output.
             - CHANGE:
                 required: false

@@ -40,7 +40,9 @@ impl Gerrit {
 
     /// Get list of changes from Gerrit server
     pub fn get_changes(&self, opts: changes::ChangeOptions) -> Result<Vec<changes::ChangeInfo>> {
-        let json: String = self.request_json(format!("changes/?n={}", opts.limit.unwrap_or(25)))?;
+        let uri = format!("changes/{}", opts.to_query_string());
+        println!("{}", uri);
+        let json: String = self.request_json(uri)?;
         let changes: Vec<changes::ChangeInfo> = serde_json::from_str(json.as_str())?;
         Ok(changes)
     }
@@ -62,10 +64,12 @@ impl Gerrit {
         let mut data: Vec<u8> = Vec::new();
         {
             let mut transfer = easy.transfer();
-            transfer.write_function(|input| {
-                data.extend_from_slice(input);
-                Ok(input.len())
-            }).unwrap();
+            transfer
+                .write_function(|input| {
+                    data.extend_from_slice(input);
+                    Ok(input.len())
+                })
+                .unwrap();
             transfer.perform().unwrap();
         }
         let response = String::from_utf8_lossy(data.as_slice()).to_string();
