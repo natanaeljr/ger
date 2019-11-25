@@ -33,10 +33,12 @@ fn command_change(
     };
 
     let gerrit = Gerrit::new("https://gerrit-review.googlesource.com")
-        .username("")
-        .password("");
+        .username("git-natanaeljrabello.gmail.com")
+        .password("1//051m9TvuxT1C2CgYIARAAGAUSNwF-L9IrwlzbgR9P3KJYyfb2qGv8PVTXMR5uWjoCWeU6y_dYCP9c3mbSYm5M4y-ZXDdLh1J1LuI");
 
-    let changes = gerrit.get_changes(max_count)?;
+    let change_opts = gerlib::changes::ChangeOptions::new().limit(max_count);
+
+    let changes = gerrit.get_changes(change_opts)?;
 
     if changes.is_empty() {
         writeln!(out, "no changes")?;

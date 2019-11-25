@@ -39,8 +39,8 @@ impl Gerrit {
     }
 
     /// Get list of changes from Gerrit server
-    pub fn get_changes(&self, max_count: u32) -> Result<Vec<changes::ChangeInfo>> {
-        let json: String = self.request_json(format!("changes/?n={}", max_count))?;
+    pub fn get_changes(&self, opts: changes::ChangeOptions) -> Result<Vec<changes::ChangeInfo>> {
+        let json: String = self.request_json(format!("changes/?n={}", opts.limit.unwrap_or(25)))?;
         let changes: Vec<changes::ChangeInfo> = serde_json::from_str(json.as_str())?;
         Ok(changes)
     }
