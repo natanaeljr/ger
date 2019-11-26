@@ -1,9 +1,11 @@
-use super::changes;
+use chrono::{DateTime, Utc};
+use serde_derive::{Deserialize, Serialize};
 
-pub struct QueryOpts {
-    pub status: Option<changes::ChangeStatus>
-}
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Timestamp(#[serde(with = "super::details::serde_timestamp")] pub DateTime<Utc>);
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
 /// This uses the chrono crate to serialize and deserialize JSON data
 /// containing a Gerrit's custom timestamp format.
 /// The with attribute (as in #[serde(with="serde_timestamp")]) is used

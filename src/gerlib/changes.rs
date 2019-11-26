@@ -1,6 +1,7 @@
-use super::accounts;
-use chrono::{DateTime, Utc};
+use super::accounts::*;
+use super::details::Timestamp;
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// The status of the change.
@@ -11,23 +12,6 @@ pub enum ChangeStatus {
     Merged,
     Abandoned,
     Draft,
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Timestamp(#[serde(with = "super::details::serde_timestamp")] pub DateTime<Utc>);
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum SubmitType {
-    Inherit,
-    FastForwardOnly,
-    MergeIfNecessary,
-    AlwaysMerge,
-    CherryPick,
-    RebaseIfNecessary,
-    RebaseAlways,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -45,7 +29,7 @@ pub struct ChangeInfo {
     /// The topic to which this change belongs.
     pub topic: Option<String>,
     /// The assignee of the change as an AccountInfo entity.
-    pub assignee: Option<accounts::AccountInfo>,
+    pub assignee: Option<AccountInfo>,
     /// List of hashtags that are set on the change (only populated when NoteDb is enabled).
     pub hashtags: Option<Vec<String>>,
     /// The Change-Id of the change.
@@ -61,7 +45,7 @@ pub struct ChangeInfo {
     /// The timestamp of when the change was submitted.
     pub submitted: Option<Timestamp>,
     /// The user who submitted the change, as an AccountInfo entity.
-    pub submitter: Option<accounts::AccountInfo>,
+    pub submitter: Option<AccountInfo>,
     /// Whether the calling user has starred this change with the default label.
     #[serde(default)]
     pub starred: bool,
@@ -77,9 +61,138 @@ pub struct ChangeInfo {
     /// been tested, or if the skip_mergeable option is set or when
     /// change.api.excludeMergeableInChangeInfo is set.
     pub mergeable: Option<bool>,
+    /// Whether the change has been approved by the project submit rules. Only set if requested.
+    pub submittable: Option<bool>,
+    /// Number of inserted lines.
+    pub insertions: u32,
+    /// Number of deleted lines.
+    pub deletions: u32,
+    /// Total number of inline comments across all patch sets.
+    /// Not set if the current change index doesn’t have the data.
+    pub total_comment_count: Option<u32>,
+    /// Number of unresolved inline comment threads across all patch sets.
+    /// Not set if the current change index doesn’t have the data.
+    pub unresolved_comment_count: Option<u32>,
     /// The legacy numeric ID of the change.
     pub _number: u32,
+    /// The owner of the change as an AccountInfo entity.
+    pub owner: AccountInfo,
+    /// Actions the caller might be able to perform on this revision.
+    /// The information is a map of view name to ActionInfo entities.
+    pub actions: Option<HashMap<String, ActionInfo>>,
+    /// List of the requirements to be met before this change can be submitted.
+    pub requirements: Option<Vec<Requirement>>,
+    /// The labels of the change as a map that maps the label names to LabelInfo entries.
+    /// Only set if labels or detailed labels are requested.
+    pub labels: Option<HashMap<String, LabelInfo>>,
+    /// A map of the permitted labels that maps a label name to the list of values that are allowed
+    /// for that label. Only set if detailed labels are requested.
+    pub permitted_labels: Option<HashMap<String, LabelInfo>>,
+    /// The reviewers that can be removed by the calling user as a list of AccountInfo entities.
+    /// Only set if detailed labels are requested.
+    pub removable_reviewers: Option<Vec<AccountInfo>>,
+    /// The reviewers as a map that maps a reviewer state to a list of AccountInfo entities.
+    pub reviewers: Option<HashMap<ReviewerState, Vec<AccountInfo>>>,
+    /// Updates to reviewers that have been made while the change was in the WIP state.
+    /// Only present on WIP changes and only if there are pending reviewer updates to report.
+    /// These are reviewers who have not yet been notified about being added to or removed from the change.
+    /// Only set if detailed labels are requested.
+    pub pending_reviewers: Option<HashMap<ReviewerState, Vec<AccountInfo>>>,
+    /// Updates to reviewers set for the change as ReviewerUpdateInfo entities.
+    /// Only set if reviewer updates are requested and if NoteDb is enabled.
+    pub reviewer_updates: Option<Vec<ReviewerUpdateInfo>>,
+    /// Messages associated with the change as a list of ChangeMessageInfo entities.
+    /// Only set if messages are requested.
+    pub messages: Option<Vec<ChangeMessageInfo>>,
+    /// The commit ID of the current patch set of this change.
+    /// Only set if the current revision is requested or if all revisions are requested.
+    pub current_revision: String,
+    /// All patch sets of this change as a map that maps the commit ID of the patch set
+    /// to a RevisionInfo entity. Only set if the current revision is requested (in which case
+    /// it will only contain a key for the current revision) or if all revisions are requested.
+    pub revisions: Option<HashMap<String, RevisionInfo>>,
+    /// A list of TrackingIdInfo entities describing references to external tracking systems.
+    /// Only set if tracking ids are requested.
+    pub tracking_ids: Option<Vec<TrackingIdInfo>>,
+    /// Whether the query would deliver more results if not limited.
+    /// Only set on the last change that is returned.
+    #[serde(default)]
+    pub _more_changes: bool,
+    /// A list of ProblemInfo entities describing potential problems with this change.
+    /// Only set if CHECK is set.
+    pub problems: Option<Vec<ProblemInfo>>,
+    /// When present, change is marked as private.
+    #[serde(default)]
+    pub is_private: bool,
+    /// When present, change is marked as Work In Progress.
+    #[serde(default)]
+    pub work_in_progress: bool,
+    /// When present, change has been marked Ready at some point in time.
+    #[serde(default)]
+    pub has_review_started: bool,
+    /// The numeric Change-Id of the change that this change reverts.
+    pub revert_of: Option<String>,
+    /// ID of the submission of this change. Only set if the status is MERGED.
+    pub submission_id: Option<String>,
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SubmitType {
+    Inherit,
+    FastForwardOnly,
+    MergeIfNecessary,
+    AlwaysMerge,
+    CherryPick,
+    RebaseIfNecessary,
+    RebaseAlways,
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/// Reviewer State
+#[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ReviewerState {
+    /// Users with at least one non-zero vote on the change.
+    Reviewer,
+    /// Users that were added to the change, but have not voted.
+    CC,
+    /// Users that were previously reviewers on the change, but have been removed.
+    Removed,
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ActionInfo {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Requirement {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct LabelInfo {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ReviewerUpdateInfo {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ChangeMessageInfo {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct RevisionInfo {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct TrackingIdInfo {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ProblemInfo {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]

@@ -4,6 +4,7 @@ extern crate ansi_term;
 extern crate chrono;
 extern crate exitfailure;
 extern crate failure;
+extern crate gerlib;
 mod cli;
 
 fn main() -> Result<(), exitfailure::ExitFailure> {
