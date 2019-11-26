@@ -1,14 +1,33 @@
+use super::accounts;
 use chrono::{DateTime, Utc};
 use serde_derive::{Deserialize, Serialize};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// The status of the change.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ChangeStatus {
-    NEW,
-    MERGED,
-    ABANDONED,
-    DRAFT,
+    New,
+    Merged,
+    Abandoned,
+    Draft,
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Timestamp(#[serde(with = "super::details::serde_timestamp")] pub DateTime<Utc>);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum SubmitType {
+    Inherit,
+    FastForwardOnly,
+    MergeIfNecessary,
+    AlwaysMerge,
+    CherryPick,
+    RebaseIfNecessary,
+    RebaseAlways,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -25,15 +44,39 @@ pub struct ChangeInfo {
     pub branch: String,
     /// The topic to which this change belongs.
     pub topic: Option<String>,
+    /// The assignee of the change as an AccountInfo entity.
+    pub assignee: Option<accounts::AccountInfo>,
+    /// List of hashtags that are set on the change (only populated when NoteDb is enabled).
+    pub hashtags: Option<Vec<String>>,
     /// The Change-Id of the change.
-    pub change_id: Option<String>,
+    pub change_id: String,
     /// The subject of the change (header line of the commit message).
     pub subject: String,
     /// The status of the change.
     pub status: ChangeStatus,
+    /// The timestamp of when the change was created.
+    pub created: Timestamp,
     /// The timestamp of when the change was last updated.
-    #[serde(with = "super::details::serde_timestamp")]
-    pub updated: DateTime<Utc>,
+    pub updated: Timestamp,
+    /// The timestamp of when the change was submitted.
+    pub submitted: Option<Timestamp>,
+    /// The user who submitted the change, as an AccountInfo entity.
+    pub submitter: Option<accounts::AccountInfo>,
+    /// Whether the calling user has starred this change with the default label.
+    #[serde(default)]
+    pub starred: bool,
+    /// A list of star labels that are applied by the calling user to this change.
+    /// The labels are lexicographically sorted.
+    pub stars: Option<Vec<String>>,
+    /// Whether the change was reviewed by the calling user. Only set if reviewed is requested.
+    #[serde(default)]
+    pub reviewed: bool,
+    /// The submit type of the change. Not set for merged changes.
+    pub submit_type: Option<SubmitType>,
+    /// Whether the change is mergeable. Not set for merged changes, if the change has not yet
+    /// been tested, or if the skip_mergeable option is set or when
+    /// change.api.excludeMergeableInChangeInfo is set.
+    pub mergeable: Option<bool>,
     /// The legacy numeric ID of the change.
     pub _number: u32,
 }
@@ -121,7 +164,7 @@ pub enum QueryOpt {
     Owner(Owner),
     Change(String),
     Limit(u32),
-    // Not,
+    Not(Box<QueryOpt>),
 }
 
 impl std::fmt::Display for QueryOpt {
@@ -134,6 +177,7 @@ impl std::fmt::Display for QueryOpt {
             QueryOpt::Owner(o) => write!(f, "owner:{}", o),
             QueryOpt::Change(s) => write!(f, "change:{}", s),
             QueryOpt::Limit(u) => write!(f, "limit:{}", u),
+            QueryOpt::Not(q) => write!(f, "-{}", q),
         }
     }
 }

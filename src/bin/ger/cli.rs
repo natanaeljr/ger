@@ -37,9 +37,11 @@ fn command_change(
         .password("");
 
     let query_opts = vec![
-        // gerlib::changes::QueryOpt::Owner(gerlib::changes::Owner::_Self_),
         gerlib::changes::QueryOpt::Is(gerlib::changes::ChangeIs::Open),
         gerlib::changes::QueryOpt::Is(gerlib::changes::ChangeIs::Reviewer),
+        gerlib::changes::QueryOpt::Not(Box::new(gerlib::changes::QueryOpt::Owner(
+            gerlib::changes::Owner::_Self_,
+        ))),
     ];
     let queries = vec![gerlib::changes::Query(query_opts)];
     let change_opts = gerlib::changes::ChangeOptions::new()
@@ -64,9 +66,10 @@ fn command_change(
             } else {
                 number
             },
-            Color::Blue.paint(utils::format_short_datetime(&change.updated)),
+            Color::Blue.paint(utils::format_short_datetime(&change.updated.0)),
             Color::Cyan.paint(&change.project),
-            get_change_status_style(&change.status).paint(format!("{:?}", change.status)),
+            get_change_status_style(&change.status)
+                .paint(format!("{:?}", change.status).to_uppercase()),
             ansi_term::Style::default().paint(&change.subject)
         )?;
     }
@@ -77,10 +80,10 @@ fn command_change(
 fn get_change_status_style(status: &gerlib::changes::ChangeStatus) -> ansi_term::Style {
     use gerlib::changes::ChangeStatus;
     match status {
-        ChangeStatus::NEW => Color::Green.bold(),
-        ChangeStatus::MERGED => Color::Purple.bold(),
-        ChangeStatus::ABANDONED => Color::Black.bold(),
-        ChangeStatus::DRAFT => Color::White.bold().dimmed(),
+        ChangeStatus::New => Color::Green.bold(),
+        ChangeStatus::Merged => Color::Purple.bold(),
+        ChangeStatus::Abandoned => Color::Black.bold(),
+        ChangeStatus::Draft => Color::White.bold().dimmed(),
     }
 }
 
