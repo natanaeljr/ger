@@ -32,21 +32,59 @@ fn command_change(
         }
     };
 
+    use gerlib::changes::{ChangeIs, ChangeOptions, Owner, Query, QueryOpt};
+
     let gerrit = Gerrit::new("")
         .username("")
         .password("");
 
-    let query_opts = vec![
-        gerlib::changes::QueryOpt::Is(gerlib::changes::ChangeIs::Open),
-        gerlib::changes::QueryOpt::Is(gerlib::changes::ChangeIs::Reviewer),
-        gerlib::changes::QueryOpt::Not(Box::new(gerlib::changes::QueryOpt::Owner(
-            gerlib::changes::Owner::_Self_,
-        ))),
-    ];
-    let queries = vec![gerlib::changes::Query(query_opts)];
-    let change_opts = gerlib::changes::ChangeOptions::new()
-        .limit(max_count)
-        .queries(queries);
+    let mut query_opts: Vec<QueryOpt> = Vec::new();
+
+    if let Some(is_v) = args.values_of("is") {
+        for is in is_v {
+            let mut not = false;
+            let is_s = if is.starts_with("-") {
+                not = true;
+                is[1..].to_lowercase().to_owned()
+            } else {
+                is.to_lowercase().to_owned()
+            };
+            let query_opt = match is_s.as_str() {
+                "open" | "" => QueryOpt::Is(ChangeIs::Open),
+                "draft" | "wip" => QueryOpt::Is(ChangeIs::Draft),
+                "closed" => QueryOpt::Is(ChangeIs::Closed),
+                "reviewer" => QueryOpt::Is(ChangeIs::Reviewer),
+                _ => return Err(failure::err_msg("unsupported --is value")),
+            };
+            query_opts.push(if not {
+                QueryOpt::Not(Box::new(query_opt))
+            } else {
+                query_opt
+            });
+        }
+    }
+
+    if let Some(owner) = args.value_of("owner") {
+        let mut not = false;
+        let owner_s = if owner.starts_with("-") {
+            not = true;
+            owner[1..].to_lowercase().to_owned()
+        } else {
+            owner.to_lowercase().to_owned()
+        };
+        let query_opt = match owner_s.as_str() {
+            "self" => QueryOpt::Owner(Owner::_Self_),
+            _ => QueryOpt::Owner(Owner::Other(owner.to_owned())),
+        };
+        query_opts.push(if not {
+            QueryOpt::Not(Box::new(query_opt))
+        } else {
+            query_opt
+        });
+    }
+
+    let queries = vec![Query(query_opts)];
+    let change_opts = ChangeOptions::new().limit(max_count).queries(queries);
     // println!("{}", change_opts.to_query_string());
 
     let changes = gerrit.get_changes(change_opts)?;

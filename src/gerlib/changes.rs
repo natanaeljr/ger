@@ -106,7 +106,7 @@ pub struct ChangeInfo {
     pub messages: Option<Vec<ChangeMessageInfo>>,
     /// The commit ID of the current patch set of this change.
     /// Only set if the current revision is requested or if all revisions are requested.
-    pub current_revision: String,
+    pub current_revision: Option<String>,
     /// All patch sets of this change as a map that maps the commit ID of the patch set
     /// to a RevisionInfo entity. Only set if the current revision is requested (in which case
     /// it will only contain a key for the current revision) or if all revisions are requested.
@@ -321,6 +321,7 @@ pub enum ChangeIs {
     New,
     Open,
     Pending,
+    Draft,
     Closed,
     Merged,
     Abandoned,

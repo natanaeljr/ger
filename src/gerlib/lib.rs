@@ -44,7 +44,7 @@ impl Gerrit {
         println!("{}", uri);
         let json: String = self.request_json(uri)?;
         // println!("{}", json);
-        let changes: Vec<changes::ChangeInfo> = serde_json::from_str(json.as_str())?;
+        let changes: Vec<changes::ChangeInfo> = serde_json::from_str(json.as_str()).map_err(|err| {println!("ERROR: {}", err); err}).unwrap();
         Ok(changes)
     }
 

@@ -26,7 +26,56 @@ subcommands:
         about: List changes from the gerrit server.
         settings:
             - unifiedhelpmessage
+            - derivedisplayorder
         args:
+            - CHANGE:
+                required: false
+                multiple: true
+                help: "Specify changes to look for.\nCan be either a legacy numerical id (e.g. 15813),
+                       full or abbreviated Change-Id (e.g. Ic0ff33) or commit SHA-1 (e.g. d81b32ef)."
+            - is:
+                short: i
+                long: is
+                value_name: STATE
+                takes_value: true
+                allow_hyphen_values: true
+                case_insensitive: true
+                use_delimiter: true
+                require_delimiter: true
+                multiple: true
+                help: Changes in current STATE.
+                possible_values:
+                    - open
+                    - pending
+                    - draft
+                    - closed
+                    - merged
+                    - abandoned
+                    - mergeable
+                    - reviewer
+                    - owner
+                    - reviewed
+                    - watched
+                    - starred 
+                    - -open
+                    - -pending
+                    - -draft
+                    - -closed
+                    - -merged
+                    - -abandoned
+                    - -mergeable
+                    - -reviewer
+                    - -owner
+                    - -reviewed
+                    - -watched
+                    - -starred 
+            - owner:
+                short: o
+                long: owner
+                value_name: USER
+                takes_value: true
+                help: "Changes originally submitted by 'USER'. The special case of --owner=self will
+                       find changes owned by the caller."
             - max-count:
                 short: n
                 long: max-count
@@ -34,11 +83,6 @@ subcommands:
                 takes_value: true
                 default_value: "20"
                 help: Limit the number of changes to output.
-            - CHANGE:
-                required: false
-                multiple: true
-                help: "Specify changes to look for.\nCan be either a legacy numerical id (e.g. 15813),
-                       full or abbreviated Change-Id (e.g. Ic0ff33) or commit SHA-1 (e.g. d81b32ef)."
 
     - project:
         about: List projects from the gerrit server.
