@@ -15,12 +15,16 @@ toml = "0.5"
 failure = "0.1.6"
 exitfailure = "0.5.1"
 hyper = "0.12"
-curl = "0.3.11"
+curl = "0.4.25"
+dirs = "2.0.2"
 
 [dependencies.clap]
 version = "2.33.0"
 default-features = true
 features = [ "wrap_help", "yaml" ]
+
+[dev-dependencies]
+tempfile = "3.1.0"
 
 [lib]
 name = "gerlib"

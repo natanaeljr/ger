@@ -7,9 +7,16 @@ settings:
     - derivedisplayorder
 
 args:
-    - config:
-        short: c
-        long: config
+    - remote:
+        long: remote
+        short: r
+        global: true
+        value_name: NAME
+        takes_value: true
+        help: Remote server to use from config-file.
+
+    - config-file:
+        long: config-file
         value_name: FILE
         takes_value: true
         help: Specify alternative configuration file.
@@ -48,6 +55,7 @@ subcommands:
                     - open
                     - pending
                     - draft
+                    - wip
                     - closed
                     - merged
                     - abandoned
@@ -60,6 +68,7 @@ subcommands:
                     - -open
                     - -pending
                     - -draft
+                    - -wip
                     - -closed
                     - -merged
                     - -abandoned

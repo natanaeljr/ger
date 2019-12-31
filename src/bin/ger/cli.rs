@@ -1,19 +1,26 @@
+use super::config::Config;
 use ansi_term::Color;
 use gerlib::Gerrit;
 
 /// Ger CLI main entrance
 pub fn cli<I, T>(iter: I, out: &mut impl std::io::Write) -> Result<(), failure::Error>
-where
-    I: IntoIterator<Item = T>,
-    T: Into<std::ffi::OsString> + Clone,
+    where
+        I: IntoIterator<Item=T>,
+        T: Into<std::ffi::OsString> + Clone,
 {
     let yaml = load_yaml!("cli.yml");
     let args = clap::App::from_yaml(yaml).get_matches_from(iter);
 
+    let home_config_file = format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
+    let config_file = args
+        .value_of("config-file")
+        .unwrap_or(home_config_file.as_str());
+    let config = Config::from_file(config_file).unwrap();
+
     match args.subcommand() {
-        ("change", Some(subargs)) => command_change(&subargs, out),
-        ("project", Some(subargs)) => command_project(&subargs, out),
-        ("config", Some(subargs)) => command_config(&subargs, out),
+        ("change", Some(subargs)) => command_change(&subargs, out, &config),
+        ("project", Some(subargs)) => command_project(&subargs, out, &config),
+        ("config", Some(subargs)) => command_config(&subargs, out, &config),
         _ => failure::bail!("invalid subcommand"),
     }?;
     Ok(())
@@ -22,21 +29,50 @@ where
 fn command_change(
     args: &clap::ArgMatches,
     out: &mut impl std::io::Write,
+    config: &Config,
 ) -> Result<(), failure::Error> {
     let max_count = match args.value_of("max-count").unwrap_or("25").parse::<u32>() {
         Ok(n) => n,
         Err(_) => {
             return Err(failure::err_msg(
                 "argument of '-n|--max-count' isn't a positive number",
-            ))
+            ));
         }
     };
 
-    use gerlib::changes::{ChangeIs, ChangeOptions, Owner, Query, QueryOpt};
+    let remote = if let Some(remote_arg) = args.value_of("remote") {
+        if let Some(remote) = config.remotes.get(remote_arg) {
+            remote
+        } else {
+            failure::bail!(format!(
+                "remote ({}) not found in config file",
+                remote_arg
+            ));
+        }
+    } else if let Some(default_remote) = &config.default_remote {
+        if let Some(remote) = config.remotes.get(default_remote) {
+            remote
+        } else {
+            failure::bail!(format!(
+                "default remote ({}) not found in config file",
+                default_remote
+            ));
+        }
+    } else if config.remotes.len() == 1 {
+        config.remotes.values().next().unwrap()
+    } else {
+        failure::bail!("no default remote specified");
+    };
 
-    let gerrit = Gerrit::new("")
-        .username("")
-        .password("");
+    use gerlib::changes::{ChangeIs, ChangeOptions, Owner, Query, QueryOpt};
+    let host = if remote.port.is_some() {
+        format!("{}:{}", &remote.url, remote.port.unwrap())
+    } else {
+        remote.url.clone()
+    };
+    let gerrit = Gerrit::new(&host)
+        .username(&remote.username)
+        .password(&remote.http_password);
 
     let mut query_opts: Vec<QueryOpt> = Vec::new();
 
@@ -51,7 +87,8 @@ fn command_change(
             };
             let query_opt = match is_s.as_str() {
                 "open" | "" => QueryOpt::Is(ChangeIs::Open),
-                "draft" | "wip" => QueryOpt::Is(ChangeIs::Draft),
+                "draft" => QueryOpt::Is(ChangeIs::Draft),
+                "wip" => QueryOpt::Is(ChangeIs::WIP),
                 "closed" => QueryOpt::Is(ChangeIs::Closed),
                 "reviewer" => QueryOpt::Is(ChangeIs::Reviewer),
                 _ => return Err(failure::err_msg("unsupported --is value")),
@@ -128,14 +165,16 @@ fn get_change_status_style(status: &gerlib::changes::ChangeStatus) -> ansi_term:
 fn command_project(
     _args: &clap::ArgMatches,
     out: &mut impl std::io::Write,
+    _config: &Config,
 ) -> Result<(), failure::Error> {
-    writeln!(out, "Ger PROJECT",)?;
+    writeln!(out, "Ger PROJECT", )?;
     Ok(())
 }
 
 fn command_config(
     _args: &clap::ArgMatches,
     out: &mut impl std::io::Write,
+    _config: &Config,
 ) -> Result<(), failure::Error> {
     writeln!(
         out,
@@ -145,6 +184,7 @@ fn command_config(
     )?;
     Ok(())
 }
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// UTILS
 mod utils {
@@ -189,7 +229,6 @@ mod utils {
 /// TESTS
 #[cfg(test)]
 mod tests {
-
     /// Test output from CLI subcommand 'project'.
     #[test]
     fn cli_project() {
