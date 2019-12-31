@@ -131,7 +131,7 @@ pub struct ChangeInfo {
     #[serde(default)]
     pub has_review_started: bool,
     /// The numeric Change-Id of the change that this change reverts.
-    pub revert_of: Option<String>,
+    pub revert_of: Option<u32>,
     /// ID of the submission of this change. Only set if the status is MERGED.
     pub submission_id: Option<String>,
 }
