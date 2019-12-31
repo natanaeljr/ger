@@ -198,7 +198,7 @@ pub struct ProblemInfo {}
 #[derive(Debug)]
 pub struct ChangeOptions {
     pub queries: Vec<Query>,
-    pub additional_opts: Vec<AddiotionalOpt>,
+    pub additional_opts: Vec<AdditionalOpt>,
     pub limit: Option<u32>,
     pub start: Option<u32>,
 }
@@ -218,7 +218,7 @@ impl ChangeOptions {
         self
     }
 
-    pub fn additional_opts(mut self, add_opts: Vec<AddiotionalOpt>) -> Self {
+    pub fn additional_opts(mut self, add_opts: Vec<AdditionalOpt>) -> Self {
         self.additional_opts = add_opts;
         self
     }
@@ -297,7 +297,7 @@ impl std::fmt::Display for QueryOpt {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
-pub enum AddiotionalOpt {
+pub enum AdditionalOpt {
     Labels,
     DetailedLabels,
     CurrentRevision,

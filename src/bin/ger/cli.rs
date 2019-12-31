@@ -1,6 +1,8 @@
-use super::config::Config;
 use ansi_term::Color;
 use gerlib::Gerrit;
+
+use super::config::Config;
+use std::str::FromStr;
 
 /// Ger CLI main entrance
 pub fn cli<I, T>(iter: I, out: &mut impl std::io::Write) -> Result<(), failure::Error>
@@ -21,6 +23,7 @@ pub fn cli<I, T>(iter: I, out: &mut impl std::io::Write) -> Result<(), failure::
         ("change", Some(subargs)) => command_change(&subargs, out, &config),
         ("project", Some(subargs)) => command_project(&subargs, out, &config),
         ("config", Some(subargs)) => command_config(&subargs, out, &config),
+        ("gen-completion", Some(subargs)) => command_gen_completion(&subargs, out, &config),
         _ => failure::bail!("invalid subcommand"),
     }?;
     Ok(())
@@ -182,6 +185,17 @@ fn command_config(
         Color::Blue.paint("Ger"),
         Color::Blue.bold().paint("CONFIG")
     )?;
+    Ok(())
+}
+
+fn command_gen_completion(
+    args: &clap::ArgMatches,
+    out: &mut impl std::io::Write,
+    _config: &Config,
+) -> Result<(), failure::Error> {
+    let shell = clap::Shell::from_str(args.value_of("SHELL").unwrap()).unwrap();
+    let yaml = load_yaml!("cli.yml");
+    clap::App::from_yaml(yaml).gen_completions_to("ger", shell, out);
     Ok(())
 }
 
