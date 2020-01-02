@@ -41,6 +41,7 @@ mod tests {
                     "alpha".to_owned(),
                     super::Remote {
                         url: "https://gerrit-review.googlesource.com".to_owned(),
+                        port: None,
                         username: "stickman".to_owned(),
                         http_password: "somelongstring4685+&%".to_owned(),
                     },
@@ -49,6 +50,7 @@ mod tests {
                     "beta".to_owned(),
                     super::Remote {
                         url: "http://gerrit-review.example.com".to_owned(),
+                        port: Some(8080),
                         username: "wonderwoman".to_owned(),
                         http_password: "+&%anotherlongstring4685".to_owned(),
                     },
@@ -62,7 +64,7 @@ mod tests {
         tmp_file
             .write_all(
                 b"\
-default_remote = \"alpha\"
+default_remote = \"beta\"
 
 [remotes.alpha]
 url = \"https://gerrit-review.googlesource.com\"
@@ -71,6 +73,7 @@ http_password = \"somelongstring4685+&%\"
 
 [remotes.beta]
 url = \"http://gerrit-review.example.com\"
+port = 8080
 http_password = \"+&%anotherlongstring4685\"
 username = \"wonderwoman\"
         ",

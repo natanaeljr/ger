@@ -6,11 +6,11 @@ use std::str::FromStr;
 
 /// Ger CLI main entrance
 pub fn cli<I, T>(iter: I, out: &mut impl std::io::Write) -> Result<(), failure::Error>
-    where
-        I: IntoIterator<Item=T>,
-        T: Into<std::ffi::OsString> + Clone,
+where
+    I: IntoIterator<Item = T>,
+    T: Into<std::ffi::OsString> + Clone,
 {
-    let yaml = load_yaml!("cli.yml");
+    let yaml = load_yaml!("cli_tmp.yml");
     let args = clap::App::from_yaml(yaml).get_matches_from(iter);
 
     let home_config_file = format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
@@ -30,9 +30,7 @@ pub fn cli<I, T>(iter: I, out: &mut impl std::io::Write) -> Result<(), failure::
 }
 
 fn command_change(
-    args: &clap::ArgMatches,
-    out: &mut impl std::io::Write,
-    config: &Config,
+    args: &clap::ArgMatches, out: &mut impl std::io::Write, config: &Config,
 ) -> Result<(), failure::Error> {
     let max_count = match args.value_of("max-count").unwrap_or("25").parse::<u32>() {
         Ok(n) => n,
@@ -47,10 +45,7 @@ fn command_change(
         if let Some(remote) = config.remotes.get(remote_arg) {
             remote
         } else {
-            failure::bail!(format!(
-                "remote ({}) not found in config file",
-                remote_arg
-            ));
+            failure::bail!(format!("remote ({}) not found in config file", remote_arg));
         }
     } else if let Some(default_remote) = &config.default_remote {
         if let Some(remote) = config.remotes.get(default_remote) {
@@ -166,18 +161,14 @@ fn get_change_status_style(status: &gerlib::changes::ChangeStatus) -> ansi_term:
 }
 
 fn command_project(
-    _args: &clap::ArgMatches,
-    out: &mut impl std::io::Write,
-    _config: &Config,
+    _args: &clap::ArgMatches, out: &mut impl std::io::Write, _config: &Config,
 ) -> Result<(), failure::Error> {
-    writeln!(out, "Ger PROJECT", )?;
+    writeln!(out, "Ger PROJECT",)?;
     Ok(())
 }
 
 fn command_config(
-    _args: &clap::ArgMatches,
-    out: &mut impl std::io::Write,
-    _config: &Config,
+    _args: &clap::ArgMatches, out: &mut impl std::io::Write, _config: &Config,
 ) -> Result<(), failure::Error> {
     writeln!(
         out,
@@ -189,12 +180,10 @@ fn command_config(
 }
 
 fn command_gen_completion(
-    args: &clap::ArgMatches,
-    out: &mut impl std::io::Write,
-    _config: &Config,
+    args: &clap::ArgMatches, out: &mut impl std::io::Write, _config: &Config,
 ) -> Result<(), failure::Error> {
     let shell = clap::Shell::from_str(args.value_of("SHELL").unwrap()).unwrap();
-    let yaml = load_yaml!("cli.yml");
+    let yaml = load_yaml!("cli_tmp.yml");
     clap::App::from_yaml(yaml).gen_completions_to("ger", shell, out);
     Ok(())
 }

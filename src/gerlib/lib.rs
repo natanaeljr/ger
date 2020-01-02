@@ -43,8 +43,13 @@ impl Gerrit {
         let uri = format!("changes/{}", opts.to_query_string());
         println!("{}", uri);
         let json: String = self.request_json(uri)?;
-//         println!("{}", json);
-        let changes: Vec<changes::ChangeInfo> = serde_json::from_str(json.as_str()).map_err(|err| {println!("ERROR: {}", err); err}).unwrap();
+        //         println!("{}", json);
+        let changes: Vec<changes::ChangeInfo> = serde_json::from_str(json.as_str())
+            .map_err(|err| {
+                println!("ERROR: {}", err);
+                err
+            })
+            .unwrap();
         Ok(changes)
     }
 
@@ -57,11 +62,11 @@ impl Gerrit {
         easy.password(self.password.as_str()).unwrap();
         easy.http_auth(curl::easy::Auth::new().digest(true).basic(true))
             .unwrap();
-//        easy.ssl_verify_peer(false).unwrap();
-//        easy.ssl_verify_host(false).unwrap();
-//        let mut headers = curl::easy::List::new();
-//        headers.append("Accept: application/json").unwrap();
-//        easy.http_headers(headers).unwrap();
+        //        easy.ssl_verify_peer(false).unwrap();
+        //        easy.ssl_verify_host(false).unwrap();
+        //        let mut headers = curl::easy::List::new();
+        //        headers.append("Accept: application/json").unwrap();
+        //        easy.http_headers(headers).unwrap();
         let mut data: Vec<u8> = Vec::new();
         {
             let mut transfer = easy.transfer();
