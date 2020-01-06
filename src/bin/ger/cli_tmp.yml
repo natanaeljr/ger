@@ -1,6 +1,6 @@
 name: ger
 version: '0.1.0'
-about: Gerrit command-line interface.
+about: Gerrit commands-line interface.
 settings:
     - argrequiredelsehelp
     - unifiedhelpmessage

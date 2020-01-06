@@ -12,7 +12,7 @@ mod cli;
 mod cli_tmp;
 mod config;
 mod ger;
-mod command;
+mod commands;
 
 fn main() -> Result<(), exitfailure::ExitFailure> {
     let rv = ger::Ger::run_cli(&mut std::env::args_os(), &mut std::io::stdout())?;

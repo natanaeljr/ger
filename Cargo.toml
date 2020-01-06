@@ -15,7 +15,7 @@ toml = "0.5"
 failure = "0.1.6"
 exitfailure = "0.5.1"
 hyper = "0.12"
-curl = "0.4.25"
+curl = "0.3.11"
 dirs = "2.0.2"
 
 [dependencies.clap]

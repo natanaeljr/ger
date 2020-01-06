@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::cli::build_cli;
-use crate::command::Command;
+use crate::commands::Command;
 
 use super::config::Config;
 
@@ -11,7 +11,7 @@ pub struct Ger<'a> {
 }
 
 impl<'a> Ger<'a> {
-    /// Run command-line interface
+    /// Run commands-line interface
     pub fn run_cli<I, T>(iter_args: I, out: &mut impl std::io::Write) -> Result<(), failure::Error>
     where
         I: IntoIterator<Item = T>,
@@ -33,7 +33,7 @@ impl<'a> Ger<'a> {
         Ok(config)
     }
 
-    /// Run a command by dispatching it to its function
+    /// Run a commands by dispatching it to its function
     pub fn run_command(
         self,
         command_set: (&str, Option<&clap::ArgMatches<'a>>),

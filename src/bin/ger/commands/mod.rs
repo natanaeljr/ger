@@ -1,7 +1,13 @@
 use std::fmt;
 use std::str::FromStr;
+use clap::App;
 
 pub mod change;
+
+pub fn builtin() -> Vec<App<'static, 'static>> {
+    vec![change::cli()]
+}
+
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Command {
