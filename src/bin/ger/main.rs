@@ -8,13 +8,16 @@ extern crate dirs;
 extern crate exitfailure;
 extern crate failure;
 extern crate gerlib;
+
 mod cli;
-mod cli_tmp;
+mod commands;
 mod config;
 mod ger;
-mod commands;
+mod util;
 
-fn main() -> Result<(), exitfailure::ExitFailure> {
+use exitfailure::ExitFailure;
+
+fn main() -> Result<(), ExitFailure> {
     let rv = ger::Ger::run_cli(&mut std::env::args_os(), &mut std::io::stdout())?;
     Ok(rv)
 }

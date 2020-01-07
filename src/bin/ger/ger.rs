@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
+use crate::config::Config;
 use crate::cli::build_cli;
-use crate::commands::Command;
+use crate::commands;
 
-use super::config::Config;
 
 pub struct Ger<'a> {
     pub config: Config,
@@ -35,14 +35,12 @@ impl<'a> Ger<'a> {
 
     /// Run a commands by dispatching it to its function
     pub fn run_command(
-        self,
-        command_set: (&str, Option<&clap::ArgMatches<'a>>),
+        mut self, cmd_set: (&str, Option<&clap::ArgMatches<'a>>),
     ) -> Result<(), failure::Error> {
-        let command = Command::from_str(command_set.0).unwrap();
-        match command {
-            Command::Change => {}
-        };
-        Ok(())
+        if let Some(exec) = commands::builtin_exec(cmd_set.0) {
+            return exec(&mut self.config, cmd_set.1.unwrap());
+        }
+        Err(failure::err_msg("invalid command"))
     }
 }
 

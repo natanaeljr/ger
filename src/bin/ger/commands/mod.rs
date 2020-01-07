@@ -1,6 +1,6 @@
-use std::fmt;
-use std::str::FromStr;
-use clap::App;
+use crate::config::Config;
+use clap::{App, ArgMatches};
+use failure::Error;
 
 pub mod change;
 
@@ -8,33 +8,12 @@ pub fn builtin() -> Vec<App<'static, 'static>> {
     vec![change::cli()]
 }
 
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Command {
-    Change,
-}
-
-impl Command {
-    pub fn variants() -> [&'static str; 1] {
-        ["change"]
-    }
-}
-
-impl FromStr for Command {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "change" => Ok(Command::Change),
-            _ => Err(String::from("[valid values: change]")),
-        }
-    }
-}
-
-impl fmt::Display for Command {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Command::Change => write!(f, "change"),
-        }
-    }
+pub fn builtin_exec(
+    cmd: &str,
+) -> Option<fn(&mut Config, &ArgMatches) -> Result<(), failure::Error>> {
+    let func = match cmd {
+        "change" => change::exec,
+        _ => return None,
+    };
+    Some(func)
 }
