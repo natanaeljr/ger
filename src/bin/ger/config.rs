@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use toml;
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
-pub struct Config {
-    pub remotes: HashMap<String, Remote>,
+pub struct UserConfig {
     pub default_remote: Option<String>,
+    pub remotes: HashMap<String, Remote>,
 }
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
@@ -16,7 +16,8 @@ pub struct Remote {
     pub http_password: String,
 }
 
-impl Config {
+impl UserConfig {
+    /// Read config from TOML file
     pub fn from_file(filepath: &str) -> Result<Self, std::io::Error> {
         let contents = std::fs::read_to_string(filepath)?;
         let config: Self = toml::from_str(contents.as_str()).unwrap();
@@ -34,7 +35,7 @@ mod tests {
 
     #[test]
     fn config_file_two_remotes() {
-        let expected = super::Config {
+        let expected = super::UserConfig {
             remotes: {
                 let mut remotes = HashMap::new();
                 remotes.insert(
@@ -80,7 +81,7 @@ username = \"wonderwoman\"
             )
             .unwrap();
         let tmp_filename = tmp_file.path().to_str().unwrap();
-        let actual = super::Config::from_file(tmp_filename).unwrap();
+        let actual = super::UserConfig::from_file(tmp_filename).unwrap();
 
         assert_eq!(expected, actual);
     }
