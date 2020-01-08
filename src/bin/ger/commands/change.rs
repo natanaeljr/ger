@@ -1,4 +1,4 @@
-use crate::config::UserConfig;
+use crate::config::CliConfig;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
 
@@ -28,7 +28,7 @@ pub fn cli() -> App<'static, 'static> {
         .template("{about}\n\n{usage}\n\n{all-args}")
 }
 
-pub fn exec(config: &mut UserConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+pub fn exec(_config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     println!("Command: change");
     Ok(())
 }

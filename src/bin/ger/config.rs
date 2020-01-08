@@ -2,10 +2,27 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use toml;
 
+pub struct CliConfig {
+    pub user_cfg: UserConfig,
+}
+
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
+#[serde(deny_unknown_fields, default)]
 pub struct UserConfig {
     pub default_remote: Option<String>,
     pub remotes: HashMap<String, Remote>,
+}
+
+impl UserConfig {
+    /// Read user config from TOML config file
+    pub fn from_file(config_file: Option<&str>) -> Result<Self, std::io::Error> {
+        let default_config_file =
+            format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
+        let config_file = config_file.unwrap_or(default_config_file.as_str());
+        let contents = std::fs::read_to_string(config_file)?;
+        let config: Self = toml::from_str(contents.as_str()).unwrap();
+        Ok(config)
+    }
 }
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
@@ -14,15 +31,6 @@ pub struct Remote {
     pub port: Option<u16>,
     pub username: String,
     pub http_password: String,
-}
-
-impl UserConfig {
-    /// Read config from TOML file
-    pub fn from_file(filepath: &str) -> Result<Self, std::io::Error> {
-        let contents = std::fs::read_to_string(filepath)?;
-        let config: Self = toml::from_str(contents.as_str()).unwrap();
-        Ok(config)
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

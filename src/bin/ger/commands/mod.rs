@@ -1,6 +1,5 @@
-use crate::config::UserConfig;
+use crate::config::CliConfig;
 use clap::{App, ArgMatches};
-use failure::Error;
 
 pub mod change;
 
@@ -10,7 +9,7 @@ pub fn builtin() -> Vec<App<'static, 'static>> {
 
 pub fn builtin_exec(
     cmd: &str,
-) -> Option<fn(&mut UserConfig, Option<&ArgMatches>) -> Result<(), failure::Error>> {
+) -> Option<fn(&mut CliConfig, Option<&ArgMatches>) -> Result<(), failure::Error>> {
     let func = match cmd {
         "change" => change::exec,
         _ => return None,
