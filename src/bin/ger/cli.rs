@@ -1,6 +1,7 @@
 use crate::commands;
 use crate::config::{CliConfig, UserConfig};
 use clap::{App, AppSettings, Arg};
+use termcolor::{ColorChoice, StandardStream};
 
 /**************************************************************************************************/
 /// Build GER Clap App
@@ -42,6 +43,10 @@ where
     let args = cli().get_matches_from(iter_args);
     let mut config = CliConfig {
         user_cfg: UserConfig::from_file(args.value_of("config-file"))?,
+        stdout: StandardStream::stdout(match atty::is(atty::Stream::Stdout) {
+            true => ColorChoice::Auto,
+            false => ColorChoice::Never,
+        }),
     };
     execute_subcommand(&mut config, args.subcommand())
 }

@@ -1,6 +1,7 @@
 use crate::config::CliConfig;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use termcolor::{Color, ColorSpec, WriteColor};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("change")
@@ -28,7 +29,12 @@ pub fn cli() -> App<'static, 'static> {
         .template("{about}\n\n{usage}\n\n{all-args}")
 }
 
-pub fn exec(_config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+    config
+        .stdout
+        .set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))
+        .unwrap();
     println!("Command: change");
+    config.stdout.reset().unwrap();
     Ok(())
 }

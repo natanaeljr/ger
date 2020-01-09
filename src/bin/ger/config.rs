@@ -1,9 +1,11 @@
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
+use termcolor::StandardStream;
 use toml;
 
 pub struct CliConfig {
     pub user_cfg: UserConfig,
+    pub stdout: StandardStream,
 }
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
