@@ -22,6 +22,14 @@ pub fn cli() -> App<'static, 'static> {
                 .help("Alternative TOML configuration filepath."),
         )
         .arg(
+            Arg::with_name("color")
+                .long("color")
+                .takes_value(true)
+                .value_name("WHEN")
+                .possible_values(&["auto", "always", "never"])
+                .help("Control when to use colors on output."),
+        )
+        .arg(
             Arg::with_name("verbose")
                 .long("verbose")
                 .short("v")
