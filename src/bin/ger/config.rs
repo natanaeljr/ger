@@ -3,6 +3,14 @@ use std::collections::HashMap;
 use termcolor::StandardStream;
 use toml;
 
+#[derive(Ord, PartialOrd, Eq, PartialEq)]
+pub enum Verbosity {
+    Normal,
+    Verbose,
+    High,
+    Debug,
+}
+
 pub struct CliConfig {
     pub user_cfg: UserConfig,
     pub stdout: StandardStream,
