@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use termcolor::StandardStream;
 use toml;
 
@@ -11,6 +11,17 @@ pub enum Verbosity {
     Debug,
 }
 
+impl From<u64> for Verbosity {
+    fn from(val: u64) -> Self {
+        match val {
+            0 => Verbosity::Normal,
+            1 => Verbosity::Verbose,
+            2 => Verbosity::High,
+            _ => Verbosity::Debug,
+        }
+    }
+}
+
 pub struct CliConfig {
     pub user_cfg: UserConfig,
     pub stdout: StandardStream,
@@ -20,7 +31,7 @@ pub struct CliConfig {
 #[serde(deny_unknown_fields, default)]
 pub struct UserConfig {
     pub default_remote: Option<String>,
-    pub remotes: HashMap<String, Remote>,
+    pub remotes: BTreeMap<String, Remote>,
 }
 
 impl UserConfig {
@@ -48,14 +59,14 @@ pub struct Remote {
 #[cfg(test)]
 mod tests {
     use failure::_core::iter::FromFn;
-    use std::collections::HashMap;
+    use std::collections::{BTreeMap, HashMap};
     use std::io::Write;
 
     #[test]
     fn config_file_two_remotes() {
         let expected = super::UserConfig {
             remotes: {
-                let mut remotes = HashMap::new();
+                let mut remotes = BTreeMap::new();
                 remotes.insert(
                     "alpha".to_owned(),
                     super::Remote {
