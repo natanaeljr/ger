@@ -27,6 +27,7 @@ pub fn cli() -> App<'static, 'static> {
                 .env("GER_COLOR")
                 .takes_value(true)
                 .value_name("WHEN")
+                .require_equals(true)
                 .possible_values(&["auto", "always", "never"])
                 .hide_env_values(true)
                 .help("Control when to use colors on output."),
