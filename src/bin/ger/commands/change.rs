@@ -26,7 +26,7 @@ pub fn cli() -> App<'static, 'static> {
                 .validator(util::validate::is_u32)
                 .help("Limit the number of changes to output."),
         )
-        .template("{about}\n\n{usage}\n\n{all-args}")
+        .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
 pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {

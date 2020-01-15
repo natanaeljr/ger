@@ -41,7 +41,7 @@ pub fn cli() -> App<'static, 'static> {
                 .help("Set level of verbosity (up to -vvv)"),
         )
         .subcommands(crate::commands::builtin())
-        .template("{about}\n\n{usage}\n\n{all-args}")
+        .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
 /**************************************************************************************************/

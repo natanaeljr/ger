@@ -9,7 +9,7 @@ mod prelude {
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("remote")
         .about("Manage gerrit remote servers.")
-        .template("{about}\n\n{usage}\n\n{all-args}")
+        .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
         .subcommands(vec![add::cli()])
 }
 
@@ -67,14 +67,14 @@ mod add {
 
     pub fn cli() -> App<'static, 'static> {
         SubCommand::with_name("add")
-            .about("Add a new remote")
-            .template("{about}\n\n{usage}\n\n{all-args}")
+            .about("Add a new remote.")
+            .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
             .arg(
                 Arg::with_name("name")
                     .required(true)
-                    .help("Remote unique name"),
+                    .help("Remote unique name."),
             )
-            .arg(Arg::with_name("url").required(true).help("Remote URL"))
+            .arg(Arg::with_name("url").required(true).help("Remote URL."))
     }
 
     pub fn exec(_config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
