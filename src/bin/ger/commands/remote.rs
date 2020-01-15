@@ -94,7 +94,11 @@ mod add {
                     .required(true)
                     .help("Remote unique name."),
             )
-            .arg(Arg::with_name("url").required(true).help("Remote URL."))
+            .arg(
+                Arg::with_name("url")
+                    .required(true)
+                    .help("Remote URL including protocol. e.g. 'https://mygerrit.com'."),
+            )
     }
 
     pub fn exec(_config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
