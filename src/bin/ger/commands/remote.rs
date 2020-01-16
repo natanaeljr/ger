@@ -45,7 +45,7 @@ mod show {
         let mut name_maxlen = 0;
         let mut url_maxlen = 0;
         // compute format variables
-        for remote in config.user_cfg.remotes.iter() {
+        for remote in config.user_cfg.settings.remotes.iter() {
             if remote.0.len() > name_maxlen {
                 name_maxlen = remote.0.len();
             }
@@ -54,7 +54,7 @@ mod show {
             }
         }
         // print remotes table
-        for remote in config.user_cfg.remotes.iter() {
+        for remote in config.user_cfg.settings.remotes.iter() {
             let mut stdout = config.stdout.lock();
             write!(stdout, "{0}", remote.0)?;
             if verbose.ge(&Verbosity::Verbose) {
@@ -147,7 +147,7 @@ mod add {
             None => None,
         };
 
-        if config.user_cfg.remotes.contains_key(name) {
+        if config.user_cfg.settings.remotes.contains_key(name) {
             return Err(failure::err_msg(format!(
                 "remote '{}' already exists.",
                 name
@@ -156,7 +156,7 @@ mod add {
 
         trace!("password: {:?}", http_password);
 
-        config.user_cfg.remotes.insert(
+        config.user_cfg.settings.remotes.insert(
             name.into(),
             Remote {
                 url: url.to_owned(),
@@ -166,7 +166,9 @@ mod add {
             },
         );
 
-        super::show::show(config, args.occurrences_of("verbose").into())?;
+        config.user_cfg.store()?;
+
+        //        super::show::show(config, args.occurrences_of("verbose").into())?;
 
         Ok(())
     }

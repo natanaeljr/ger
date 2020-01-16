@@ -1,5 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use termcolor::StandardStream;
 use toml;
 
@@ -27,9 +28,14 @@ pub struct CliConfig {
     pub stdout: StandardStream,
 }
 
+pub struct UserConfig {
+    pub filepath: PathBuf,
+    pub settings: UserSettings,
+}
+
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields, default)]
-pub struct UserConfig {
+pub struct UserSettings {
     pub default_remote: Option<String>,
     pub remotes: BTreeMap<String, Remote>,
 }
@@ -41,8 +47,17 @@ impl UserConfig {
             format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
         let config_file = config_file.unwrap_or(default_config_file.as_str());
         let contents = std::fs::read_to_string(config_file)?;
-        let config: Self = toml::from_str(contents.as_str()).unwrap();
-        Ok(config)
+        let settings: UserSettings = toml::from_str(contents.as_str()).unwrap();
+        Ok(UserConfig {
+            filepath: config_file.into(),
+            settings,
+        })
+    }
+
+    /// Write user config to filepath
+    pub fn store(&self) -> Result<(), std::io::Error> {
+        let toml = toml::to_string_pretty(&self.settings).unwrap();
+        std::fs::write(&self.filepath, toml)
     }
 }
 
