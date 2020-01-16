@@ -19,7 +19,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("config-file")
                 .takes_value(true)
                 .value_name("FILE")
-                .help("Alternative TOML configuration filepath."),
+                .help("Alternative configuration file [TOML]."),
         )
         .arg(
             Arg::with_name("color")
@@ -38,7 +38,7 @@ pub fn cli() -> App<'static, 'static> {
                 .short("v")
                 .global(true)
                 .multiple(true)
-                .help("Set level of verbosity (up to -vvv)"),
+                .help("Set level of verbosity to output (up to -vvv)"),
         )
         .subcommands(crate::commands::builtin())
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")

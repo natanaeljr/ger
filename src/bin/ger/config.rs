@@ -50,8 +50,8 @@ impl UserConfig {
 pub struct Remote {
     pub url: String,
     pub port: Option<u16>,
-    pub username: String,
-    pub http_password: String,
+    pub username: Option<String>,
+    pub http_password: Option<String>,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -72,8 +72,8 @@ mod tests {
                     super::Remote {
                         url: "https://gerrit-review.googlesource.com".to_owned(),
                         port: None,
-                        username: "stickman".to_owned(),
-                        http_password: "somelongstring4685+&%".to_owned(),
+                        username: Some("stickman".to_owned()),
+                        http_password: Some("somelongstring4685+&%".to_owned()),
                     },
                 );
                 remotes.insert(
@@ -81,8 +81,8 @@ mod tests {
                     super::Remote {
                         url: "http://gerrit-review.example.com".to_owned(),
                         port: Some(8080),
-                        username: "wonderwoman".to_owned(),
-                        http_password: "+&%anotherlongstring4685".to_owned(),
+                        username: Some("wonderwoman".to_owned()),
+                        http_password: Some("+&%anotherlongstring4685".to_owned()),
                     },
                 );
                 remotes
@@ -110,7 +110,7 @@ username = \"wonderwoman\"
             )
             .unwrap();
         let tmp_filename = tmp_file.path().to_str().unwrap();
-        let actual = super::UserConfig::from_file(tmp_filename).unwrap();
+        let actual = super::UserConfig::from_file(Some(tmp_filename)).unwrap();
 
         assert_eq!(expected, actual);
     }
