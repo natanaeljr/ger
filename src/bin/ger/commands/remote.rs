@@ -1,6 +1,7 @@
 use prelude::*;
 
 mod prelude {
+    pub use crate::config::Remote;
     pub use crate::config::{CliConfig, Verbosity};
     pub use crate::util;
     pub use clap::{App, Arg, ArgMatches, SubCommand};
@@ -10,7 +11,7 @@ pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("remote")
         .about("Manage gerrit remote servers.")
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
-        .subcommands(vec![add::cli(), show::cli()])
+        .subcommands(vec![add::cli(), show::cli(), remove::cli()])
 }
 
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
@@ -19,6 +20,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         ("add", subargs) => add::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
         ("", _) => show::show(config, args.occurrences_of("verbose").into()),
+        ("remove", subargs) => remove::exec(config, subargs),
         _ => Ok(()),
     }
 }
@@ -82,7 +84,6 @@ mod show {
 /**************************************************************************************************/
 mod add {
     use super::prelude::*;
-    use crate::config::Remote;
 
     pub fn cli() -> App<'static, 'static> {
         SubCommand::with_name("add")
@@ -154,8 +155,6 @@ mod add {
             )));
         }
 
-        trace!("password: {:?}", http_password);
-
         config.user_cfg.settings.remotes.insert(
             name.into(),
             Remote {
@@ -167,9 +166,41 @@ mod add {
         );
 
         config.user_cfg.store()?;
+        Ok(())
+    }
+}
 
-        //        super::show::show(config, args.occurrences_of("verbose").into())?;
+/**************************************************************************************************/
+mod remove {
+    use super::prelude::*;
+    use std::io::Write;
 
+    pub fn cli() -> App<'static, 'static> {
+        SubCommand::with_name("remove")
+            .visible_alias("rm")
+            .about("Remove a remote from config.")
+            .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
+            .arg(
+                Arg::with_name("remote")
+                    .required(true)
+                    .multiple(true)
+                    .help("Remote name."),
+            )
+    }
+
+    pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+        let args = args.unwrap();
+        let remotes = args.values_of("remote").unwrap();
+
+        for remote in remotes.into_iter() {
+            let mut stdout = config.stdout.lock();
+            match config.user_cfg.settings.remotes.remove(remote) {
+                Some(_) => writeln!(stdout, "removed: {}", remote)?,
+                None => writeln!(stdout, "fatal: no such remote: {}", remote)?,
+            };
+        }
+
+        config.user_cfg.store()?;
         Ok(())
     }
 }
