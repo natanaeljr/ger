@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-#[macro_use]
 extern crate log;
 
 pub mod cli;

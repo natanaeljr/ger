@@ -19,7 +19,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     match args.subcommand() {
         ("add", subargs) => add::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
-        ("", _) => show::show(config, args.occurrences_of("verbose").into()),
+        ("", _) => show::show_table(config, args.occurrences_of("verbose").into()),
         ("remove", subargs) => remove::exec(config, subargs),
         _ => Ok(()),
     }
@@ -40,10 +40,13 @@ mod show {
     pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
         let args = args.unwrap();
         let verbose: Verbosity = args.occurrences_of("verbose").into();
-        show(config, verbose)
+        match args.values_of("remote") {
+            Some(remotes) => show_remote(config, remotes.into_iter(), verbose),
+            None => show_table(config, verbose),
+        }
     }
 
-    pub fn show(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::Error> {
+    pub fn show_table(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::Error> {
         let mut name_maxlen = 0;
         let mut url_maxlen = 0;
         // compute format variables
@@ -76,6 +79,27 @@ mod show {
                 }
             }
             writeln!(stdout, "")?;
+        }
+        Ok(())
+    }
+
+    pub fn show_remote(
+        config: &CliConfig, remotes: clap::Values, _verbose: Verbosity,
+    ) -> Result<(), failure::Error> {
+        for name in remotes {
+            let mut stdout = config.stdout.lock();
+            if let Some(remote) = config.user_cfg.settings.remotes.get(name.into()) {
+                writeln!(stdout, "* remote: {}\n  url: {}", name, remote.url)?;
+                if let Some(port) = remote.port {
+                    writeln!(stdout, "  port: {}", port)?;
+                }
+                if let Some(username) = &remote.username {
+                    writeln!(stdout, "  login: {}", username)?
+                }
+                writeln!(stdout, "")?;
+            } else {
+                return Err(failure::err_msg(format!("no such remote '{}'.", name)));
+            }
         }
         Ok(())
     }
