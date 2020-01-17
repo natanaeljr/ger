@@ -19,7 +19,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     match args.subcommand() {
         ("add", subargs) => add::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
-        ("", _) => show::show_table(config, args.occurrences_of("verbose").into()),
+        ("", _) => show::show_list(config, args.occurrences_of("verbose").into()),
         ("remove", subargs) => remove::exec(config, subargs),
         _ => Ok(()),
     }
@@ -30,6 +30,7 @@ mod show {
     use super::prelude::*;
     use std::io::Write;
 
+    /// Build the CLI for show command
     pub fn cli() -> App<'static, 'static> {
         SubCommand::with_name("show")
             .about("Show information about remote.")
@@ -37,16 +38,18 @@ mod show {
             .arg(Arg::with_name("remote").multiple(true).help("Remote name."))
     }
 
+    /// Execute the show command
     pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
         let args = args.unwrap();
         let verbose: Verbosity = args.occurrences_of("verbose").into();
         match args.values_of("remote") {
-            Some(remotes) => show_remote(config, remotes.into_iter(), verbose),
-            None => show_table(config, verbose),
+            Some(remotes) => show_remotes(config, remotes.into_iter(), verbose),
+            None => show_remotes(config, config.user_cfg.settings.remotes.keys(), verbose),
         }
     }
 
-    pub fn show_table(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::Error> {
+    /// Show basic information about cofigured remotes
+    pub fn show_list(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::Error> {
         let mut name_maxlen = 0;
         let mut url_maxlen = 0;
         // compute format variables
@@ -78,29 +81,43 @@ mod show {
                     write!(stdout, " ({})", username)?
                 }
             }
-            writeln!(stdout, "")?;
+            stdout.write_all(b"\n")?;
         }
         Ok(())
     }
 
-    pub fn show_remote(
-        config: &CliConfig, remotes: clap::Values, _verbose: Verbosity,
-    ) -> Result<(), failure::Error> {
-        for name in remotes {
-            let mut stdout = config.stdout.lock();
-            if let Some(remote) = config.user_cfg.settings.remotes.get(name.into()) {
-                writeln!(stdout, "* remote: {}\n  url: {}", name, remote.url)?;
-                if let Some(port) = remote.port {
-                    writeln!(stdout, "  port: {}", port)?;
-                }
-                if let Some(username) = &remote.username {
-                    writeln!(stdout, "  login: {}", username)?
-                }
-                writeln!(stdout, "")?;
+    /// Show information about one or more remotes
+    pub fn show_remotes<I, T>(
+        config: &CliConfig, iter_remotes: I, verbose: Verbosity,
+    ) -> Result<(), failure::Error>
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<String>,
+    {
+        for name in iter_remotes {
+            let name = name.into();
+            if let Some(remote) = config.user_cfg.settings.remotes.get(&name) {
+                show_remote(config, (name.as_str(), remote), verbose.clone())?;
             } else {
                 return Err(failure::err_msg(format!("no such remote '{}'.", name)));
             }
         }
+        Ok(())
+    }
+
+    /// Show information about a given remote
+    pub fn show_remote(
+        config: &CliConfig, remote: (&str, &Remote), _verbose: Verbosity,
+    ) -> Result<(), failure::Error> {
+        let mut stdout = config.stdout.lock();
+        writeln!(stdout, "* remote: {}\n  url: {}", remote.0, remote.1.url)?;
+        if let Some(port) = remote.1.port {
+            writeln!(stdout, "  port: {}", port)?;
+        }
+        if let Some(username) = &remote.1.username {
+            writeln!(stdout, "  login: {}", username)?
+        }
+        stdout.write_all(b"\n")?;
         Ok(())
     }
 }
@@ -188,8 +205,8 @@ mod add {
                 http_password,
             },
         );
-
         config.user_cfg.store()?;
+
         Ok(())
     }
 }
@@ -215,15 +232,13 @@ mod remove {
     pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
         let args = args.unwrap();
         let remotes = args.values_of("remote").unwrap();
-
         for remote in remotes.into_iter() {
             let mut stdout = config.stdout.lock();
             match config.user_cfg.settings.remotes.remove(remote) {
-                Some(_) => writeln!(stdout, "removed: {}", remote)?,
+                Some(_) => writeln!(stdout, "remote removed: {}", remote)?,
                 None => writeln!(stdout, "fatal: no such remote: {}", remote)?,
             };
         }
-
         config.user_cfg.store()?;
         Ok(())
     }

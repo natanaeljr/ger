@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use termcolor::StandardStream;
 use toml;
 
-#[derive(Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 pub enum Verbosity {
     Normal,
     Verbose,
