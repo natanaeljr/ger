@@ -68,12 +68,14 @@ mod show {
             if verbose.ge(&Verbosity::Verbose) {
                 write!(
                     stdout,
-                    "{0:1$} - {2} [{3}]",
+                    "{0:1$} - {2}",
                     "",
                     name_maxlen - remote.0.len(),
                     remote.1.url,
-                    remote.1.port.unwrap_or(8080)
                 )?;
+                if let Some(port) = &remote.1.port {
+                    write!(stdout, " [{}]", port)?;
+                }
             }
             if verbose.ge(&Verbosity::High) {
                 write!(stdout, "{0:1$}", "", url_maxlen - remote.1.url.len())?;
@@ -111,9 +113,14 @@ mod show {
     ) -> Result<(), failure::Error> {
         let mut stdout = config.stdout.lock();
         writeln!(stdout, "* remote: {}\n  url: {}", remote.0, remote.1.url)?;
-        if let Some(port) = remote.1.port {
-            writeln!(stdout, "  port: {}", port)?;
-        }
+        writeln!(
+            stdout,
+            "  port: {}",
+            remote
+                .1
+                .port
+                .unwrap_or_else(|| return crate::util::default_port_for_url(remote.1.url.as_str()))
+        )?;
         if let Some(username) = &remote.1.username {
             writeln!(stdout, "  login: {}", username)?
         }
@@ -235,7 +242,7 @@ mod remove {
         for remote in remotes.into_iter() {
             let mut stdout = config.stdout.lock();
             match config.user_cfg.settings.remotes.remove(remote) {
-                Some(_) => writeln!(stdout, "remote removed: {}", remote)?,
+                Some(_) => writeln!(stdout, "removed remote {}", remote)?,
                 None => writeln!(stdout, "fatal: no such remote: {}", remote)?,
             };
         }
