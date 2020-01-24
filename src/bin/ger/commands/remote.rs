@@ -30,6 +30,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
 mod show {
     use super::prelude::*;
     use std::io::Write;
+    use termcolor::{Color, ColorSpec, WriteColor};
 
     /// Build the CLI for show command
     pub fn cli() -> App<'static, 'static> {
@@ -67,10 +68,16 @@ mod show {
             }
         }
         // print remotes table
+        let default_remote = config.user_cfg.settings.default_remote();
         for remote in config.user_cfg.settings.remotes.iter() {
             let mut stdout = config.stdout.lock();
             let mut port_len = 0;
-            write!(stdout, "{0}", remote.0)?;
+            let default = default_remote.is_some() && remote.0 == default_remote.unwrap();
+            if default {
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+            }
+            let star = if default { '*' } else { ' ' };
+            write!(stdout, "{0} {1}", star, remote.0)?;
             if verbose.ge(&Verbosity::Verbose) {
                 write!(
                     stdout,
@@ -94,6 +101,9 @@ mod show {
                 }
             }
             stdout.write_all(b"\n")?;
+            if default {
+                stdout.reset()?;
+            }
         }
         Ok(())
     }
@@ -269,7 +279,7 @@ mod default {
     /// Build the CLI for show command
     pub fn cli() -> App<'static, 'static> {
         SubCommand::with_name("default")
-            .about("Set the default remote.")
+            .about("Set the default remote or display current one.")
             .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
             .arg(Arg::with_name("remote").help("Remote name."))
     }
