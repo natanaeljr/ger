@@ -111,7 +111,7 @@ mod show {
             if let Some(remote) = config.user_cfg.settings.remotes.get(&name) {
                 show_remote(config, (name.as_str(), remote), verbose.clone())?;
             } else {
-                return Err(failure::err_msg(format!("no such remote '{}'.", name)));
+                return Err(failure::err_msg(format!("no such remote '{}'", name)));
             }
         }
         Ok(())
@@ -280,7 +280,11 @@ mod default {
         if let Some(remote) = args.value_of("remote") {
             set(config, remote)?
         } else {
-            writeln!(config.stdout, "default: TODO")?
+            if let Some(default) = config.user_cfg.settings.default_remote() {
+                writeln!(config.stdout, "{}", default)?;
+            } else {
+                return Err(failure::err_msg("no default remote set"));
+            }
         }
         Ok(())
     }
@@ -288,11 +292,14 @@ mod default {
     /// Set remote as default remote
     pub fn set(config: &mut CliConfig, remote: &str) -> Result<(), failure::Error> {
         if config.user_cfg.settings.remotes.contains_key(remote) {
-            config.user_cfg.settings.default_remote = Some(remote.into());
+            config
+                .user_cfg
+                .settings
+                .set_default_remote(Some(remote.into()));
             config.user_cfg.store()?;
             Ok(())
         } else {
-            Err(failure::err_msg(format!("no such remote: {}.", remote)))
+            Err(failure::err_msg(format!("no such remote: {}", remote)))
         }
     }
 }

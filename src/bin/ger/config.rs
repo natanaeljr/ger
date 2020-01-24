@@ -36,7 +36,7 @@ pub struct UserConfig {
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields, default)]
 pub struct UserSettings {
-    pub default_remote: Option<String>,
+    default_remote: Option<String>,
     pub remotes: BTreeMap<String, Remote>,
 }
 
@@ -58,6 +58,24 @@ impl UserConfig {
     pub fn store(&self) -> Result<(), std::io::Error> {
         let toml = toml::to_string_pretty(&self.settings).unwrap();
         std::fs::write(&self.filepath, toml)
+    }
+}
+
+impl UserSettings {
+    /// Get default remote or figure out one
+    pub fn default_remote(&self) -> Option<&str> {
+        if let Some(default) = &self.default_remote {
+            Some(default.as_str())
+        } else if self.remotes.len() == 1 {
+            Some(self.remotes.keys().next().unwrap().as_str())
+        } else {
+            None
+        }
+    }
+
+    /// Set default remote value
+    pub fn set_default_remote(&mut self, default: Option<String>) {
+        self.default_remote = default;
     }
 }
 
