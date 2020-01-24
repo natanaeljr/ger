@@ -51,19 +51,24 @@ mod show {
     /// Show basic information about cofigured remotes
     pub fn show_list(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::Error> {
         let mut name_maxlen = 0;
-        let mut url_maxlen = 0;
+        let mut column2_maxlen = 0;
         // compute format variables
         for remote in config.user_cfg.settings.remotes.iter() {
             if remote.0.len() > name_maxlen {
                 name_maxlen = remote.0.len();
             }
-            if remote.1.url.len() > url_maxlen {
-                url_maxlen = remote.1.url.len();
+            let mut column2_len = remote.1.url.len();
+            if let Some(port) = remote.1.port {
+                column2_len += format!(" [{}]", port).len();
+            }
+            if column2_len > column2_maxlen {
+                column2_maxlen = column2_len;
             }
         }
         // print remotes table
         for remote in config.user_cfg.settings.remotes.iter() {
             let mut stdout = config.stdout.lock();
+            let mut port_len = 0;
             write!(stdout, "{0}", remote.0)?;
             if verbose.ge(&Verbosity::Verbose) {
                 write!(
@@ -74,11 +79,15 @@ mod show {
                     remote.1.url,
                 )?;
                 if let Some(port) = &remote.1.port {
-                    write!(stdout, " [{}]", port)?;
+                    let port_str = format!(" [{}]", port);
+                    write!(stdout, "{}", port_str)?;
+                    port_len = port_str.len();
                 }
             }
             if verbose.ge(&Verbosity::High) {
-                write!(stdout, "{0:1$}", "", url_maxlen - remote.1.url.len())?;
+                let column2_len = remote.1.url.len() + port_len;
+                let padding = column2_maxlen - column2_len;
+                write!(stdout, "{0:1$}", "", padding)?;
                 if let Some(username) = &remote.1.username {
                     write!(stdout, " ({})", username)?
                 }
@@ -119,7 +128,7 @@ mod show {
             remote
                 .1
                 .port
-                .unwrap_or_else(|| return crate::util::default_port_for_url(remote.1.url.as_str()))
+                .unwrap_or_else(|| return util::default_port_for_url(remote.1.url.as_str()))
         )?;
         if let Some(username) = &remote.1.username {
             writeln!(stdout, "  login: {}", username)?
