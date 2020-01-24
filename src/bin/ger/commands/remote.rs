@@ -11,7 +11,7 @@ pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("remote")
         .about("Manage gerrit remote servers.")
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
-        .subcommands(vec![add::cli(), show::cli(), remove::cli()])
+        .subcommands(vec![add::cli(), show::cli(), remove::cli(), default::cli()])
 }
 
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
@@ -21,6 +21,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         ("show", subargs) => show::exec(config, subargs),
         ("", _) => show::show_list(config, args.occurrences_of("verbose").into()),
         ("remove", subargs) => remove::exec(config, subargs),
+        ("default", subargs) => default::exec(config, subargs),
         _ => Ok(()),
     }
 }
@@ -257,5 +258,41 @@ mod remove {
         }
         config.user_cfg.store()?;
         Ok(())
+    }
+}
+
+/**************************************************************************************************/
+mod default {
+    use super::prelude::*;
+    use std::io::Write;
+
+    /// Build the CLI for show command
+    pub fn cli() -> App<'static, 'static> {
+        SubCommand::with_name("default")
+            .about("Set the default remote.")
+            .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
+            .arg(Arg::with_name("remote").help("Remote name."))
+    }
+
+    /// Execute the default command
+    pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+        let args = args.unwrap();
+        if let Some(remote) = args.value_of("remote") {
+            set(config, remote)?
+        } else {
+            writeln!(config.stdout, "default: TODO")?
+        }
+        Ok(())
+    }
+
+    /// Set remote as default remote
+    pub fn set(config: &mut CliConfig, remote: &str) -> Result<(), failure::Error> {
+        if config.user_cfg.settings.remotes.contains_key(remote) {
+            config.user_cfg.settings.default_remote = Some(remote.into());
+            config.user_cfg.store()?;
+            Ok(())
+        } else {
+            Err(failure::err_msg(format!("no such remote: {}.", remote)))
+        }
     }
 }
