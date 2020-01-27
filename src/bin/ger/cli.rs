@@ -18,6 +18,7 @@ pub fn cli() -> App<'static, 'static> {
             Arg::with_name("color")
                 .long("color")
                 .env("GER_COLOR")
+                .visible_alias("colour")
                 .takes_value(true)
                 .value_name("WHEN")
                 .require_equals(true)
