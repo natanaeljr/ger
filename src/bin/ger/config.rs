@@ -42,11 +42,11 @@ pub struct UserSettings {
 
 impl UserConfig {
     /// Read user config from TOML config file
-    pub fn from_file(config_file: Option<&str>) -> Result<Self, std::io::Error> {
+    pub fn from_file(config_file: Option<String>) -> Result<Self, std::io::Error> {
         let default_config_file =
             format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
-        let config_file = config_file.unwrap_or(default_config_file.as_str());
-        let contents = std::fs::read_to_string(config_file)?;
+        let config_file = config_file.unwrap_or(default_config_file);
+        let contents = std::fs::read_to_string(&config_file)?;
         let settings: UserSettings = toml::from_str(contents.as_str()).unwrap();
         Ok(UserConfig {
             filepath: config_file.into(),

@@ -15,13 +15,6 @@ pub fn cli() -> App<'static, 'static> {
         .global_setting(AppSettings::DontCollapseArgsInUsage)
         .global_setting(AppSettings::VersionlessSubcommands)
         .arg(
-            Arg::with_name("config-file")
-                .long("config-file")
-                .takes_value(true)
-                .value_name("FILE")
-                .help("Alternative configuration file [TOML]."),
-        )
-        .arg(
             Arg::with_name("color")
                 .long("color")
                 .env("GER_COLOR")
@@ -60,7 +53,7 @@ where
 /// Configure CLI running settings
 fn configure(args: &ArgMatches) -> Result<CliConfig, failure::Error> {
     let config = CliConfig {
-        user_cfg: UserConfig::from_file(args.value_of("config-file"))?,
+        user_cfg: UserConfig::from_file(std::env::var("GER_CONFIG").ok())?,
         stdout: StandardStream::stdout(match args.value_of("color") {
             Some("always") => ColorChoice::Always,
             Some("never") => ColorChoice::Never,
