@@ -156,7 +156,8 @@ mod add {
     pub fn cli() -> App<'static, 'static> {
         SubCommand::with_name("add")
             .about("Add a new remote.")
-            .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
+            .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}\n\n{after-help}")
+            .after_help("EXAMPLE:\n    ger remote add mygerrit https://mygerrit.company.com")
             .setting(clap::AppSettings::DeriveDisplayOrder)
             .arg(
                 Arg::with_name("name")
@@ -185,14 +186,12 @@ mod add {
             )
             .arg(
                 Arg::with_name("password")
-                    .long("password")
+                    .long("http-password")
                     .short("p")
                     .takes_value(true)
                     .value_name("STRING")
-                    .min_values(0)
                     .help(
                         "HTTP password. Can be generated in gerrit user settings menu.\n\
-                         Pass only the flag without value to be prompted for (recommended).\n\
                          Note: this password is saved in plain text in the configuration file.",
                     ),
             )
@@ -203,18 +202,9 @@ mod add {
 
         let name = args.value_of("name").unwrap();
         let url = args.value_of("url").unwrap();
-        let port = match args.value_of("port") {
-            Some(p) => Some(p.parse::<u16>().unwrap()),
-            None => None,
-        };
-        let username = match args.value_of("username") {
-            Some(u) => Some(u.to_owned()),
-            None => None,
-        };
-        let http_password = match args.value_of("password") {
-            Some(p) => Some(p.to_owned()),
-            None => None,
-        };
+        let port = args.value_of("port").map(|s| s.parse::<u16>().unwrap());
+        let username = args.value_of("username").map(|s| s.to_owned());
+        let http_password = args.value_of("password").map(|s| s.to_owned());
 
         if config.user_cfg.settings.remotes.contains_key(name) {
             return Err(failure::err_msg(format!(
