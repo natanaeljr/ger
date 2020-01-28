@@ -129,7 +129,7 @@ mod show {
 
     /// Show information about a given remote
     pub fn show_remote(
-        config: &CliConfig, remote: (&str, &Remote), _verbose: Verbosity,
+        config: &CliConfig, remote: (&str, &Remote), verbose: Verbosity,
     ) -> Result<(), failure::Error> {
         let mut stdout = config.stdout.lock();
         writeln!(stdout, "* remote: {}\n  url: {}", remote.0, remote.1.url)?;
@@ -142,7 +142,12 @@ mod show {
                 .unwrap_or_else(|| return util::default_port_for_url(remote.1.url.as_str()))
         )?;
         if let Some(username) = &remote.1.username {
-            writeln!(stdout, "  login: {}", username)?
+            writeln!(stdout, "  username: {}", username)?
+        }
+        if verbose >= Verbosity::High {
+            if let Some(http_password) = &remote.1.http_password {
+                writeln!(stdout, "  http_password: {}", http_password)?
+            }
         }
         stdout.write_all(b"\n")?;
         Ok(())
@@ -152,6 +157,7 @@ mod show {
 /**************************************************************************************************/
 mod add {
     use super::prelude::*;
+    use std::io::Write;
 
     pub fn cli() -> App<'static, 'static> {
         SubCommand::with_name("add")
@@ -203,14 +209,28 @@ mod add {
         let name = args.value_of("name").unwrap();
         let url = args.value_of("url").unwrap();
         let port = args.value_of("port").map(|s| s.parse::<u16>().unwrap());
-        let username = args.value_of("username").map(|s| s.to_owned());
-        let http_password = args.value_of("password").map(|s| s.to_owned());
+        let mut username = args.value_of("username").map(|s| s.to_owned());
+        let mut http_password = args.value_of("password").map(|s| s.to_owned());
 
         if config.user_cfg.settings.remotes.contains_key(name) {
             return Err(failure::err_msg(format!(
                 "remote '{}' already exists.",
                 name
             )));
+        }
+
+        if username.is_none() {
+            let mut input = String::new();
+            write!(config.stdout, "Username for '{}': ", name)?;
+            config.stdout.flush()?;
+            std::io::stdin().read_line(&mut input)?;
+            username = Some(input.trim().into());
+        }
+
+        if http_password.is_none() {
+            let prompt = format!("HTTP-Password for '{}': ", name);
+            let input = rpassword::read_password_from_tty(Some(prompt.as_str()))?;
+            http_password = Some(input.trim().into());
         }
 
         config.user_cfg.settings.remotes.insert(
