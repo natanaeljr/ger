@@ -201,6 +201,11 @@ mod add {
                          Note: this password is saved in plain text in the configuration file.",
                     ),
             )
+            .arg(
+                Arg::with_name("insecure")
+                    .long("insecure")
+                    .help("Allow insecure server connections when using SSL."),
+            )
     }
 
     pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
@@ -211,6 +216,7 @@ mod add {
         let port = args.value_of("port").map(|s| s.parse::<u16>().unwrap());
         let mut username = args.value_of("username").map(|s| s.to_owned());
         let mut http_password = args.value_of("password").map(|s| s.to_owned());
+        let insecure = args.is_present("insecure");
 
         if config.user_cfg.settings.remotes.contains_key(name) {
             return Err(failure::err_msg(format!(
@@ -240,6 +246,7 @@ mod add {
                 port,
                 username,
                 http_password,
+                insecure,
             },
         );
         config.user_cfg.store()?;

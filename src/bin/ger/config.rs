@@ -1,3 +1,4 @@
+use crate::util;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -85,6 +86,8 @@ pub struct Remote {
     pub port: Option<u16>,
     pub username: Option<String>,
     pub http_password: Option<String>,
+    #[serde(default, skip_serializing_if = "util::is_false")]
+    pub insecure: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -10,3 +10,9 @@ pub fn default_port_for_url(url: &str) -> u16 {
         panic!()
     }
 }
+
+/// Function to check if boolean is false.
+/// Used for serde 'path' attributes.
+pub fn is_false(b: &bool) -> bool {
+    !*b
+}
