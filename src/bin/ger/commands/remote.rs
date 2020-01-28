@@ -68,7 +68,7 @@ mod show {
             }
         }
         // print remotes table
-        let default_remote = config.user_cfg.settings.default_remote();
+        let default_remote = config.user_cfg.settings.default_remote_verify();
         for remote in config.user_cfg.settings.remotes.iter() {
             let mut stdout = config.stdout.lock();
             let mut port_len = 0;
@@ -132,7 +132,17 @@ mod show {
         config: &CliConfig, remote: (&str, &Remote), verbose: Verbosity,
     ) -> Result<(), failure::Error> {
         let mut stdout = config.stdout.lock();
-        writeln!(stdout, "* remote: {}\n  url: {}", remote.0, remote.1.url)?;
+        let default_remote = config.user_cfg.settings.default_remote_verify();
+        let default = default_remote.is_some() && remote.0 == default_remote.unwrap();
+        if default {
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+        }
+        let star = if default { '*' } else { ' ' };
+        writeln!(
+            stdout,
+            "{} remote: {}\n  url: {}",
+            star, remote.0, remote.1.url
+        )?;
         writeln!(
             stdout,
             "  port: {}",
@@ -149,7 +159,13 @@ mod show {
                 writeln!(stdout, "  http_password: {}", http_password)?
             }
         }
+        if remote.1.insecure {
+            writeln!(stdout, "  insecure: {}", remote.1.insecure)?;
+        }
         stdout.write_all(b"\n")?;
+        if default {
+            stdout.reset()?;
+        }
         Ok(())
     }
 }
@@ -307,10 +323,10 @@ mod default {
         if let Some(remote) = args.value_of("remote") {
             set(config, remote)?
         } else {
-            if let Some(default) = config.user_cfg.settings.default_remote() {
+            if let Some(default) = config.user_cfg.settings.default_remote_verify() {
                 writeln!(config.stdout, "{}", default)?;
             } else {
-                return Err(failure::err_msg("no default remote set"));
+                return Err(failure::err_msg("no default remote"));
             }
         }
         Ok(())

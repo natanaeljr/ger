@@ -63,8 +63,8 @@ impl UserConfig {
 }
 
 impl UserSettings {
-    /// Get default remote or figure out one
-    pub fn default_remote(&self) -> Option<&str> {
+    /// Get default remote from config or figure out one
+    fn default_remote(&self) -> Option<&str> {
         if let Some(default) = &self.default_remote {
             Some(default.as_str())
         } else if self.remotes.len() == 1 {
@@ -72,6 +72,17 @@ impl UserSettings {
         } else {
             None
         }
+    }
+
+    /// Get default remote from config or figure out one, plus verify that the remote is exists in the map
+    pub fn default_remote_verify(&self) -> Option<&str> {
+        self.default_remote().and_then(|default| {
+            if self.remotes.contains_key(default) {
+                Some(default)
+            } else {
+                None
+            }
+        })
     }
 
     /// Set default remote value
