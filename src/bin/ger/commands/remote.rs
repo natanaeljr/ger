@@ -135,8 +135,8 @@ mod show {
                 writeln!(stdout, "  http_password: {}", http_password)?
             }
         }
-        if remote.1.insecure {
-            writeln!(stdout, "  insecure: {}", remote.1.insecure)?;
+        if !remote.1.ssl_verify {
+            writeln!(stdout, "  ssl_verify: {}", remote.1.ssl_verify)?;
         }
         stdout.write_all(b"\n")?;
         if default {
@@ -188,9 +188,9 @@ mod add {
                     ),
             )
             .arg(
-                Arg::with_name("insecure")
-                    .long("insecure")
-                    .help("Allow insecure server connections when using SSL."),
+                Arg::with_name("no-ssl-verify")
+                    .long("no-ssl-verify")
+                    .help("Do not to verify the SSL certificate for HTTPS."),
             )
     }
 
@@ -201,7 +201,7 @@ mod add {
         let url = args.value_of("url").unwrap();
         let mut username = args.value_of("username").map(|s| s.to_owned());
         let mut http_password = args.value_of("password").map(|s| s.to_owned());
-        let insecure = args.is_present("insecure");
+        let no_ssl_verify = args.is_present("no-ssl-verify");
 
         if config.user_cfg.settings.remotes.contains_key(name) {
             return Err(failure::err_msg(format!(
@@ -230,7 +230,7 @@ mod add {
                 url: url.to_owned(),
                 username,
                 http_password,
-                insecure,
+                ssl_verify: !no_ssl_verify,
             },
         );
         config.user_cfg.store()?;

@@ -50,7 +50,7 @@ impl UserConfig {
         let config_file = config_file.unwrap_or(default_config_file);
         let contents = std::fs::read_to_string(&config_file)?;
         let settings: UserSettings = toml::from_str(contents.as_str())
-            .with_context(|e| format!("failed to parse config file: {}", config_file))?;
+            .with_context(|_| format!("failed to parse config file: {}", config_file))?;
         Ok(UserConfig {
             filepath: config_file.into(),
             settings,
@@ -94,14 +94,25 @@ impl UserSettings {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
-#[serde(deny_unknown_fields)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+#[serde(default, deny_unknown_fields)]
 pub struct Remote {
     pub url: String,
     pub username: Option<String>,
     pub http_password: Option<String>,
-    #[serde(default, skip_serializing_if = "util::is_false")]
-    pub insecure: bool,
+    #[serde(skip_serializing_if = "util::is_true")]
+    pub ssl_verify: bool,
+}
+
+impl Default for Remote {
+    fn default() -> Self {
+        Self {
+            url: String::new(),
+            username: None,
+            http_password: None,
+            ssl_verify: true,
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
