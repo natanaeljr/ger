@@ -1,7 +1,7 @@
 use crate::config::CliConfig;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use termcolor::{Color, ColorSpec, WriteColor};
+use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("change")
@@ -30,11 +30,27 @@ pub fn cli() -> App<'static, 'static> {
 }
 
 pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
-    config
-        .stdout
-        .set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))
-        .unwrap();
-    println!("Command: change");
-    config.stdout.reset().unwrap();
+    let remote = match config.user_cfg.settings.default_remote_verify() {
+        Some(r) => config.user_cfg.settings.remotes.get(r).unwrap(),
+        None => return Err(failure::err_msg("no remote specified")),
+    };
+
+    let mut http_handler = gerlib::HttpRequestHandler::new(gerlib::Gerrit {
+        host: format!(
+            "{}:{}",
+            remote.url.clone(),
+            remote
+                .port
+                .unwrap_or_else(|| util::default_port_for_url(remote.url.as_str()))
+        ),
+        port: None,
+        username: remote.username.as_ref().unwrap().clone(),
+        http_password: remote.http_password.as_ref().unwrap().clone(),
+        insecure: remote.insecure,
+    })?;
+
+    let data = http_handler.get("a/changes/?n=2")?;
+    writeln!(config.stdout, "response: {}", data)?;
+
     Ok(())
 }
