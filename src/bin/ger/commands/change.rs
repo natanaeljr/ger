@@ -35,7 +35,7 @@ pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), fa
         None => return Err(failure::err_msg("no remote specified")),
     };
 
-    let mut http_handler = gerlib::HttpRequestHandler::new(gerlib::Gerrit {
+    let mut http_handler = gerlib::http::HttpRequestHandler::new(gerlib::Gerrit {
         host: format!(
             "{}:{}",
             remote.url.clone(),
