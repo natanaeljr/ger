@@ -1,12 +1,15 @@
 use prelude::*;
+use std::borrow::Cow;
+use std::io::Write;
+use termcolor::StandardStream;
 
 mod prelude {
-    pub use crate::config::Remote;
-    pub use crate::config::{CliConfig, Verbosity};
+    pub use crate::config::{CliConfig, RemoteFilled, RemoteOpts, Verbosity};
     pub use crate::util;
     pub use clap::{App, Arg, ArgMatches, SubCommand};
 }
 
+/// Build the CLI
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("remote")
         .about("Manage gerrit remote servers.")
@@ -14,6 +17,7 @@ pub fn cli() -> App<'static, 'static> {
         .subcommands(vec![add::cli(), show::cli(), remove::cli(), default::cli()])
 }
 
+/// Execute the remote command
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     match args.subcommand() {
@@ -113,7 +117,7 @@ mod show {
 
     /// Show information about a given remote
     pub fn show_remote(
-        config: &CliConfig, remote: (&str, &Remote), verbose: Verbosity,
+        config: &CliConfig, remote: (&str, &RemoteOpts), verbose: Verbosity,
     ) -> Result<(), failure::Error> {
         let mut stdout = config.stdout.lock();
         let default_remote = config.user_cfg.settings.default_remote_verify();
@@ -149,7 +153,6 @@ mod show {
 /**************************************************************************************************/
 mod add {
     use super::prelude::*;
-    use std::io::Write;
 
     pub fn cli() -> App<'static, 'static> {
         SubCommand::with_name("add")
@@ -211,22 +214,16 @@ mod add {
         }
 
         if username.is_none() {
-            let mut input = String::new();
-            write!(config.stdout, "Username for '{}': ", name)?;
-            config.stdout.flush()?;
-            std::io::stdin().read_line(&mut input)?;
-            username = Some(input.trim().into());
+            username = Some(super::prompt_username(&mut config.stdout, name)?);
         }
 
         if http_password.is_none() {
-            let prompt = format!("HTTP-Password for '{}': ", name);
-            let input = rpassword::read_password_from_tty(Some(prompt.as_str()))?;
-            http_password = Some(input.trim().into());
+            http_password = Some(super::prompt_http_password(name)?);
         }
 
         config.user_cfg.settings.remotes.insert(
             name.into(),
-            Remote {
+            RemoteOpts {
                 url: url.to_owned(),
                 username,
                 http_password,
@@ -313,4 +310,69 @@ mod default {
             Err(failure::err_msg(format!("no such remote: {}", remote)))
         }
     }
+}
+
+/**************************************************************************************************/
+/// Get default remote with all fields filled or prompt for missing ones
+pub fn get_default_filled_or_prompt(
+    config: &mut CliConfig,
+) -> Result<(&str, RemoteFilled), failure::Error> {
+    let default_remote = config
+        .user_cfg
+        .settings
+        .default_remote_verify()
+        .map(|d| d.to_string());
+
+    let remote = match default_remote {
+        Some(name) => get_filled_or_prompt(config, name.as_str())?,
+        None => return Err(failure::err_msg("no default remote")),
+    };
+
+    Ok((
+        config.user_cfg.settings.default_remote_verify().unwrap(),
+        remote,
+    ))
+}
+
+/// Get remote with all fields filled or prompt for missing ones
+pub fn get_filled_or_prompt(
+    config: &mut CliConfig, target_remote: &str,
+) -> Result<RemoteFilled, failure::Error> {
+    let remote_opts = match config.user_cfg.settings.remotes.get(target_remote) {
+        Some(remote) => remote,
+        None => return Err(failure::err_msg(format!("no remote '{}'", target_remote))),
+    };
+
+    let username = match &remote_opts.username {
+        Some(u) => Cow::Borrowed(u),
+        None => Cow::Owned(prompt_username(&mut config.stdout, target_remote)?),
+    };
+
+    let http_password = match &remote_opts.http_password {
+        Some(u) => Cow::Borrowed(u),
+        None => Cow::Owned(prompt_http_password(target_remote)?),
+    };
+
+    Ok(RemoteFilled {
+        url: remote_opts.url.clone(),
+        username: username.into_owned(),
+        http_password: http_password.into_owned(),
+        ssl_verify: remote_opts.ssl_verify,
+    })
+}
+
+/// Prompt for Username for given remote
+fn prompt_username(stdout: &mut StandardStream, remote: &str) -> Result<String, failure::Error> {
+    write!(stdout, "Username for '{}': ", remote)?;
+    stdout.flush()?;
+    let mut input = String::new();
+    std::io::stdin().read_line(&mut input)?;
+    Ok(input.trim().into())
+}
+
+/// Prompt for HTTP Password for given remote
+fn prompt_http_password(remote: &str) -> Result<String, failure::Error> {
+    let prompt = format!("HTTP-Password for '{}': ", remote);
+    let input = rpassword::read_password_from_tty(Some(prompt.as_str()))?;
+    Ok(input.trim().into())
 }

@@ -39,7 +39,7 @@ pub struct UserConfig {
 #[serde(deny_unknown_fields, default)]
 pub struct UserSettings {
     default_remote: Option<String>,
-    pub remotes: BTreeMap<String, Remote>,
+    pub remotes: BTreeMap<String, RemoteOpts>,
 }
 
 impl UserConfig {
@@ -77,7 +77,8 @@ impl UserSettings {
         }
     }
 
-    /// Get default remote from config or figure out one, plus verify that the remote is exists in the map
+    /// Get default remote from config or figure out one,
+    /// plus verify that the remote is exists in the map
     pub fn default_remote_verify(&self) -> Option<&str> {
         self.default_remote().and_then(|default| {
             if self.remotes.contains_key(default) {
@@ -96,7 +97,7 @@ impl UserSettings {
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(default, deny_unknown_fields)]
-pub struct Remote {
+pub struct RemoteOpts {
     pub url: String,
     pub username: Option<String>,
     pub http_password: Option<String>,
@@ -104,7 +105,7 @@ pub struct Remote {
     pub ssl_verify: bool,
 }
 
-impl Default for Remote {
+impl Default for RemoteOpts {
     fn default() -> Self {
         Self {
             url: String::new(),
@@ -113,6 +114,13 @@ impl Default for Remote {
             ssl_verify: true,
         }
     }
+}
+
+pub struct RemoteFilled {
+    pub url: String,
+    pub username: String,
+    pub http_password: String,
+    pub ssl_verify: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +138,7 @@ mod tests {
                 let mut remotes = BTreeMap::new();
                 remotes.insert(
                     "alpha".to_owned(),
-                    super::Remote {
+                    super::RemoteOpts {
                         url: "https://gerrit-review.googlesource.com".to_owned(),
                         port: None,
                         username: Some("stickman".to_owned()),
@@ -139,7 +147,7 @@ mod tests {
                 );
                 remotes.insert(
                     "beta".to_owned(),
-                    super::Remote {
+                    super::RemoteOpts {
                         url: "http://gerrit-review.example.com".to_owned(),
                         port: Some(8080),
                         username: Some("wonderwoman".to_owned()),
