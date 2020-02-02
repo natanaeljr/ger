@@ -36,14 +36,7 @@ pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), fa
     };
 
     let mut http_handler = gerlib::http::HttpRequestHandler::new(gerlib::Gerrit {
-        host: format!(
-            "{}:{}",
-            remote.url.clone(),
-            remote
-                .port
-                .unwrap_or_else(|| util::default_port_for_url(remote.url.as_str()))
-        ),
-        port: None,
+        host: remote.url.clone(),
         username: remote.username.as_ref().unwrap().clone(),
         http_password: remote.http_password.as_ref().unwrap().clone(),
         insecure: remote.insecure,

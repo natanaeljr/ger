@@ -53,25 +53,20 @@ mod show {
     /// Show basic information about cofigured remotes
     pub fn show_list(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::Error> {
         let mut name_maxlen = 0;
-        let mut column2_maxlen = 0;
+        let mut url_maxlen = 0;
         // compute format variables
         for remote in config.user_cfg.settings.remotes.iter() {
             if remote.0.len() > name_maxlen {
                 name_maxlen = remote.0.len();
             }
-            let mut column2_len = remote.1.url.len();
-            if let Some(port) = remote.1.port {
-                column2_len += format!(" [{}]", port).len();
-            }
-            if column2_len > column2_maxlen {
-                column2_maxlen = column2_len;
+            if remote.1.url.len() > url_maxlen {
+                url_maxlen = remote.1.url.len();
             }
         }
         // print remotes table
         let default_remote = config.user_cfg.settings.default_remote_verify();
         for remote in config.user_cfg.settings.remotes.iter() {
             let mut stdout = config.stdout.lock();
-            let mut port_len = 0;
             let default = default_remote.is_some() && remote.0 == default_remote.unwrap();
             if default {
                 stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
@@ -79,22 +74,11 @@ mod show {
             let star = if default { '*' } else { ' ' };
             write!(stdout, "{0} {1}", star, remote.0)?;
             if verbose.ge(&Verbosity::Verbose) {
-                write!(
-                    stdout,
-                    "{0:1$} - {2}",
-                    "",
-                    name_maxlen - remote.0.len(),
-                    remote.1.url,
-                )?;
-                if let Some(port) = &remote.1.port {
-                    let port_str = format!(" [{}]", port);
-                    write!(stdout, "{}", port_str)?;
-                    port_len = port_str.len();
-                }
+                let padding = name_maxlen - remote.0.len();
+                write!(stdout, "{0:1$} - {2}", "", padding, remote.1.url)?;
             }
             if verbose.ge(&Verbosity::High) {
-                let column2_len = remote.1.url.len() + port_len;
-                let padding = column2_maxlen - column2_len;
+                let padding = url_maxlen - remote.1.url.len();
                 write!(stdout, "{0:1$}", "", padding)?;
                 if let Some(username) = &remote.1.username {
                     write!(stdout, " ({})", username)?
@@ -143,14 +127,6 @@ mod show {
             "{} remote: {}\n  url: {}",
             star, remote.0, remote.1.url
         )?;
-        writeln!(
-            stdout,
-            "  port: {}",
-            remote
-                .1
-                .port
-                .unwrap_or_else(|| return util::default_port_for_url(remote.1.url.as_str()))
-        )?;
         if let Some(username) = &remote.1.username {
             writeln!(stdout, "  username: {}", username)?
         }
@@ -193,12 +169,6 @@ mod add {
                     .help("Remote URL including protocol. e.g. 'https://mygerrit.com'."),
             )
             .arg(
-                Arg::with_name("port")
-                    .takes_value(true)
-                    .validator(util::validate::is_u16_range)
-                    .help("Port to use on connection with server."),
-            )
-            .arg(
                 Arg::with_name("username")
                     .long("username")
                     .short("u")
@@ -229,7 +199,6 @@ mod add {
 
         let name = args.value_of("name").unwrap();
         let url = args.value_of("url").unwrap();
-        let port = args.value_of("port").map(|s| s.parse::<u16>().unwrap());
         let mut username = args.value_of("username").map(|s| s.to_owned());
         let mut http_password = args.value_of("password").map(|s| s.to_owned());
         let insecure = args.is_present("insecure");
@@ -259,7 +228,6 @@ mod add {
             name.into(),
             Remote {
                 url: url.to_owned(),
-                port,
                 username,
                 http_password,
                 insecure,

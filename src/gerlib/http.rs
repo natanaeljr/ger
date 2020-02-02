@@ -13,9 +13,6 @@ impl HttpRequestHandler {
     pub fn new(gerrit: Gerrit) -> Result<Self, failure::Error> {
         let mut curl = CurlEasy::new();
         curl.url(gerrit.host.as_str())?;
-        if let Some(port) = gerrit.port {
-            curl.port(port)?;
-        }
         curl.http_auth(curl::easy::Auth::new().basic(true).digest(true))?;
         curl.username(gerrit.username.as_str())?;
         curl.password(gerrit.http_password.as_str())?;

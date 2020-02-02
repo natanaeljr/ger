@@ -1,4 +1,5 @@
 use crate::util;
+use failure::ResultExt;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -43,12 +44,13 @@ pub struct UserSettings {
 
 impl UserConfig {
     /// Read user config from TOML config file
-    pub fn from_file(config_file: Option<String>) -> Result<Self, std::io::Error> {
+    pub fn from_file(config_file: Option<String>) -> Result<Self, failure::Error> {
         let default_config_file =
             format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
         let config_file = config_file.unwrap_or(default_config_file);
         let contents = std::fs::read_to_string(&config_file)?;
-        let settings: UserSettings = toml::from_str(contents.as_str()).unwrap();
+        let settings: UserSettings = toml::from_str(contents.as_str())
+            .with_context(|e| format!("failed to parse config file: {}", config_file))?;
         Ok(UserConfig {
             filepath: config_file.into(),
             settings,
@@ -56,9 +58,10 @@ impl UserConfig {
     }
 
     /// Write user config to filepath
-    pub fn store(&self) -> Result<(), std::io::Error> {
-        let toml = toml::to_string_pretty(&self.settings).unwrap();
-        std::fs::write(&self.filepath, toml)
+    pub fn store(&self) -> Result<(), failure::Error> {
+        let toml = toml::to_string_pretty(&self.settings)?;
+        std::fs::write(&self.filepath, toml)?;
+        Ok(())
     }
 }
 
@@ -92,9 +95,9 @@ impl UserSettings {
 }
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct Remote {
     pub url: String,
-    pub port: Option<u16>,
     pub username: Option<String>,
     pub http_password: Option<String>,
     #[serde(default, skip_serializing_if = "util::is_false")]
