@@ -130,8 +130,8 @@ mod show {
         if verbose >= Verbosity::High {
             writeln!(stdout, "  http_password: {}", remote.1.http_password)?
         }
-        if !remote.1.ssl_verify {
-            writeln!(stdout, "  ssl_verify: {}", remote.1.ssl_verify)?;
+        if remote.1.no_ssl_verify {
+            writeln!(stdout, "  no_ssl_verify: {}", remote.1.no_ssl_verify)?;
         }
         stdout.write_all(b"\n")?;
         if default {
@@ -220,7 +220,7 @@ mod add {
                 url: url.to_owned(),
                 username,
                 http_password,
-                ssl_verify: !no_ssl_verify,
+                no_ssl_verify,
             },
         );
         config.user_cfg.store()?;

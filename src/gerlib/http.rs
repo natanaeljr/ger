@@ -16,7 +16,7 @@ impl HttpRequestHandler {
         curl.http_auth(curl::easy::Auth::new().basic(true).digest(true))?;
         curl.username(gerrit.username.as_str())?;
         curl.password(gerrit.http_password.as_str())?;
-        if !gerrit.ssl_verify {
+        if gerrit.no_ssl_verify {
             curl.ssl_verify_host(false)?;
             curl.ssl_verify_peer(false)?;
         }

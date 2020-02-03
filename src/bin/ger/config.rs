@@ -101,8 +101,8 @@ pub struct RemoteOpts {
     pub url: String,
     pub username: String,
     pub http_password: String,
-    #[serde(skip_serializing_if = "util::is_true")]
-    pub ssl_verify: bool,
+    #[serde(skip_serializing_if = "util::is_false")]
+    pub no_ssl_verify: bool,
 }
 
 impl Default for RemoteOpts {
@@ -111,7 +111,7 @@ impl Default for RemoteOpts {
             url: Default::default(),
             username: Default::default(),
             http_password: Default::default(),
-            ssl_verify: true,
+            no_ssl_verify: false,
         }
     }
 }

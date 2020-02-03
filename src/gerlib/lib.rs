@@ -10,5 +10,5 @@ pub struct Gerrit {
     pub host: String,
     pub username: String,
     pub http_password: String,
-    pub ssl_verify: bool,
+    pub no_ssl_verify: bool,
 }

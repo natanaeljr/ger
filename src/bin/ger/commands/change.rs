@@ -39,7 +39,7 @@ pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), fa
         host: remote.url.clone(),
         username: remote.username.clone(),
         http_password: remote.http_password.clone(),
-        ssl_verify: remote.ssl_verify,
+        no_ssl_verify: remote.no_ssl_verify,
     })?;
 
     let data = http_handler.get("a/changes/?n=2")?;
