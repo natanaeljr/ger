@@ -1,10 +1,9 @@
 use prelude::*;
-use std::borrow::Cow;
 use std::io::Write;
 use termcolor::StandardStream;
 
 mod prelude {
-    pub use crate::config::{CliConfig, RemoteFilled, RemoteOpts, Verbosity};
+    pub use crate::config::{CliConfig, RemoteOpts, Verbosity};
     pub use crate::util;
     pub use clap::{App, Arg, ArgMatches, SubCommand};
 }
@@ -83,10 +82,7 @@ mod show {
             }
             if verbose.ge(&Verbosity::High) {
                 let padding = url_maxlen - remote.1.url.len();
-                write!(stdout, "{0:1$}", "", padding)?;
-                if let Some(username) = &remote.1.username {
-                    write!(stdout, " ({})", username)?
-                }
+                write!(stdout, "{0:1$} ({2})", "", padding, remote.1.username)?;
             }
             stdout.write_all(b"\n")?;
             if default {
@@ -128,16 +124,11 @@ mod show {
         let star = if default { '*' } else { ' ' };
         writeln!(
             stdout,
-            "{} remote: {}\n  url: {}",
-            star, remote.0, remote.1.url
+            "{} remote: {}\n  url: {}\n  username: {}",
+            star, remote.0, remote.1.url, remote.1.username
         )?;
-        if let Some(username) = &remote.1.username {
-            writeln!(stdout, "  username: {}", username)?
-        }
         if verbose >= Verbosity::High {
-            if let Some(http_password) = &remote.1.http_password {
-                writeln!(stdout, "  http_password: {}", http_password)?
-            }
+            writeln!(stdout, "  http_password: {}", remote.1.http_password)?
         }
         if !remote.1.ssl_verify {
             writeln!(stdout, "  ssl_verify: {}", remote.1.ssl_verify)?;
@@ -202,8 +193,8 @@ mod add {
 
         let name = args.value_of("name").unwrap();
         let url = args.value_of("url").unwrap();
-        let mut username = args.value_of("username").map(|s| s.to_owned());
-        let mut http_password = args.value_of("password").map(|s| s.to_owned());
+        let username = args.value_of("username").map(|s| s.to_owned());
+        let http_password = args.value_of("password").map(|s| s.to_owned());
         let no_ssl_verify = args.is_present("no-ssl-verify");
 
         if config.user_cfg.settings.remotes.contains_key(name) {
@@ -213,13 +204,15 @@ mod add {
             )));
         }
 
-        if username.is_none() {
-            username = Some(super::prompt_username(&mut config.stdout, name)?);
-        }
+        let username = match username {
+            Some(u) => u,
+            None => super::prompt_username(&mut config.stdout, name)?,
+        };
 
-        if http_password.is_none() {
-            http_password = Some(super::prompt_http_password(name)?);
-        }
+        let http_password = match http_password {
+            Some(p) => p,
+            None => super::prompt_http_password(name)?,
+        };
 
         config.user_cfg.settings.remotes.insert(
             name.into(),
@@ -310,55 +303,6 @@ mod default {
             Err(failure::err_msg(format!("no such remote: {}", remote)))
         }
     }
-}
-
-/**************************************************************************************************/
-/// Get default remote with all fields filled or prompt for missing ones
-pub fn get_default_filled_or_prompt(
-    config: &mut CliConfig,
-) -> Result<(&str, RemoteFilled), failure::Error> {
-    let default_remote = config
-        .user_cfg
-        .settings
-        .default_remote_verify()
-        .map(|d| d.to_string());
-
-    let remote = match default_remote {
-        Some(name) => get_filled_or_prompt(config, name.as_str())?,
-        None => return Err(failure::err_msg("no default remote")),
-    };
-
-    Ok((
-        config.user_cfg.settings.default_remote_verify().unwrap(),
-        remote,
-    ))
-}
-
-/// Get remote with all fields filled or prompt for missing ones
-pub fn get_filled_or_prompt(
-    config: &mut CliConfig, target_remote: &str,
-) -> Result<RemoteFilled, failure::Error> {
-    let remote_opts = match config.user_cfg.settings.remotes.get(target_remote) {
-        Some(remote) => remote,
-        None => return Err(failure::err_msg(format!("no remote '{}'", target_remote))),
-    };
-
-    let username = match &remote_opts.username {
-        Some(u) => Cow::Borrowed(u),
-        None => Cow::Owned(prompt_username(&mut config.stdout, target_remote)?),
-    };
-
-    let http_password = match &remote_opts.http_password {
-        Some(u) => Cow::Borrowed(u),
-        None => Cow::Owned(prompt_http_password(target_remote)?),
-    };
-
-    Ok(RemoteFilled {
-        url: remote_opts.url.clone(),
-        username: username.into_owned(),
-        http_password: http_password.into_owned(),
-        ssl_verify: remote_opts.ssl_verify,
-    })
 }
 
 /// Prompt for Username for given remote

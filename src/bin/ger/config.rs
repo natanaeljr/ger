@@ -99,8 +99,8 @@ impl UserSettings {
 #[serde(default, deny_unknown_fields)]
 pub struct RemoteOpts {
     pub url: String,
-    pub username: Option<String>,
-    pub http_password: Option<String>,
+    pub username: String,
+    pub http_password: String,
     #[serde(skip_serializing_if = "util::is_true")]
     pub ssl_verify: bool,
 }
@@ -108,19 +108,12 @@ pub struct RemoteOpts {
 impl Default for RemoteOpts {
     fn default() -> Self {
         Self {
-            url: String::new(),
-            username: None,
-            http_password: None,
+            url: Default::default(),
+            username: Default::default(),
+            http_password: Default::default(),
             ssl_verify: true,
         }
     }
-}
-
-pub struct RemoteFilled {
-    pub url: String,
-    pub username: String,
-    pub http_password: String,
-    pub ssl_verify: bool,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

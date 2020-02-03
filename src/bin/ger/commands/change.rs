@@ -30,13 +30,16 @@ pub fn cli() -> App<'static, 'static> {
 }
 
 pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
-    let remote = super::remote::get_default_filled_or_prompt(config)?;
+    let remote = match config.user_cfg.settings.default_remote_verify() {
+        Some(default) => config.user_cfg.settings.remotes.get(default).unwrap(),
+        None => return Err(failure::err_msg("no default remote")),
+    };
 
     let mut http_handler = gerlib::http::HttpRequestHandler::new(gerlib::Gerrit {
-        host: remote.1.url.clone(),
-        username: remote.1.username.clone(),
-        http_password: remote.1.http_password.clone(),
-        ssl_verify: remote.1.ssl_verify,
+        host: remote.url.clone(),
+        username: remote.username.clone(),
+        http_password: remote.http_password.clone(),
+        ssl_verify: remote.ssl_verify,
     })?;
 
     let data = http_handler.get("a/changes/?n=2")?;
