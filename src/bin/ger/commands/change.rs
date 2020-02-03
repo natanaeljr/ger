@@ -1,6 +1,7 @@
 use crate::config::CliConfig;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use std::borrow::Cow;
 use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
@@ -35,10 +36,10 @@ pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), fa
         None => return Err(failure::err_msg("no default remote")),
     };
 
-    let mut http_handler = gerlib::http::HttpRequestHandler::new(gerlib::Gerrit {
-        host: remote.url.clone(),
-        username: remote.username.clone(),
-        http_password: remote.http_password.clone(),
+    let mut http_handler = gerlib::http::HttpRequestHandler::new(gerlib::GerritConn {
+        host: Cow::Borrowed(&remote.url),
+        username: Cow::Borrowed(&remote.username),
+        http_password: Cow::Borrowed(&remote.http_password),
         no_ssl_verify: remote.no_ssl_verify,
     })?;
 

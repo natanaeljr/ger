@@ -1,16 +1,17 @@
-use super::Gerrit;
+use super::GerritConn;
 use curl::easy::Easy as CurlEasy;
 use log::{debug, trace};
 
 /// Handler for make request to Gerrit REST API
 pub struct HttpRequestHandler {
-    gerrit: Gerrit,
+    host: String,
     curl: CurlEasy,
 }
 
 impl HttpRequestHandler {
     /// Create a new RequestHandler
-    pub fn new(gerrit: Gerrit) -> Result<Self, failure::Error> {
+    pub fn new(gerrit: GerritConn) -> Result<Self, failure::Error> {
+        trace!("curl version: {}", curl::Version::get().version());
         let mut curl = CurlEasy::new();
         curl.url(gerrit.host.as_str())?;
         curl.http_auth(curl::easy::Auth::new().basic(true).digest(true))?;
@@ -22,12 +23,15 @@ impl HttpRequestHandler {
         }
         curl.follow_location(true)?;
 
-        Ok(Self { gerrit, curl })
+        Ok(Self {
+            host: gerrit.host.into_owned(),
+            curl,
+        })
     }
 
     /// Make a GET request to URI
     pub fn get(&mut self, uri: &str) -> Result<String, failure::Error> {
-        let url = format!("{}/{}", self.gerrit.host, uri);
+        let url = format!("{}/{}", self.host, uri);
         debug!("get url: {}", url);
         self.curl.url(url.as_str())?;
         self.curl
