@@ -31,7 +31,7 @@ impl HttpRequestHandler {
     }
 
     /// Make a GET request to URI
-    pub fn get(&mut self, uri: &str) -> Result<String, failure::Error> {
+    pub fn get(&mut self, uri: &str) -> Result<(u32, String), failure::Error> {
         let url = Url::parse(self.host.as_str())?.join(uri)?;
         debug!("get url: {}", url.as_str());
         self.curl.url(url.as_str())?;
@@ -47,7 +47,9 @@ impl HttpRequestHandler {
             transfer.debug_function(Self::curl_debug_function)?;
             transfer.perform()?;
         }
-        Ok(String::from_utf8_lossy(data.as_slice()).into_owned())
+        let code = self.curl.response_code()?;
+        let response = String::from_utf8_lossy(data.as_slice()).into_owned();
+        Ok((code, response))
     }
 
     /// Debug function for CURL

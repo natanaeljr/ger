@@ -1,4 +1,4 @@
-use crate::config::CliConfig;
+use crate::config::{CliConfig, Verbosity};
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use gerlib::changes::ChangeInfo;
@@ -33,7 +33,10 @@ pub fn cli() -> App<'static, 'static> {
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
-pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+    let args = args.unwrap();
+    let verbose: Verbosity = args.occurrences_of("verbose").into();
+
     let remote = match config.user_cfg.settings.default_remote_verify() {
         Some(default) => config.user_cfg.settings.remotes.get(default).unwrap(),
         None => return Err(failure::err_msg("no default remote")),
@@ -47,9 +50,9 @@ pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), fa
     };
 
     let mut rest = RestRequestHandler::new(gerrit)?;
-    let uri: PathAndQuery = "/a/changes/?n=5".parse()?;
+    let uri: PathAndQuery = "/a/changes/?q=owner:self+is:open".parse()?;
 
-    let json = rest.request_json(uri)?;
+    let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
 
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
     for change in changes {
