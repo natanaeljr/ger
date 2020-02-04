@@ -54,7 +54,7 @@ where
 /// Configure CLI running settings
 fn configure(args: &ArgMatches) -> Result<CliConfig, failure::Error> {
     let config = CliConfig {
-        user_cfg: UserConfig::from_file(std::env::var("GER_CONFIG").ok())?,
+        user: UserConfig::from_file(std::env::var("GER_CONFIG").ok())?,
         stdout: StandardStream::stdout(match args.value_of("color") {
             Some("always") => ColorChoice::Always,
             Some("never") => ColorChoice::Never,

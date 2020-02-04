@@ -26,7 +26,7 @@ impl From<u64> for Verbosity {
 }
 
 pub struct CliConfig {
-    pub user_cfg: UserConfig,
+    pub user: UserConfig,
     pub stdout: StandardStream,
 }
 

@@ -52,7 +52,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let http_password = args.value_of("password").map(|s| s.to_owned());
     let no_ssl_verify = args.is_present("no-ssl-verify");
 
-    if config.user_cfg.settings.remotes.contains_key(name) {
+    if config.user.settings.remotes.contains_key(name) {
         return Err(failure::err_msg(format!(
             "remote '{}' already exists.",
             name
@@ -69,7 +69,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         None => super::prompt_http_password(name)?,
     };
 
-    config.user_cfg.settings.remotes.insert(
+    config.user.settings.remotes.insert(
         name.into(),
         RemoteOpts {
             url: url.to_owned(),
@@ -78,7 +78,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
             no_ssl_verify,
         },
     );
-    config.user_cfg.store()?;
+    config.user.store()?;
 
     Ok(())
 }

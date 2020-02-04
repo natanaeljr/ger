@@ -16,7 +16,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     match args.values_of("remote") {
         Some(remotes) => show_remotes(config, remotes.into_iter(), verbose),
-        None => show_remotes(config, config.user_cfg.settings.remotes.keys(), verbose),
+        None => show_remotes(config, config.user.settings.remotes.keys(), verbose),
     }
 }
 
@@ -25,7 +25,7 @@ pub fn show_list(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::
     let mut name_maxlen = 0;
     let mut url_maxlen = 0;
     // compute format variables
-    for remote in config.user_cfg.settings.remotes.iter() {
+    for remote in config.user.settings.remotes.iter() {
         if remote.0.len() > name_maxlen {
             name_maxlen = remote.0.len();
         }
@@ -34,8 +34,8 @@ pub fn show_list(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::
         }
     }
     // print remotes table
-    let default_remote = config.user_cfg.settings.default_remote_verify();
-    for remote in config.user_cfg.settings.remotes.iter() {
+    let default_remote = config.user.settings.default_remote_verify();
+    for remote in config.user.settings.remotes.iter() {
         let mut stdout = config.stdout.lock();
         let default = default_remote.is_some() && remote.0 == default_remote.unwrap();
         if default {
@@ -69,7 +69,7 @@ pub fn show_remotes<I, T>(
 {
     for name in iter_remotes {
         let name = name.into();
-        if let Some(remote) = config.user_cfg.settings.remotes.get(&name) {
+        if let Some(remote) = config.user.settings.remotes.get(&name) {
             show_remote(config, (name.as_str(), remote), verbose.clone())?;
         } else {
             return Err(failure::err_msg(format!("no such remote '{}'", name)));
@@ -83,7 +83,7 @@ pub fn show_remote(
     config: &CliConfig, remote: (&str, &RemoteOpts), verbose: Verbosity,
 ) -> Result<(), failure::Error> {
     let mut stdout = config.stdout.lock();
-    let default_remote = config.user_cfg.settings.default_remote_verify();
+    let default_remote = config.user.settings.default_remote_verify();
     let default = default_remote.is_some() && remote.0 == default_remote.unwrap();
     if default {
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;

@@ -15,7 +15,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     if let Some(remote) = args.value_of("remote") {
         set(config, remote)?
     } else {
-        if let Some(default) = config.user_cfg.settings.default_remote_verify() {
+        if let Some(default) = config.user.settings.default_remote_verify() {
             writeln!(config.stdout, "{}", default)?;
         } else {
             return Err(failure::err_msg("no default remote"));
@@ -26,12 +26,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
 
 /// Set remote as default remote
 pub fn set(config: &mut CliConfig, remote: &str) -> Result<(), failure::Error> {
-    if config.user_cfg.settings.remotes.contains_key(remote) {
+    if config.user.settings.remotes.contains_key(remote) {
         config
-            .user_cfg
+            .user
             .settings
             .set_default_remote(Some(remote.into()));
-        config.user_cfg.store()?;
+        config.user.store()?;
         Ok(())
     } else {
         Err(failure::err_msg(format!("no such remote: {}", remote)))

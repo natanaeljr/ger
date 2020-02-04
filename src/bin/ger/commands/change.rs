@@ -37,8 +37,8 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let args = args.unwrap();
     let verbose: Verbosity = args.occurrences_of("verbose").into();
 
-    let remote = match config.user_cfg.settings.default_remote_verify() {
-        Some(default) => config.user_cfg.settings.remotes.get(default).unwrap(),
+    let remote = match config.user.settings.default_remote_verify() {
+        Some(default) => config.user.settings.remotes.get(default).unwrap(),
         None => return Err(failure::err_msg("no default remote")),
     };
 

@@ -19,11 +19,11 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let remotes = args.values_of("remote").unwrap();
     for remote in remotes.into_iter() {
         let mut stdout = config.stdout.lock();
-        match config.user_cfg.settings.remotes.remove(remote) {
+        match config.user.settings.remotes.remove(remote) {
             Some(_) => writeln!(stdout, "removed remote {}", remote)?,
             None => writeln!(stdout, "fatal: no such remote: {}", remote)?,
         };
     }
-    config.user_cfg.store()?;
+    config.user.store()?;
     Ok(())
 }
