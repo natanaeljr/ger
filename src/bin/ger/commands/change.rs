@@ -1,6 +1,9 @@
 use crate::config::CliConfig;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::ChangeInfo;
+use gerlib::rest::RestRequestHandler;
+use http::uri::PathAndQuery;
 use std::borrow::Cow;
 use std::io::Write;
 
@@ -36,15 +39,22 @@ pub fn exec(config: &mut CliConfig, _args: Option<&ArgMatches>) -> Result<(), fa
         None => return Err(failure::err_msg("no default remote")),
     };
 
-    let mut http_handler = gerlib::http::HttpRequestHandler::new(gerlib::GerritConn {
+    let gerrit = gerlib::GerritConn {
         host: Cow::Borrowed(&remote.url),
         username: Cow::Borrowed(&remote.username),
         http_password: Cow::Borrowed(&remote.http_password),
         no_ssl_verify: remote.no_ssl_verify,
-    })?;
+    };
 
-    let data = http_handler.get("a/changes/?n=2")?;
-    writeln!(config.stdout, "response: {}", data)?;
+    let mut rest = RestRequestHandler::new(gerrit)?;
+    let uri: PathAndQuery = "/a/changes/?n=5".parse()?;
+
+    let json = rest.request_json(uri)?;
+
+    let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
+    for change in changes {
+        writeln!(config.stdout, "{} - {}", change._number, change.subject)?;
+    }
 
     Ok(())
 }

@@ -1,6 +1,7 @@
 use super::GerritConn;
 use curl::easy::Easy as CurlEasy;
 use log::{debug, trace};
+use url::Url;
 
 /// Handler for make request to Gerrit REST API
 pub struct HttpRequestHandler {
@@ -31,8 +32,8 @@ impl HttpRequestHandler {
 
     /// Make a GET request to URI
     pub fn get(&mut self, uri: &str) -> Result<String, failure::Error> {
-        let url = format!("{}/{}", self.host, uri);
-        debug!("get url: {}", url);
+        let url = Url::parse(self.host.as_str())?.join(uri)?;
+        debug!("get url: {}", url.as_str());
         self.curl.url(url.as_str())?;
         self.curl
             .verbose(log::max_level() >= log::LevelFilter::Debug)?;
