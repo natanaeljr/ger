@@ -5,6 +5,7 @@ extern crate log;
 pub mod cli;
 pub mod commands;
 pub mod config;
+pub mod handler;
 pub mod util;
 
 use exitfailure::ExitFailure;

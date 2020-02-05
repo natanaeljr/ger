@@ -1,10 +1,9 @@
 use crate::config::{CliConfig, Verbosity};
+use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use gerlib::changes::ChangeInfo;
-use gerlib::rest::RestRequestHandler;
 use http::uri::PathAndQuery;
-use std::borrow::Cow;
 use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
@@ -30,31 +29,30 @@ pub fn cli() -> App<'static, 'static> {
                 .validator(util::validate::is_u32)
                 .help("Limit the number of changes to output."),
         )
+        .arg(
+            Arg::with_name("remote")
+                .long("remote")
+                .short("r")
+                .takes_value(true)
+                .value_name("NAME")
+                .help("Specify an alternative remote to use."),
+        )
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     let verbose: Verbosity = args.occurrences_of("verbose").into();
+    let remote = args.value_of("remote");
 
-    let remote = match config.user.settings.default_remote_verify() {
-        Some(default) => config.user.settings.remotes.get(default).unwrap(),
-        None => return Err(failure::err_msg("no default remote")),
-    };
-
-    let gerrit = gerlib::GerritConn {
-        host: Cow::Borrowed(&remote.url),
-        username: Cow::Borrowed(&remote.username),
-        http_password: Cow::Borrowed(&remote.http_password),
-        no_ssl_verify: remote.no_ssl_verify,
-    };
-
-    let mut rest = RestRequestHandler::new(gerrit)?;
-    let uri: PathAndQuery = "/a/changes/?q=owner:self+is:open".parse()?;
-
+    let mut rest = get_remote_restapi_handler(config, remote)?;
+    let uri: PathAndQuery = "/a/changes/?q=is:open&n=10".parse()?;
     let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
-
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
+    if changes.is_empty() {
+        writeln!(config.stdout, "No changes.")?;
+        return Ok(());
+    }
     for change in changes {
         writeln!(config.stdout, "{} - {}", change._number, change.subject)?;
     }
