@@ -74,7 +74,8 @@ pub struct ChangeInfo {
     /// Not set if the current change index doesn’t have the data.
     pub unresolved_comment_count: Option<u32>,
     /// The legacy numeric ID of the change.
-    pub _number: u32,
+    #[serde(rename = "_number")]
+    pub number: u32,
     /// The owner of the change as an AccountInfo entity.
     pub owner: AccountInfo,
     /// Actions the caller might be able to perform on this revision.
@@ -116,8 +117,8 @@ pub struct ChangeInfo {
     pub tracking_ids: Option<Vec<TrackingIdInfo>>,
     /// Whether the query would deliver more results if not limited.
     /// Only set on the last change that is returned.
-    #[serde(default)]
-    pub _more_changes: bool,
+    #[serde(default, rename = "_more_changes")]
+    pub more_changes: bool,
     /// A list of ProblemInfo entities describing potential problems with this change.
     /// Only set if CHECK is set.
     pub problems: Option<Vec<ProblemInfo>>,
@@ -204,35 +205,6 @@ pub struct ChangeOptions {
 }
 
 impl ChangeOptions {
-    pub fn new() -> Self {
-        ChangeOptions {
-            queries: Vec::new(),
-            additional_opts: Vec::new(),
-            limit: None,
-            start: None,
-        }
-    }
-
-    pub fn queries(mut self, queries: Vec<Query>) -> Self {
-        self.queries = queries;
-        self
-    }
-
-    pub fn additional_opts(mut self, add_opts: Vec<AdditionalOpt>) -> Self {
-        self.additional_opts = add_opts;
-        self
-    }
-
-    pub fn limit(mut self, limit: u32) -> Self {
-        self.limit = Some(limit);
-        self
-    }
-
-    pub fn start(mut self, start: u32) -> Self {
-        self.start = Some(start);
-        self
-    }
-
     pub fn to_query_string(&self) -> String {
         use std::fmt::Write;
         let mut result = String::new();
@@ -240,7 +212,7 @@ impl ChangeOptions {
             let sym = if result.is_empty() { '?' } else { '&' };
             let q_str = query.to_query_string();
             if !q_str.is_empty() {
-                write!(result, "{}q={}", sym, query.to_query_string()).unwrap();
+                write!(result, "{}q={}", sym, q_str).unwrap();
             }
         }
         let sym = if result.is_empty() { '?' } else { '&' };
@@ -253,17 +225,11 @@ impl ChangeOptions {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
-pub struct Query(pub Vec<QueryOpt>);
+pub struct Query(pub QueryOpt);
 
 impl Query {
     pub fn to_query_string(&self) -> String {
-        use std::fmt::Write;
-        let mut result = String::new();
-        for opt in self.0.iter() {
-            let add = if result.is_empty() { "" } else { "+" };
-            write!(result, "{}{}", add, opt).unwrap();
-        }
-        result
+        format!("{}", self.0)
     }
 }
 
