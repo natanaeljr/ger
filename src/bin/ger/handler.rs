@@ -1,10 +1,10 @@
 use crate::config::CliConfig;
-use gerlib::rest::RestRequestHandler;
+use gerlib::rest::RestApiHandler;
 use std::borrow::Cow;
 
 pub fn get_remote_restapi_handler(
     config: &CliConfig, remote: Option<&str>,
-) -> Result<RestRequestHandler, failure::Error> {
+) -> Result<RestApiHandler, failure::Error> {
     let remote = if let Some(this) = remote {
         this
     } else {
@@ -26,6 +26,6 @@ pub fn get_remote_restapi_handler(
         no_ssl_verify: remote.no_ssl_verify,
     };
 
-    let handler = RestRequestHandler::new(gerrit)?;
+    let handler = RestApiHandler::new(gerrit)?;
     Ok(handler)
 }

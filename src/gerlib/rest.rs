@@ -3,11 +3,11 @@ use crate::GerritConn;
 use http::uri::PathAndQuery;
 use std::fmt::Write;
 
-pub struct RestRequestHandler {
+pub struct RestApiHandler {
     http: HttpRequestHandler,
 }
 
-impl RestRequestHandler {
+impl RestApiHandler {
     pub fn new(gerrit: GerritConn) -> Result<Self, failure::Error> {
         Ok(Self {
             http: HttpRequestHandler::new(gerrit)?,
