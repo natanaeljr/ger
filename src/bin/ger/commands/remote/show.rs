@@ -34,9 +34,9 @@ pub fn show_list(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::
         }
     }
     // print remotes table
+    let mut stdout = config.stdout.lock();
     let default_remote = config.user.settings.default_remote_verify();
     for remote in config.user.settings.remotes.iter() {
-        let mut stdout = config.stdout.lock();
         let default = default_remote.is_some() && remote.0 == default_remote.unwrap();
         if default {
             stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
@@ -63,9 +63,9 @@ pub fn show_list(config: &CliConfig, verbose: Verbosity) -> Result<(), failure::
 pub fn show_remotes<I, T>(
     config: &CliConfig, iter_remotes: I, verbose: Verbosity,
 ) -> Result<(), failure::Error>
-    where
-        I: IntoIterator<Item = T>,
-        T: Into<String>,
+where
+    I: IntoIterator<Item = T>,
+    T: Into<String>,
 {
     for name in iter_remotes {
         let name = name.into();

@@ -9,7 +9,7 @@ use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("change")
-        .about("Lists information about changes.")
+        .about("Lists changes and information about changes.")
         .arg(
             Arg::with_name("CHANGE")
                 .required(false)
@@ -25,7 +25,7 @@ pub fn cli() -> App<'static, 'static> {
             Arg::with_name("max-count")
                 .short("n")
                 .takes_value(true)
-                .value_name("NUMBER")
+                .value_name("limit")
                 .default_value("20")
                 .validator(util::validate::is_u32)
                 .help("Limit the number of changes to output."),

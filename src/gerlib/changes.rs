@@ -1,5 +1,5 @@
-use super::accounts::*;
-use super::details::Timestamp;
+use crate::accounts::*;
+use crate::details::Timestamp;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -194,6 +194,10 @@ pub struct TrackingIdInfo {}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct ProblemInfo {}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct WebLinkInfo {}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
