@@ -67,7 +67,7 @@ impl UserConfig {
 
 impl UserSettings {
     /// Get default remote from config or figure out one
-    fn default_remote(&self) -> Option<&str> {
+    pub fn default_remote(&self) -> Option<&str> {
         if let Some(default) = &self.default_remote {
             Some(default.as_str())
         } else if self.remotes.len() == 1 {

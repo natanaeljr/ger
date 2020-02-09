@@ -11,6 +11,7 @@ mod prelude {
 mod add;
 mod default;
 mod remove;
+mod rename;
 mod show;
 
 /// Build the CLI
@@ -18,7 +19,13 @@ pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("remote")
         .about("Manage gerrit remote servers.")
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
-        .subcommands(vec![add::cli(), show::cli(), remove::cli(), default::cli()])
+        .subcommands(vec![
+            add::cli(),
+            show::cli(),
+            rename::cli(),
+            remove::cli(),
+            default::cli(),
+        ])
 }
 
 /// Execute the remote command
@@ -28,6 +35,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         ("add", subargs) => add::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
         ("", _) => show::show_list(config, args.occurrences_of("verbose").into()),
+        ("rename", subargs) => rename::exec(config, subargs),
         ("remove", subargs) => remove::exec(config, subargs),
         ("default", subargs) => default::exec(config, subargs),
         _ => Ok(()),
