@@ -33,6 +33,17 @@ pub fn cli() -> App<'static, 'static> {
                 .value_name("NAME")
                 .help("Specify an alternative remote to use."),
         )
+        .arg(
+            Arg::with_name("prefix")
+                .long("prefix")
+                .short("p")
+                .takes_value(true)
+                .value_name("STRING")
+                .help(
+                    "Limit the results to those projects that start with the specified prefix.\n\
+                          The match is case sensitive. May not be used together with m or r.",
+                ),
+        )
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
@@ -41,10 +52,14 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
     let max_count = args.value_of("max-count");
+    let prefix = args.value_of("prefix");
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
 
     let mut query_str = "?d".to_owned();
+    if let Some(prefix) = prefix {
+        query_str = format!("{}&p={}", query_str, prefix);
+    }
     if let Some(limit) = max_count {
         query_str = format!("{}&n={}", query_str, limit);
     }
