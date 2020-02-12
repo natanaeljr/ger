@@ -41,7 +41,7 @@ pub fn cli() -> App<'static, 'static> {
                 .value_name("STRING")
                 .help(
                     "Limit the results to those projects that start with the specified prefix.\n\
-                          The match is case sensitive. May not be used together with m or r.",
+                     The match is case sensitive. May not be used together with m or r.",
                 ),
         )
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
@@ -84,7 +84,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let no_description = "<no description>".to_string();
     for project in projects.into_iter() {
         write!(stdout, "{}", project.0)?;
-        if verbose >= Verbosity::Verbose {
+        if verbose == Verbosity::Verbose {
+            let padding = project_maxlen - project.0.len();
+            let description = project.1.description.as_ref().unwrap_or(&no_description);
+            let desc = description.replace('\n', " ");
+            writeln!(stdout, "{0:1$} - {2}", "", padding, desc)?;
+        } else if verbose >= Verbosity::High {
             let padding = project_maxlen - project.0.len();
             let description = project.1.description.as_ref().unwrap_or(&no_description);
             let mut lines = description.lines();
