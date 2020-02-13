@@ -6,6 +6,7 @@ use gerlib::changes::{ChangeInfo, ChangeIs, ChangeOptions, Query, QueryOpt};
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
+use termcolor::{Color, ColorSpec, WriteColor};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("change")
@@ -59,15 +60,32 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let query_str = queries.to_query_string();
     let uri: PathAndQuery = format!("/a/changes/{}", query_str).parse()?;
     info!("uri: {}", uri);
-
     let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
+
+    show_list(config, &changes)?;
+
+    Ok(())
+}
+
+pub fn show_list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<(), failure::Error> {
     if changes.is_empty() {
         writeln!(config.stdout, "No changes.")?;
         return Ok(());
     }
+
+    let mut stdout = config.stdout.lock();
     for change in changes {
-        writeln!(config.stdout, "{} - {}", change.number, change.subject)?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
+        write!(stdout, "{}", change.number)?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?;
+        write!(stdout, " {}", change.project)?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
+        write!(stdout, " {}", change.status)?;
+
+        stdout.reset()?;
+        write!(stdout, " {}", change.subject)?;
+        stdout.write_all(b"\n")?;
     }
 
     Ok(())

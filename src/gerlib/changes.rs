@@ -14,6 +14,12 @@ pub enum ChangeStatus {
     Draft,
 }
 
+impl std::fmt::Display for ChangeStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(format!("{:?}", self).to_uppercase().as_str())
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// The ChangeInfo entity contains information about a change.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
