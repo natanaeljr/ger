@@ -58,7 +58,11 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     };
 
     let query_str = queries.to_query_string();
-    let uri: PathAndQuery = format!("/a/changes/{}", query_str).parse()?;
+    let uri: PathAndQuery = format!(
+        "/a/changes/{}&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION",
+        query_str
+    )
+    .parse()?;
     info!("uri: {}", uri);
     let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
@@ -76,10 +80,35 @@ pub fn show_list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<()
 
     let mut stdout = config.stdout.lock();
     for change in changes {
+        stdout.reset()?;
+
+        if let Some(current_revision) = &change.current_revision {
+            write!(stdout, "{}", &current_revision[..8])?;
+        }
+
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
-        write!(stdout, "{}", change.number)?;
+        write!(stdout, " {}", change.number)?;
+
+        if let Some(owner_name) = &change.owner.name {
+            stdout.set_color(
+                ColorSpec::new()
+                    .set_fg(Some(Color::Black))
+                    .set_intense(true),
+            )?;
+            write!(stdout, " {}", owner_name)?;
+        }
+
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?;
         write!(stdout, " {}", change.project)?;
+
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)).set_intense(true))?;
+        write!(stdout, " {}", change.branch)?;
+
+        if let Some(topic) = &change.topic {
+            stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)).set_bold(true))?;
+            write!(stdout, " {}", topic)?;
+        }
+
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
         write!(stdout, " {}", change.status)?;
 
