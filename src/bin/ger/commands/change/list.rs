@@ -8,26 +8,16 @@ use log::info;
 use std::io::Write;
 use termcolor::{Color, ColorSpec, WriteColor};
 
+/// Build the CLI
 pub fn cli() -> App<'static, 'static> {
-    SubCommand::with_name("change")
-        .about("Lists changes and information about changes.")
-        .arg(
-            Arg::with_name("CHANGE")
-                .required(false)
-                .multiple(true)
-                .help(
-                    "Specify changes to look for.\n\
-                     Can be either a legacy numerical id (e.g. 15813),\
-                     full or abbreviated Change-Id (e.g. Ic0ff33)\
-                     or commit SHA-1 (e.g. d81b32ef).",
-                ),
-        )
+    SubCommand::with_name("list")
+        .visible_alias("ls")
+        .about("Lists changes.")
         .arg(
             Arg::with_name("max-count")
                 .short("n")
                 .takes_value(true)
                 .value_name("limit")
-                .default_value("20")
                 .validator(util::validate::is_u32)
                 .help("Limit the number of changes to output."),
         )
@@ -42,18 +32,32 @@ pub fn cli() -> App<'static, 'static> {
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
+/// Execute the command
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
-    let max_count = args.value_of("max-count");
+    let max_count = args
+        .value_of("max-count")
+        .map(|n| n.to_owned())
+        .unwrap_or_else(|| match term_size::dimensions_stdout() {
+            Some((_, h)) => {
+                let height = h as i64 - 5;
+                if height > 0 {
+                    height.to_string()
+                } else {
+                    "20".to_string()
+                }
+            }
+            None => "20".to_string(),
+        });
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
 
     let queries = ChangeOptions {
         queries: vec![Query(QueryOpt::Is(ChangeIs::Open))],
         additional_opts: vec![],
-        limit: max_count.map(|n| n.parse::<u32>().unwrap()),
+        limit: Some(max_count.parse::<u32>().unwrap()),
         start: None,
     };
 
@@ -72,6 +76,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     Ok(())
 }
 
+/// Show list of changes
 pub fn show_list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<(), failure::Error> {
     if changes.is_empty() {
         writeln!(config.stdout, "No changes.")?;
