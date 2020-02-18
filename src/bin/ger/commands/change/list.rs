@@ -39,17 +39,17 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let remote = args.value_of("remote");
     let max_count = args
         .value_of("max-count")
-        .map(|n| n.to_owned())
+        .map(|n| n.parse::<u32>().unwrap())
         .unwrap_or_else(|| match term_size::dimensions_stdout() {
             Some((_, h)) => {
                 let height = h as i64 - 5;
                 if height > 0 {
-                    height.to_string()
+                    height as u32
                 } else {
-                    "20".to_string()
+                    20
                 }
             }
-            None => "20".to_string(),
+            None => 20,
         });
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
@@ -57,7 +57,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let queries = ChangeOptions {
         queries: vec![Query(QueryOpt::Is(ChangeIs::Open))],
         additional_opts: vec![],
-        limit: Some(max_count.parse::<u32>().unwrap()),
+        limit: Some(max_count),
         start: None,
     };
 
