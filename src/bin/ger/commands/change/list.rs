@@ -88,7 +88,7 @@ pub fn list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<(), fai
         stdout.reset()?;
 
         if let Some(current_revision) = &change.current_revision {
-            write!(stdout, "{}", &current_revision[..8])?;
+            write!(stdout, "{}", &current_revision[..7])?;
         }
 
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
