@@ -103,6 +103,13 @@ pub fn show_list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<()
             write!(stdout, " {}", owner_name)?;
         }
 
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Magenta)))?;
+        write!(
+            stdout,
+            " {}",
+            util::format_short_datetime(&change.updated.0)
+        )?;
+
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?;
         write!(stdout, " {}", change.project)?;
 
