@@ -71,13 +71,13 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
 
-    show_list(config, &changes)?;
+    list(config, &changes)?;
 
     Ok(())
 }
 
 /// Show list of changes
-pub fn show_list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<(), failure::Error> {
+pub fn list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<(), failure::Error> {
     if changes.is_empty() {
         writeln!(config.stdout, "No changes.")?;
         return Ok(());
@@ -103,7 +103,11 @@ pub fn show_list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<()
             write!(stdout, " {}", owner_name)?;
         }
 
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Magenta)).set_intense(true))?;
+        stdout.set_color(
+            ColorSpec::new()
+                .set_fg(Some(Color::Magenta))
+                .set_intense(true),
+        )?;
         write!(
             stdout,
             " {}",
