@@ -56,7 +56,7 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     let mut stdout = config.stdout.lock();
 
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
-    writeln!(stdout, "change n° {}", change.number)?;
+    writeln!(stdout, "Change {}", change.number)?;
 
     let lines = change
         .revisions
