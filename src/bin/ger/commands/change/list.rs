@@ -46,10 +46,10 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
                 if height > 0 {
                     height as u32
                 } else {
-                    20
+                    25
                 }
             }
-            None => 20,
+            None => 25,
         });
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
@@ -103,7 +103,7 @@ pub fn show_list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<()
             write!(stdout, " {}", owner_name)?;
         }
 
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Magenta)))?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Magenta)).set_intense(true))?;
         write!(
             stdout,
             " {}",
