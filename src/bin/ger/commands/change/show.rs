@@ -58,6 +58,22 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
     writeln!(stdout, "Change {}", change.number)?;
 
+    if let Some(owner_name) = &change.owner.name {
+        stdout.set_color(
+            ColorSpec::new()
+                .set_fg(Some(Color::Black))
+                .set_intense(true),
+        )?;
+        writeln!(stdout, "Owner: {}", owner_name)?;
+    }
+
+    stdout.reset()?;
+    writeln!(
+        stdout,
+        "Commit: {}",
+        change.current_revision.as_ref().unwrap()
+    )?;
+
     let lines = change
         .revisions
         .as_ref()
