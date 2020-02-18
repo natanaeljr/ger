@@ -12,9 +12,9 @@ pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("show")
         .about("Show information about changes.")
         .arg(Arg::with_name("change").required(true).help(
-            "Change identifier.\n\
-             Can be either a legacy numerical id (e.g. 15813),\
-             full or abbreviated Change-Id (e.g. Ic0ff33)\
+            "Change identifier. \
+             Can be either a legacy numerical id (e.g. 15813), \
+             full or abbreviated Change-Id (e.g. Ic0ff33) \
              or commit SHA-1 (e.g. d81b32ef).",
         ))
         .arg(
