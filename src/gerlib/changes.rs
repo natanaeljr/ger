@@ -2,6 +2,7 @@ use crate::accounts::*;
 use crate::details::Timestamp;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::Display;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// The status of the change.
@@ -154,6 +155,20 @@ pub enum SubmitType {
     CherryPick,
     RebaseIfNecessary,
     RebaseAlways,
+}
+
+impl std::fmt::Display for SubmitType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.write_str(match *self {
+            SubmitType::Inherit => "Inherit",
+            SubmitType::FastForwardOnly => "Fast-Forward only",
+            SubmitType::MergeIfNecessary => "Merge if Necessary",
+            SubmitType::AlwaysMerge => "Always Merge",
+            SubmitType::CherryPick => "Cherry-Pick",
+            SubmitType::RebaseIfNecessary => "Rebase if Necessary",
+            SubmitType::RebaseAlways => "Rebase Always",
+        })
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

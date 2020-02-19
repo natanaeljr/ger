@@ -68,15 +68,9 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     writeln!(stdout, " - {}", status)?;
 
     stdout.reset()?;
-    write!(stdout, "Owner:   ")?;
-    stdout.set_color(
-        ColorSpec::new()
-            .set_fg(Some(Color::Black))
-            .set_intense(true),
-    )?;
     write!(
         stdout,
-        "{}",
+        "Owner:    {}",
         change
             .owner
             .name
@@ -89,36 +83,27 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     }
     stdout.write_all(b"\n")?;
 
-    stdout.reset()?;
-    write!(stdout, "Updated: ")?;
-    stdout.set_color(
-        ColorSpec::new()
-            .set_fg(Some(Color::Magenta))
-            .set_intense(true),
-    )?;
-    writeln!(stdout, "{}", util::format_short_datetime(&change.updated.0))?;
-
-    stdout.reset()?;
-    write!(stdout, "Project: ")?;
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?;
-    writeln!(stdout, "{}", change.project)?;
-
-    stdout.reset()?;
-    write!(stdout, "Branch:  ")?;
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)).set_intense(true))?;
-    writeln!(stdout, "{}", change.branch)?;
-
-    stdout.reset()?;
-    write!(stdout, "Topic:   ")?;
-    if let Some(topic) = &change.topic {
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)).set_bold(true))?;
-        writeln!(stdout, "{}", topic)?;
-    }
-
-    stdout.reset()?;
     writeln!(
         stdout,
-        "Commit:  {}",
+        "Updated:  {}",
+        util::format_long_datetime(&change.updated.0)
+    )?;
+
+    writeln!(stdout, "Project:  {}", change.project)?;
+
+    writeln!(stdout, "Branch:   {}", change.branch)?;
+
+    if let Some(topic) = &change.topic {
+        writeln!(stdout, "Topic:    {}", topic)?;
+    }
+
+    if let Some(strategy) = &change.submit_type {
+        writeln!(stdout, "Strategy: {}", strategy)?;
+    }
+
+    writeln!(
+        stdout,
+        "Commit:   {}",
         change.current_revision.as_ref().unwrap()
     )?;
 
@@ -134,7 +119,6 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
         .message
         .lines();
 
-    stdout.reset()?;
     stdout.write_all(b"\n")?;
 
     for line in lines {
