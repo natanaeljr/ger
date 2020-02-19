@@ -1,5 +1,6 @@
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
+use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use gerlib::changes::ChangeInfo;
 use http::uri::PathAndQuery;
@@ -56,21 +57,68 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     let mut stdout = config.stdout.lock();
 
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
-    writeln!(stdout, "Change {}", change.number)?;
+    write!(stdout, "Change {}", change.number)?;
 
-    if let Some(owner_name) = &change.owner.name {
-        stdout.set_color(
-            ColorSpec::new()
-                .set_fg(Some(Color::Black))
-                .set_intense(true),
-        )?;
-        writeln!(stdout, "Owner: {}", owner_name)?;
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
+    let status = if change.work_in_progress {
+        "Work-in-Progress".to_string()
+    } else {
+        change.status.to_string()
+    };
+    writeln!(stdout, " - {}", status)?;
+
+    stdout.reset()?;
+    write!(stdout, "Owner:   ")?;
+    stdout.set_color(
+        ColorSpec::new()
+            .set_fg(Some(Color::Black))
+            .set_intense(true),
+    )?;
+    write!(
+        stdout,
+        "{}",
+        change
+            .owner
+            .name
+            .as_ref()
+            .or_else(|| change.owner.username.as_ref())
+            .unwrap()
+    )?;
+    if let Some(owner_email) = &change.owner.email {
+        write!(stdout, " <{}>", owner_email)?;
+    }
+    stdout.write_all(b"\n")?;
+
+    stdout.reset()?;
+    write!(stdout, "Updated: ")?;
+    stdout.set_color(
+        ColorSpec::new()
+            .set_fg(Some(Color::Magenta))
+            .set_intense(true),
+    )?;
+    writeln!(stdout, "{}", util::format_short_datetime(&change.updated.0))?;
+
+    stdout.reset()?;
+    write!(stdout, "Project: ")?;
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?;
+    writeln!(stdout, "{}", change.project)?;
+
+    stdout.reset()?;
+    write!(stdout, "Branch:  ")?;
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)).set_intense(true))?;
+    writeln!(stdout, "{}", change.branch)?;
+
+    stdout.reset()?;
+    write!(stdout, "Topic:   ")?;
+    if let Some(topic) = &change.topic {
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)).set_bold(true))?;
+        writeln!(stdout, "{}", topic)?;
     }
 
     stdout.reset()?;
     writeln!(
         stdout,
-        "Commit: {}",
+        "Commit:  {}",
         change.current_revision.as_ref().unwrap()
     )?;
 

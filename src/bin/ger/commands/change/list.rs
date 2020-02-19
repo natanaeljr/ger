@@ -19,7 +19,10 @@ pub fn cli() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("limit")
                 .validator(util::validate::is_u32)
-                .help("Limit the number of changes to output."),
+                .help(
+                    "Limit the number of changes to output. Defaults to the terminal height. \
+                        If stdout is not a tty, the default falls back to 25.",
+                ),
         )
         .arg(
             Arg::with_name("remote")
@@ -126,7 +129,12 @@ pub fn list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<(), fai
         }
 
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
-        write!(stdout, " {}", change.status)?;
+        let status = if change.work_in_progress {
+            "WIP".to_string()
+        } else {
+            change.status.to_string()
+        };
+        write!(stdout, " {}", status)?;
 
         stdout.reset()?;
         write!(stdout, " {}", change.subject)?;
