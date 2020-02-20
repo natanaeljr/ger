@@ -21,7 +21,7 @@ pub fn cli() -> App<'static, 'static> {
                 .validator(util::validate::is_u32)
                 .help(
                     "Limit the number of changes to output. Defaults to the terminal height. \
-                        If stdout is not a tty, the default falls back to 25.",
+                     If stdout is not a tty, the default falls back to 25.",
                 ),
         )
         .arg(

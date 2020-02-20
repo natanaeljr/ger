@@ -33,7 +33,7 @@ pub fn cli() -> App<'static, 'static> {
                 .value_name("STRING")
                 .help(
                     "HTTP password. Can be generated in gerrit user settings menu.\n\
-                         Note: this password is saved in plain text in the configuration file.",
+                     Note: this password is saved in plain text in the configuration file.",
                 ),
         )
         .arg(

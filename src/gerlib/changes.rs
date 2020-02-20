@@ -1,8 +1,7 @@
 use crate::accounts::*;
 use crate::details::Timestamp;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::Display;
+use std::collections::{BTreeMap, HashMap};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// The status of the change.
@@ -207,13 +206,109 @@ pub struct ChangeMessageInfo {}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct RevisionInfo {
+    /// The commit of the patch set as CommitInfo entity.
     pub commit: Option<CommitInfo>,
+    /// The files of the patch set as a map that maps the file names to FileInfo entities.
+    /// Only set if CURRENT_FILES or ALL_FILES option is requested.
+    pub files: Option<BTreeMap<String, FileInfo>>,
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct FileInfo {
+    /// The status of the file
+    #[serde(default)]
+    pub status: FileStatus,
+    /// Whether the file is binary.
+    #[serde(default)]
+    pub binary: bool,
+    /// The old file path.
+    /// Only set if the file was renamed or copied.
+    pub old_path: Option<String>,
+    /// Number of inserted lines.
+    /// Not set for binary files or if no lines were inserted.
+    /// An empty last line is not included in the count and hence this number can differ by one
+    /// from details provided in <<#diff-info,DiffInfo>>.
+    pub lines_inserted: Option<u32>,
+    /// Number of deleted lines.
+    /// Not set for binary files or if no lines were deleted.
+    /// An empty last line is not included in the count and hence this number can differ by one
+    /// from details provided in <<#diff-info,DiffInfo>>.
+    pub lines_deleted: Option<u32>,
+    /// Number of bytes by which the file size increased/decreased.
+    pub size_delta: i32,
+    /// File size in bytes.
+    pub size: Option<u32>,
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub enum FileStatus {
+    #[serde(rename = "M")]
+    Modified,
+    #[serde(rename = "A")]
+    Added,
+    #[serde(rename = "D")]
+    Deleted,
+    #[serde(rename = "R")]
+    Renamed,
+    #[serde(rename = "C")]
+    Copied,
+    #[serde(rename = "W")]
+    Rewritten,
+}
+
+impl Default for FileStatus {
+    fn default() -> Self {
+        FileStatus::Modified
+    }
+}
+
+impl FileStatus {
+    pub fn initial(&self) -> char {
+        match *self {
+            FileStatus::Modified => 'M',
+            FileStatus::Added => 'A',
+            FileStatus::Deleted => 'D',
+            FileStatus::Renamed => 'R',
+            FileStatus::Copied => 'C',
+            FileStatus::Rewritten => 'W',
+        }
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitInfo {
-    pub message: String,
+    /// The commit ID. Not set if included in a RevisionInfo entity that is contained in a map
+    /// which has the commit ID as key.
+    pub commit: Option<String>,
+    /// The parent commits of this commit as a list of CommitInfo entities.
+    /// In each parentonly the commit and subject fields are populated.
+    pub parents: Option<Vec<CommitInfo>>,
+    /// The author of the commit as a GitPersonInfo entity.
+    pub author: Option<GitPersonInfo>,
+    /// The committer of the commit as a GitPersonInfo entity.
+    pub committer: Option<GitPersonInfo>,
+    /// The subject of the commit (header line of the commit message).
+    pub subject: String,
+    /// The commit message.
+    pub message: Option<String>,
+    /// Links to the commit in external sites as a list of WebLinkInfo entities.
+    pub web_links: Option<WebLinkInfo>,
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct GitPersonInfo {
+    /// The name of the author/committer.
+    pub name: String,
+    /// The email address of the author/committer.
+    pub email: String,
+    /// The timestamp of when this identity was constructed.
+    pub date: Timestamp,
+    /// The timezone offset from UTC of when this identity was constructed.
+    pub tz: i32,
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

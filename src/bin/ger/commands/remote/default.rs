@@ -27,10 +27,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
 /// Set remote as default remote
 pub fn set(config: &mut CliConfig, remote: &str) -> Result<(), failure::Error> {
     if config.user.settings.remotes.contains_key(remote) {
-        config
-            .user
-            .settings
-            .set_default_remote(Some(remote.into()));
+        config.user.settings.set_default_remote(Some(remote.into()));
         config.user.store()?;
         Ok(())
     } else {
