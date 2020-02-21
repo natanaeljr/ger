@@ -61,7 +61,7 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
 
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
     let status = if change.work_in_progress {
-        "Work-in-Progress".to_string()
+        "WIP".to_string()
     } else {
         change.status.to_string()
     };
