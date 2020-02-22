@@ -39,7 +39,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let mut rest = get_remote_restapi_handler(config, remote)?;
 
     let uri: PathAndQuery = format!(
-        "/a/changes/{}/?o=CURRENT_REVISION&o=CURRENT_COMMIT&o=DETAILED_ACCOUNTS&o=CURRENT_FILES",
+        "/a/changes/{}/?o=CURRENT_REVISION&o=CURRENT_COMMIT&o=DETAILED_ACCOUNTS&o=CURRENT_FILES&o=DETAILED_LABELS",
         change_id
     )
     .parse()?;
@@ -175,6 +175,77 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
             file.0,
             (file.1.lines_inserted.unwrap_or(0) + file.1.lines_deleted.unwrap_or(0))
         )?;
+    }
+
+    stdout.write_all(b"\n")?;
+
+    if let Some(labels) = &change.labels {
+        let mut label_maxlen = 0;
+        for label in labels {
+            if label.0.len() > label_maxlen {
+                label_maxlen = label.0.len();
+            }
+        }
+
+        for label in labels {
+            let mut max = 0;
+            let mut min = 0;
+            if let Some(values) = &label.1.values {
+                for value in values {
+                    let value: i32 = value.0.trim().parse()?;
+                    if value > max {
+                        max = value;
+                    }
+                    if value < min {
+                        min = value;
+                    }
+                }
+            }
+
+            let mut padding = label_maxlen - label.0.len();
+
+            write!(stdout, "{}:", label.0)?;
+            let mut no_vote = true;
+
+            for approval in label.1.all.as_ref().unwrap() {
+                if let Some(value) = approval.value {
+                    if value != 0 {
+                        no_vote = false;
+
+                        let mut color_spec = ColorSpec::new();
+                        if value > 0 {
+                            color_spec.set_fg(Some(Color::Green));
+                        } else {
+                            color_spec.set_fg(Some(Color::Red));
+                        }
+                        if value == max || value == min {
+                            color_spec.set_bold(true).set_intense(true);
+                        }
+                        stdout.set_color(&color_spec)?;
+
+                        if padding > 0 {
+                            write!(stdout, "{0:1$}", ' ', padding)?;
+                        }
+                        write!(stdout, " {:+}", value)?;
+                        stdout.reset()?;
+
+                        if let Some(name) = &approval.account.name {
+                            write!(stdout, " {}", name)?;
+                        }
+                        if let Some(email) = &approval.account.email {
+                            write!(stdout, " <{}>", email)?;
+                        }
+
+                        stdout.write_all(b"\n")?;
+                        padding = label_maxlen + 1;
+                    }
+                }
+            }
+
+            if no_vote {
+                stdout.write_all(b"\n")?;
+            }
+        }
     }
 
     Ok(())
