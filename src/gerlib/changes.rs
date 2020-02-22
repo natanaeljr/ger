@@ -94,7 +94,7 @@ pub struct ChangeInfo {
     pub labels: Option<HashMap<String, LabelInfo>>,
     /// A map of the permitted labels that maps a label name to the list of values that are allowed
     /// for that label. Only set if detailed labels are requested.
-    pub permitted_labels: Option<HashMap<String, LabelInfo>>,
+    pub permitted_labels: Option<HashMap<String, Vec<String>>>,
     /// The reviewers that can be removed by the calling user as a list of AccountInfo entities.
     /// Only set if detailed labels are requested.
     pub removable_reviewers: Option<Vec<AccountInfo>>,
@@ -178,7 +178,7 @@ pub enum ReviewerState {
     /// Users with at least one non-zero vote on the change.
     Reviewer,
     /// Users that were added to the change, but have not voted.
-    CC,
+    Cc,
     /// Users that were previously reviewers on the change, but have been removed.
     Removed,
 }
