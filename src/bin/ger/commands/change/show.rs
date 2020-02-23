@@ -70,7 +70,7 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     stdout.reset()?;
     write!(
         stdout,
-        "Owner:     {}",
+        "Owner:       {}",
         change
             .owner
             .name
@@ -85,20 +85,20 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
 
     writeln!(
         stdout,
-        "Updated:   {}",
+        "Updated:     {}",
         util::format_long_datetime(&change.updated.0)
     )?;
 
-    writeln!(stdout, "Project:   {}", change.project)?;
+    writeln!(stdout, "Project:     {}", change.project)?;
 
-    writeln!(stdout, "Branch:    {}", change.branch)?;
+    writeln!(stdout, "Branch:      {}", change.branch)?;
 
     if let Some(topic) = &change.topic {
-        writeln!(stdout, "Topic:     {}", topic)?;
+        writeln!(stdout, "Topic:       {}", topic)?;
     }
 
     if let Some(strategy) = &change.submit_type {
-        writeln!(stdout, "Strategy:  {}", strategy)?;
+        writeln!(stdout, "Strategy:    {}", strategy)?;
     }
 
     let current_revision = change
@@ -111,73 +111,22 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     let current_commit = current_revision.commit.as_ref().unwrap();
 
     if let Some(author) = current_commit.author.as_ref() {
-        writeln!(stdout, "Author:    {} <{}>", author.name, author.email)?;
+        writeln!(stdout, "Author:      {} <{}>", author.name, author.email)?;
     }
 
     if let Some(committer) = current_commit.committer.as_ref() {
         writeln!(
             stdout,
-            "Committer: {} <{}>",
+            "Committer:   {} <{}>",
             committer.name, committer.email
         )?;
     }
 
     writeln!(
         stdout,
-        "Commit:    {}",
+        "Commit:      {}",
         change.current_revision.as_ref().unwrap()
     )?;
-
-    let lines = current_commit.message.as_ref().unwrap().lines();
-
-    stdout.write_all(b"\n")?;
-
-    for line in lines {
-        writeln!(stdout, "    {}", line)?;
-    }
-
-    stdout.write_all(b"\n")?;
-
-    let current_files = current_revision.files.as_ref().unwrap();
-    if !current_files.is_empty() {
-        writeln!(stdout, "Files:")?;
-    }
-
-    for file in current_files {
-        match &file.1.status {
-            FileStatus::Modified => stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?,
-            FileStatus::Added => stdout.set_color(
-                ColorSpec::new()
-                    .set_fg(Some(Color::Green))
-                    .set_intense(true),
-            )?,
-            FileStatus::Deleted => stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?,
-            FileStatus::Renamed => {
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?
-            }
-            FileStatus::Copied => stdout.set_color(
-                ColorSpec::new()
-                    .set_fg(Some(Color::Magenta))
-                    .set_intense(true),
-            )?,
-            FileStatus::Rewritten => stdout.set_color(
-                ColorSpec::new()
-                    .set_fg(Some(Color::White))
-                    .set_intense(true),
-            )?,
-        }
-        write!(stdout, " {}", file.1.status.initial())?;
-
-        stdout.reset()?;
-        writeln!(
-            stdout,
-            " {} | {}",
-            file.0,
-            (file.1.lines_inserted.unwrap_or(0) + file.1.lines_deleted.unwrap_or(0))
-        )?;
-    }
-
-    stdout.write_all(b"\n")?;
 
     if let Some(labels) = &change.labels {
         let mut label_maxlen = 0;
@@ -246,6 +195,54 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
                 stdout.write_all(b"\n")?;
             }
         }
+    }
+
+    stdout.write_all(b"\n")?;
+
+    let lines = current_commit.message.as_ref().unwrap().lines();
+    for line in lines {
+        writeln!(stdout, "    {}", line)?;
+    }
+
+    stdout.write_all(b"\n")?;
+
+    let current_files = current_revision.files.as_ref().unwrap();
+    if !current_files.is_empty() {
+        writeln!(stdout, "Files:")?;
+    }
+
+    for file in current_files {
+        match &file.1.status {
+            FileStatus::Modified => stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?,
+            FileStatus::Added => stdout.set_color(
+                ColorSpec::new()
+                    .set_fg(Some(Color::Green))
+                    .set_intense(true),
+            )?,
+            FileStatus::Deleted => stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?,
+            FileStatus::Renamed => {
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?
+            }
+            FileStatus::Copied => stdout.set_color(
+                ColorSpec::new()
+                    .set_fg(Some(Color::Magenta))
+                    .set_intense(true),
+            )?,
+            FileStatus::Rewritten => stdout.set_color(
+                ColorSpec::new()
+                    .set_fg(Some(Color::White))
+                    .set_intense(true),
+            )?,
+        }
+        write!(stdout, " {}", file.1.status.initial())?;
+
+        stdout.reset()?;
+        writeln!(
+            stdout,
+            " {} | {}",
+            file.0,
+            (file.1.lines_inserted.unwrap_or(0) + file.1.lines_deleted.unwrap_or(0))
+        )?;
     }
 
     Ok(())
