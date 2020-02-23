@@ -211,38 +211,96 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
         writeln!(stdout, "Files:")?;
     }
 
+    let mut file_maxlen = 0;
     for file in current_files {
-        match &file.1.status {
-            FileStatus::Modified => stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?,
-            FileStatus::Added => stdout.set_color(
-                ColorSpec::new()
-                    .set_fg(Some(Color::Green))
-                    .set_intense(true),
-            )?,
-            FileStatus::Deleted => stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?,
-            FileStatus::Renamed => {
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?
-            }
-            FileStatus::Copied => stdout.set_color(
-                ColorSpec::new()
-                    .set_fg(Some(Color::Magenta))
-                    .set_intense(true),
-            )?,
-            FileStatus::Rewritten => stdout.set_color(
-                ColorSpec::new()
-                    .set_fg(Some(Color::White))
-                    .set_intense(true),
-            )?,
+        if file.0.len() > file_maxlen {
+            file_maxlen = file.0.len();
         }
-        write!(stdout, " {}", file.1.status.initial())?;
+    }
 
-        stdout.reset()?;
-        writeln!(
-            stdout,
-            " {} | {}",
-            file.0,
-            (file.1.lines_inserted.unwrap_or(0) + file.1.lines_deleted.unwrap_or(0))
-        )?;
+    if !current_files.is_empty() {
+        let mut total_lines_inserted = 0;
+        let mut total_lines_deleted = 0;
+
+        for file in current_files {
+            match &file.1.status {
+                FileStatus::Modified => {
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?
+                }
+                FileStatus::Added => stdout.set_color(
+                    ColorSpec::new()
+                        .set_fg(Some(Color::Green))
+                        .set_intense(true),
+                )?,
+                FileStatus::Deleted => {
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?
+                }
+                FileStatus::Renamed => {
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?
+                }
+                FileStatus::Copied => stdout.set_color(
+                    ColorSpec::new()
+                        .set_fg(Some(Color::Magenta))
+                        .set_intense(true),
+                )?,
+                FileStatus::Rewritten => stdout.set_color(
+                    ColorSpec::new()
+                        .set_fg(Some(Color::White))
+                        .set_intense(true),
+                )?,
+            }
+            write!(stdout, " {}", file.1.status.initial())?;
+
+            stdout.reset()?;
+            write!(stdout, " {}", file.0,)?;
+
+            let padding = file_maxlen - file.0.len();
+            if padding > 0 {
+                write!(stdout, "{0:1$}", ' ', padding)?;
+            }
+            stdout.write_all(b" |")?;
+
+            if let Some(lines_inserted) = file.1.lines_inserted {
+                total_lines_inserted += lines_inserted;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+                stdout.write_all(b" +")?;
+                stdout.reset()?;
+                write!(stdout, "{}", lines_inserted)?;
+            }
+
+            if let Some(lines_deleted) = file.1.lines_deleted {
+                total_lines_deleted += lines_deleted;
+                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+                stdout.write_all(b" -")?;
+                stdout.reset()?;
+                write!(stdout, "{}", lines_deleted)?;
+            }
+
+            stdout.reset()?;
+            stdout.write_all(b"\n")?;
+        }
+
+        //        let file_s = if current_files.len() > 1 { "s" } else { "" };
+        //        let total_str = format!(" total {} file{} changed", current_files.len(), file_s);
+        //        write!(stdout, "{}", total_str)?;
+        //
+        //        let padding = file_maxlen - total_str.len() + 3;
+        //        if padding > 0 {
+        //            write!(stdout, "{0:1$}", ' ', padding)?;
+        //        }
+        //        stdout.write_all(b" |")?;
+        //
+        //        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+        //        stdout.write_all(b" +")?;
+        //        stdout.reset()?;
+        //        write!(stdout, "{}", total_lines_inserted)?;
+        //
+        //        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+        //        stdout.write_all(b" -")?;
+        //        stdout.reset()?;
+        //        write!(stdout, "{}", total_lines_deleted)?;
+        //
+        //        stdout.write_all(b"\n")?;
     }
 
     Ok(())
