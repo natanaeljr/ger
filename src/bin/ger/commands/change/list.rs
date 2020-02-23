@@ -14,10 +14,11 @@ pub fn cli() -> App<'static, 'static> {
         .visible_alias("ls")
         .about("Lists changes.")
         .arg(
-            Arg::with_name("max-count")
+            Arg::with_name("limit")
+                .long("limit")
                 .short("n")
                 .takes_value(true)
-                .value_name("limit")
+                .value_name("max-count")
                 .validator(util::validate::is_u32)
                 .help(
                     "Limit the number of changes to output. Defaults to the terminal height. \
@@ -40,8 +41,8 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let args = args.unwrap();
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
-    let max_count = args
-        .value_of("max-count")
+    let limit = args
+        .value_of("limit")
         .map(|n| n.parse::<u32>().unwrap())
         .unwrap_or_else(|| match term_size::dimensions_stdout() {
             Some((_, h)) => {
@@ -60,7 +61,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let queries = ChangeOptions {
         queries: vec![Query(QueryOpt::Is(ChangeIs::Open))],
         additional_opts: vec![],
-        limit: Some(max_count),
+        limit: Some(limit),
         start: None,
     };
 

@@ -97,10 +97,6 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
         writeln!(stdout, "Topic:       {}", topic)?;
     }
 
-    if let Some(strategy) = &change.submit_type {
-        writeln!(stdout, "Strategy:    {}", strategy)?;
-    }
-
     let current_revision = change
         .revisions
         .as_ref()
@@ -127,6 +123,10 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
         "Commit:      {}",
         change.current_revision.as_ref().unwrap()
     )?;
+
+    if let Some(strategy) = &change.submit_type {
+        writeln!(stdout, "Strategy:    {}", strategy)?;
+    }
 
     if let Some(labels) = &change.labels {
         let mut label_maxlen = 0;

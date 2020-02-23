@@ -18,10 +18,11 @@ pub fn cli() -> App<'static, 'static> {
                 .help("Project name."),
         )
         .arg(
-            Arg::with_name("max-count")
+            Arg::with_name("limit")
+                .long("limit")
                 .short("n")
                 .takes_value(true)
-                .value_name("limit")
+                .value_name("max-count")
                 .validator(util::validate::is_u32)
                 .help("Limit the number of projects to output."),
         )
@@ -51,7 +52,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let args = args.unwrap();
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
-    let max_count = args.value_of("max-count");
+    let limit = args.value_of("limit");
     let prefix = args.value_of("prefix");
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
@@ -60,7 +61,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     if let Some(prefix) = prefix {
         query_str = format!("{}&p={}", query_str, prefix);
     }
-    if let Some(limit) = max_count {
+    if let Some(limit) = limit {
         query_str = format!("{}&n={}", query_str, limit);
     }
     let uri: PathAndQuery = format!("/a/projects/{}", query_str).parse()?;
