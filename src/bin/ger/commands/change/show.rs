@@ -156,39 +156,46 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
             write!(stdout, "{}:", label.0)?;
             let mut no_vote = true;
 
-            for approval in label.1.all.as_ref().unwrap() {
-                if let Some(value) = approval.value {
-                    if value != 0 {
-                        no_vote = false;
+            if let Some(label_all) = &label.1.all {
+                for approval in label_all {
+                    if let Some(value) = approval.value {
+                        if value != 0 {
+                            no_vote = false;
 
-                        let mut color_spec = ColorSpec::new();
-                        if value > 0 {
-                            color_spec.set_fg(Some(Color::Green));
-                        } else {
-                            color_spec.set_fg(Some(Color::Red));
-                        }
-                        if value == max || value == min {
-                            color_spec.set_bold(true).set_intense(true);
-                        }
-                        stdout.set_color(&color_spec)?;
+                            let mut color_spec = ColorSpec::new();
+                            if value > 0 {
+                                color_spec.set_fg(Some(Color::Green));
+                            } else {
+                                color_spec.set_fg(Some(Color::Red));
+                            }
+                            if value == max || value == min {
+                                color_spec.set_bold(true).set_intense(true);
+                            }
+                            stdout.set_color(&color_spec)?;
 
-                        if padding > 0 {
-                            write!(stdout, "{0:1$}", ' ', padding)?;
-                        }
-                        write!(stdout, " {:+}", value)?;
-                        stdout.reset()?;
+                            if padding > 0 {
+                                write!(stdout, "{0:1$}", ' ', padding)?;
+                            }
+                            write!(stdout, " {:+}", value)?;
+                            stdout.reset()?;
 
-                        if let Some(name) = &approval.account.name {
-                            write!(stdout, " {}", name)?;
-                        }
-                        if let Some(email) = &approval.account.email {
-                            write!(stdout, " <{}>", email)?;
-                        }
+                            if let Some(name) = &approval.account.name {
+                                write!(stdout, " {}", name)?;
+                            }
+                            if let Some(email) = &approval.account.email {
+                                write!(stdout, " <{}>", email)?;
+                            }
 
-                        stdout.write_all(b"\n")?;
-                        padding = label_maxlen + 1;
+                            stdout.write_all(b"\n")?;
+                            padding = label_maxlen + 1;
+                        }
                     }
                 }
+            } else {
+                if padding > 0 {
+                    write!(stdout, "{0:1$}", ' ', padding)?;
+                }
+                stdout.write_all(b" -")?;
             }
 
             if no_vote {
