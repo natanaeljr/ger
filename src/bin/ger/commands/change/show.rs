@@ -219,8 +219,8 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     }
 
     if !current_files.is_empty() {
-        let mut total_lines_inserted = 0;
-        let mut total_lines_deleted = 0;
+        //        let mut total_lines_inserted = 0;
+        //        let mut total_lines_deleted = 0;
 
         for file in current_files {
             match &file.1.status {
@@ -261,7 +261,7 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
             stdout.write_all(b" |")?;
 
             if let Some(lines_inserted) = file.1.lines_inserted {
-                total_lines_inserted += lines_inserted;
+                //                total_lines_inserted += lines_inserted;
                 stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
                 stdout.write_all(b" +")?;
                 stdout.reset()?;
@@ -269,7 +269,7 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
             }
 
             if let Some(lines_deleted) = file.1.lines_deleted {
-                total_lines_deleted += lines_deleted;
+                //                total_lines_deleted += lines_deleted;
                 stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
                 stdout.write_all(b" -")?;
                 stdout.reset()?;
