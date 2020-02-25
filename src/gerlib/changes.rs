@@ -3,9 +3,8 @@ use crate::details::Timestamp;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 /// The status of the change.
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ChangeStatus {
     New,
@@ -16,13 +15,17 @@ pub enum ChangeStatus {
 
 impl std::fmt::Display for ChangeStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(format!("{:?}", self).to_uppercase().as_str())
+        f.write_str(match self {
+            ChangeStatus::New => "NEW",
+            ChangeStatus::Merged => "MERGED",
+            ChangeStatus::Abandoned => "ABANDONED",
+            ChangeStatus::Draft => "DRAFT",
+        })
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 /// The ChangeInfo entity contains information about a change.
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChangeInfo {
     /// The ID of the change in the format "'<project>~<branch>~<Change-Id>'",
     /// where 'project', 'branch' and 'Change-Id' are URL encoded.
@@ -143,8 +146,7 @@ pub struct ChangeInfo {
     pub submission_id: Option<String>,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SubmitType {
     Inherit,
@@ -158,7 +160,7 @@ pub enum SubmitType {
 
 impl std::fmt::Display for SubmitType {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(match *self {
+        f.write_str(match self {
             SubmitType::Inherit => "Inherit",
             SubmitType::FastForwardOnly => "Fast-Forward only",
             SubmitType::MergeIfNecessary => "Merge if Necessary",
@@ -170,8 +172,7 @@ impl std::fmt::Display for SubmitType {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/// Reviewer State
+/// The Reviewer State
 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReviewerState {
@@ -183,16 +184,13 @@ pub enum ReviewerState {
     Removed,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ActionInfo {}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Requirement {}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LabelInfo {
     /// Whether the label is optional. Optional means the label may be set,
     /// but it’s neither necessary for submission nor does it block submission if set.
@@ -228,7 +226,7 @@ pub struct LabelInfo {
 
 /// The ApprovalInfo entity contains information about an approval from a user for a label on a change.
 /// ApprovalInfo has the same fields as AccountInfo. In addition to the following fields:
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ApprovalInfo {
     /// The account information entity.
     #[serde(flatten)]
@@ -252,7 +250,7 @@ pub struct ApprovalInfo {
 }
 
 /// The VotingRangeInfo entity describes the continuous voting range from min to max values.
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct VotingRangeInfo {
     /// The minimum voting value.
     pub min: i32,
@@ -260,16 +258,13 @@ pub struct VotingRangeInfo {
     pub max: i32,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ReviewerUpdateInfo {}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChangeMessageInfo {}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RevisionInfo {
     /// The commit of the patch set as CommitInfo entity.
     pub commit: Option<CommitInfo>,
@@ -278,8 +273,7 @@ pub struct RevisionInfo {
     pub files: Option<BTreeMap<String, FileInfo>>,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FileInfo {
     /// The status of the file
     #[serde(default)]
@@ -306,8 +300,7 @@ pub struct FileInfo {
     pub size: Option<u32>,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum FileStatus {
     #[serde(rename = "M")]
     Modified,
@@ -331,7 +324,7 @@ impl Default for FileStatus {
 
 impl FileStatus {
     pub fn initial(&self) -> char {
-        match *self {
+        match self {
             FileStatus::Modified => 'M',
             FileStatus::Added => 'A',
             FileStatus::Deleted => 'D',
@@ -342,8 +335,7 @@ impl FileStatus {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CommitInfo {
     /// The commit ID. Not set if included in a RevisionInfo entity that is contained in a map
     /// which has the commit ID as key.
@@ -363,8 +355,7 @@ pub struct CommitInfo {
     pub web_links: Option<WebLinkInfo>,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GitPersonInfo {
     /// The name of the author/committer.
     pub name: String,
@@ -376,19 +367,15 @@ pub struct GitPersonInfo {
     pub tz: i32,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TrackingIdInfo {}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ProblemInfo {}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WebLinkInfo {}
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
 pub struct ChangeOptions {
     pub queries: Vec<Query>,
@@ -416,7 +403,6 @@ impl ChangeOptions {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
 pub struct Query(pub QueryOpt);
 
@@ -426,7 +412,6 @@ impl Query {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
 pub enum QueryOpt {
     Is(ChangeIs),
@@ -454,7 +439,6 @@ impl std::fmt::Display for QueryOpt {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
 pub enum AdditionalOpt {
     Labels,
@@ -465,7 +449,6 @@ pub enum AdditionalOpt {
     Messages,
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
 pub enum ChangeIs {
     Assigned,
@@ -496,7 +479,6 @@ impl std::fmt::Display for ChangeIs {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
 #[derive(Debug)]
 pub enum Owner {
     _Self_,

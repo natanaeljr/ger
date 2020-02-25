@@ -17,10 +17,11 @@ pub fn cli() -> App<'static, 'static> {
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     match args.subcommand() {
-        ("dashboard", subargs) | ("", subargs) => {
+        ("", subargs) => {
             let def_args = ArgMatches::default();
             dashboard::exec(config, subargs.or(Some(&def_args)))
         }
+        ("dashboard", subargs) => dashboard::exec(config, subargs),
         ("list", subargs) => list::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
         _ => Ok(()),
