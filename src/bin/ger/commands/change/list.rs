@@ -130,12 +130,10 @@ pub fn list(config: &mut CliConfig, changes: &Vec<ChangeInfo>) -> Result<(), fai
         }
 
         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
-        let status = if change.work_in_progress {
-            "WIP".to_string()
-        } else {
-            change.status.to_string()
-        };
-        write!(stdout, " {}", status)?;
+        write!(stdout, " {}", &change.status)?;
+        if change.work_in_progress {
+            write!(stdout, " WIP")?;
+        }
 
         stdout.reset()?;
         write!(stdout, " {}", change.subject)?;

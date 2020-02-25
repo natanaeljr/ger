@@ -60,12 +60,11 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     write!(stdout, "Change {}", change.number)?;
 
     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
-    let status = if change.work_in_progress {
-        "WIP".to_string()
-    } else {
-        change.status.to_string()
-    };
-    writeln!(stdout, " - {}", status)?;
+    write!(stdout, " - {}", change.status)?;
+    if change.work_in_progress {
+        write!(stdout, " (WIP)")?;
+    }
+    stdout.write_all(b"\n")?;
 
     stdout.reset()?;
     write!(
