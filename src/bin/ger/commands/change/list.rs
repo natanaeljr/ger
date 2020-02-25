@@ -71,7 +71,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
 
     let uri: PathAndQuery = format!("/a/changes/?{}", query_str).parse()?;
     info!("uri: {}", uri);
-    let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
+    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
 
     list(config, &changes)?;

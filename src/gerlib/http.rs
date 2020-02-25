@@ -1,6 +1,7 @@
 use super::GerritConn;
 use curl::easy::Easy as CurlEasy;
 use log::{debug, trace};
+use std::io::Read;
 use url::Url;
 
 /// Handler for make request to Gerrit REST API
@@ -14,7 +15,6 @@ impl HttpRequestHandler {
     pub fn new(gerrit: GerritConn) -> Result<Self, failure::Error> {
         trace!("curl version: {}", curl::Version::get().version());
         let mut curl = CurlEasy::new();
-        curl.url(gerrit.host.as_str())?;
         curl.http_auth(curl::easy::Auth::new().basic(true).digest(true))?;
         curl.username(gerrit.username.as_str())?;
         curl.password(gerrit.http_password.as_str())?;
@@ -23,6 +23,7 @@ impl HttpRequestHandler {
             curl.ssl_verify_peer(false)?;
         }
         curl.follow_location(true)?;
+        curl.verbose(log::max_level() >= log::LevelFilter::Debug)?;
 
         Ok(Self {
             host: gerrit.host.into_owned(),
@@ -35,8 +36,6 @@ impl HttpRequestHandler {
         let url = Url::parse(self.host.as_str())?.join(uri)?;
         debug!("get url: {}", url.as_str());
         self.curl.url(url.as_str())?;
-        self.curl
-            .verbose(log::max_level() >= log::LevelFilter::Debug)?;
         let mut data: Vec<u8> = Vec::new();
         {
             let mut transfer = self.curl.transfer();
@@ -49,6 +48,31 @@ impl HttpRequestHandler {
         }
         let code = self.curl.response_code()?;
         let response = String::from_utf8_lossy(data.as_slice()).into_owned();
+        Ok((code, response))
+    }
+
+    pub fn post(&mut self, uri: &str, data: &[u8]) -> Result<(u32, String), failure::Error> {
+        let url = Url::parse(self.host.as_str())?.join(uri)?;
+        debug!("post url: {}", url.as_str());
+        self.curl.url(url.as_str())?;
+        self.curl.post(true)?;
+        let mut headers = curl::easy::List::new();
+        headers.append("Content-Type: application/json, charset=UTF-8")?;
+        self.curl.http_headers(headers)?;
+        let mut output: Vec<u8> = Vec::new();
+        {
+            let mut data_mut = data;
+            let mut transfer = self.curl.transfer();
+            transfer.read_function(|into| Ok(data_mut.read(into).unwrap()))?;
+            transfer.write_function(|new_data| {
+                output.extend_from_slice(new_data);
+                Ok(new_data.len())
+            })?;
+            transfer.debug_function(Self::curl_debug_function)?;
+            transfer.perform()?;
+        }
+        let code = self.curl.response_code()?;
+        let response = String::from_utf8_lossy(output.as_slice()).into_owned();
         Ok((code, response))
     }
 

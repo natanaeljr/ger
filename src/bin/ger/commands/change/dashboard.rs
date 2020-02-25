@@ -40,7 +40,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         .parse()?;
 
     info!("uri: {}", uri);
-    let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
+    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
     let changes_vec: Vec<Vec<ChangeInfo>> = serde_json::from_str(json.as_str())?;
 
     config.stdout.set_color(ColorSpec::new().set_italic(true))?;

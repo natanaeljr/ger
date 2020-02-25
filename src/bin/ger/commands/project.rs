@@ -67,7 +67,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let uri: PathAndQuery = format!("/a/projects/{}", query_str).parse()?;
     info!("uri: {}", uri);
 
-    let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
+    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
     let projects: HashMap<String, ProjectInfo> = serde_json::from_str(json.as_str())?;
     if projects.is_empty() {
         writeln!(config.stdout, "No projects.")?;
