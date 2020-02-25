@@ -36,6 +36,7 @@ termcolor = "1.0.5"
 atty = "0.2.14"
 term_size = "1.0.0-beta1"
 rpassword = "4.0"
+serde_url_params = "0.2.0"
 
 [dev-dependencies]
 tempfile = "3.1.0"

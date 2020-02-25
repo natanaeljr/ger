@@ -1,5 +1,6 @@
 use crate::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
 use crate::details::Timestamp;
+use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
@@ -1568,120 +1569,118 @@ pub struct WorkInProgressInput {
 /// REST API
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#[derive(Debug)]
-pub struct ChangeOptions {
-    pub queries: Vec<Query>,
-    pub additional_opts: Vec<AdditionalOpt>,
+/// Query parameters available for the change endpoint.
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct QueryParams {
+    /// Search string for filtering the changes.
+    #[serde(rename = "q")]
+    pub search_query: Option<String>,
+    /// Additional Options to extend the query results
+    #[serde(rename = "o")]
+    pub additional_opts: Option<Vec<AdditionalOpt>>,
+    /// Limit the returned results to no more than X records.
+    #[serde(rename = "n")]
     pub limit: Option<u32>,
+    /// The S or start query parameter can be supplied to skip a number of changes from the list.
+    #[serde(rename = "S")]
     pub start: Option<u32>,
 }
 
-impl ChangeOptions {
-    pub fn to_query_string(&self) -> String {
-        use std::fmt::Write;
-        let mut result = String::new();
-        for query in &self.queries {
-            let sym = if result.is_empty() { '?' } else { '&' };
-            let q_str = query.to_query_string();
-            if !q_str.is_empty() {
-                write!(result, "{}q={}", sym, q_str).unwrap();
-            }
-        }
-        let sym = if result.is_empty() { '?' } else { '&' };
-        if let Some(limit) = self.limit {
-            write!(result, "{}n={}", sym, limit).unwrap();
-        }
-        result
-    }
-}
-
-#[derive(Debug)]
-pub struct Query(pub QueryOpt);
-
-impl Query {
-    pub fn to_query_string(&self) -> String {
-        format!("{}", self.0)
-    }
-}
-
-#[derive(Debug)]
-pub enum QueryOpt {
-    Is(ChangeIs),
-    Topic(String),
-    Branch(String),
-    Project(String),
-    Owner(Owner),
-    Change(String),
-    Limit(u32),
-    Not(Box<QueryOpt>),
-}
-
-impl std::fmt::Display for QueryOpt {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            QueryOpt::Is(i) => write!(f, "is:{}", i),
-            QueryOpt::Topic(s) => write!(f, "topic:{}", s),
-            QueryOpt::Branch(s) => write!(f, "branch:{}", s),
-            QueryOpt::Project(s) => write!(f, "project:{}", s),
-            QueryOpt::Owner(o) => write!(f, "owner:{}", o),
-            QueryOpt::Change(s) => write!(f, "change:{}", s),
-            QueryOpt::Limit(u) => write!(f, "limit:{}", u),
-            QueryOpt::Not(q) => write!(f, "-{}", q),
-        }
-    }
-}
-
-#[derive(Debug)]
+/// Additional fields can be obtained by adding `o` parameters, each option requires more database
+/// lookups and slows down the query response time to the client so they are generally disabled by default.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum AdditionalOpt {
+    /// A summary of each label required for submit, and approvers that have granted (or rejected)
+    /// with that label.
     Labels,
+    /// Detailed label information, including numeric values of all existing approvals,
+    /// recognized label values, values permitted to be set by the current user, all reviewers by state,
+    /// and reviewers that may be removed by the current user.
     DetailedLabels,
+    /// Describe the current revision (patch set) of the change, including the commit SHA-1 and URLs to fetch from.
     CurrentRevision,
-    AllRevision,
+    /// Describe all revisions, not just current.
+    AllRevisions,
+    /// Include the commands field in the FetchInfo for revisions.
+    /// Only valid when the CURRENT_REVISION or ALL_REVISIONS option is selected.
     DownloadCommands,
+    /// Parse and output all header fields from the commit object, including message.
+    /// Only valid when the CURRENT_REVISION or ALL_REVISIONS option is selected.
+    CurrentCommit,
+    /// parse and output all header fields from the output revisions.
+    /// If only CURRENT_REVISION was requested then only the current revision’s commit data will be output.
+    AllCommits,
+    /// list files modified by the commit and magic files, including basic line counts inserted/deleted per file.
+    /// Only valid when the CURRENT_REVISION or ALL_REVISIONS option is selected.
+    CurrentFiles,
+    /// List files modified by the commit and magic files, including basic line counts inserted/deleted
+    /// per file. If only the CURRENT_REVISION was requested then only that commit’s modified files will be output.
+    AllFiles,
+    /// Include _account_id, email and username fields when referencing accounts.
+    DetailedAccounts,
+    /// Include updates to reviewers set as ReviewerUpdateInfo entities.
+    ReviewerUpdates,
+    /// Include messages associated with the change.
     Messages,
-}
-
-#[derive(Debug)]
-pub enum ChangeIs {
-    Assigned,
-    Unassigned,
-    Starred,
-    Watched,
+    /// Include information on available actions for the change and its current revision.
+    /// Ignored if the caller is not authenticated.
+    CurrentActions,
+    /// Include information on available change actions for the change.
+    /// Ignored if the caller is not authenticated.
+    ChangeActions,
+    /// Include the reviewed field if all of the following are true:
+    ///  - the change is open
+    ///  - the caller is authenticated
+    ///  - the caller has commented on the change more recently than the last update from the change owner,
+    ///    i.e. this change would show up in the results of reviewedby:self.
     Reviewed,
-    Owner,
-    Reviewer,
-    CC,
-    Ignored,
-    New,
-    Open,
-    Pending,
-    Draft,
-    Closed,
-    Merged,
-    Abandoned,
+    /// Skip the 'insertions' and 'deletions' field in ChangeInfo.
+    /// For large trees, their computation may be expensive.
+    SkipDiffstat,
+    /// Include the submittable field in ChangeInfo,
+    /// which can be used to tell if the change is reviewed and ready for submit.
     Submittable,
-    Mergeable,
-    Private,
-    WIP,
+    /// Include the web_links field in CommitInfo, therefore only valid in combination with CURRENT_COMMIT or ALL_COMMITS.
+    WebLinks,
+    /// Include potential problems with the change.
+    Check,
+    /// Include the full commit message with Gerrit-specific commit footers in the RevisionInfo.
+    CommitFooters,
+    /// Include push certificate information in the RevisionInfo. Ignored if signed push is not enabled on the server.
+    PushCertificates,
+    /// Include references to external tracking systems as TrackingIdInfo.
+    TrackingIds,
 }
 
-impl std::fmt::Display for ChangeIs {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(format!("{:?}", self).to_lowercase().as_str())
-    }
-}
-
-#[derive(Debug)]
-pub enum Owner {
-    _Self_,
-    Other(String),
-}
-
-impl std::fmt::Display for Owner {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Owner::_Self_ => f.write_str("self"),
-            Owner::Other(s) => f.write_str(s.as_str()),
-        }
-    }
-}
+// #[derive(Debug, Serialize, Deserialize)]
+// #[serde(rename_all = "lowercase")]
+// pub enum ChangeIs {
+//     Assigned,
+//     Unassigned,
+//     Starred,
+//     Watched,
+//     Reviewed,
+//     Owner,
+//     Reviewer,
+//     Cc,
+//     Ignored,
+//     New,
+//     Open,
+//     Pending,
+//     Draft,
+//     Closed,
+//     Merged,
+//     Abandoned,
+//     Submittable,
+//     Mergeable,
+//     Private,
+//     Wip,
+// }
+//
+// #[derive(Debug, Serialize, Deserialize)]
+// pub enum Owner {
+//     #[serde(rename = "self")]
+//     _Self_,
+//     Other(String),
+// }

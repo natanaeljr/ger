@@ -2,7 +2,7 @@ use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{ChangeInfo, ChangeIs, ChangeOptions, Query, QueryOpt};
+use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams};
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
@@ -56,21 +56,20 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
             None => 25,
         });
 
-    let mut rest = get_remote_restapi_handler(config, remote)?;
-
-    let queries = ChangeOptions {
-        queries: vec![Query(QueryOpt::Is(ChangeIs::Open))],
-        additional_opts: vec![],
+    let query_param = QueryParams {
+        search_query: Some("is:open".into()),
+        additional_opts: Some(vec![
+            AdditionalOpt::DetailedAccounts,
+            AdditionalOpt::CurrentRevision,
+        ]),
         limit: Some(limit),
         start: None,
     };
+    let query_str = serde_url_params::to_string(&query_param).unwrap();
 
-    let query_str = queries.to_query_string();
-    let uri: PathAndQuery = format!(
-        "/a/changes/{}&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION",
-        query_str
-    )
-    .parse()?;
+    let mut rest = get_remote_restapi_handler(config, remote)?;
+
+    let uri: PathAndQuery = format!("/a/changes/?{}", query_str).parse()?;
     info!("uri: {}", uri);
     let json = rest.request_json(uri, verbose >= Verbosity::Debug)?;
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
