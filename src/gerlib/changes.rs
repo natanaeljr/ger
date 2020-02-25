@@ -1,6 +1,5 @@
 use crate::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
 use crate::details::Timestamp;
-use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 
@@ -712,10 +711,6 @@ pub struct EditInfo {
     /// The files of the change edit as a map that maps the file names to FileInfo entities.
     pub files: Option<BTreeMap<String, FileInfo>>,
 }
-
-/// Empty object.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct EmptyObject {}
 
 /// The FetchInfo entity contains information about how to fetch a patch set via a certain protocol.
 #[derive(Debug, Serialize, Deserialize)]
@@ -1445,7 +1440,7 @@ pub struct SubmitRecord {
     pub need: Option<BTreeMap<String, AccountInfo>>,
     /// Map of labels that should have been in need but cannot be used by any user because of access restrictions.
     /// The value is currently an empty object.
-    pub impossible: Option<BTreeMap<String, EmptyObject>>,
+    pub impossible: Option<BTreeMap<String, ()>>,
     /// When status is RULE_ERROR this message provides some text describing the failure of the rule predicate.
     pub error_message: Option<String>,
 }
