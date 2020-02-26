@@ -43,17 +43,17 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
     let changes_vec: Vec<Vec<ChangeInfo>> = serde_json::from_str(json.as_str())?;
 
-    config.stdout.set_color(ColorSpec::new().set_italic(true))?;
+    config.stdout.set_color(ColorSpec::new().set_italic(true).set_bold(true))?;
     writeln!(config.stdout, "* Outgoing reviews:")?;
     config.stdout.reset()?;
     list::list(config, &changes_vec[0])?;
 
-    config.stdout.set_color(ColorSpec::new().set_italic(true))?;
+    config.stdout.set_color(ColorSpec::new().set_italic(true).set_bold(true))?;
     writeln!(config.stdout, "\n* Incoming reviews:")?;
     config.stdout.reset()?;
     list::list(config, &changes_vec[1])?;
 
-    config.stdout.set_color(ColorSpec::new().set_italic(true))?;
+    config.stdout.set_color(ColorSpec::new().set_italic(true).set_bold(true))?;
     writeln!(config.stdout, "\n* Recently closed:")?;
     config.stdout.reset()?;
     list::list(config, &changes_vec[2])?;
