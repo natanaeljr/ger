@@ -1307,7 +1307,7 @@ pub struct ReviewerInput {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RevisionInfo {
     /// The change kind.
-    pub kind: ChangeKind,
+    pub kind: Option<ChangeKind>,
     /// The patch set number, or edit if the patch set is an edit.
     pub _number: u32,
     /// The timestamp of when the patch set was created.
