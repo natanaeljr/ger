@@ -97,6 +97,7 @@ pub fn show_remote(
     if verbose >= Verbosity::High {
         writeln!(stdout, "  http_password: {}", remote.1.http_password)?
     }
+    writeln!(stdout, "  http_auth: {}", remote.1.http_auth)?;
     if remote.1.no_ssl_verify {
         writeln!(stdout, "  no_ssl_verify: {}", remote.1.no_ssl_verify)?;
     }

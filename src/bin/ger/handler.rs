@@ -23,6 +23,7 @@ pub fn get_remote_restapi_handler(
         host: Cow::Borrowed(&remote.url),
         username: Cow::Borrowed(&remote.username),
         http_password: Cow::Borrowed(&remote.http_password),
+        http_auth: remote.http_auth.clone(),
         no_ssl_verify: remote.no_ssl_verify,
     };
 

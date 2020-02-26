@@ -1,4 +1,5 @@
 use super::GerritConn;
+use crate::HttpAuthMethod;
 use curl::easy::Easy as CurlEasy;
 use log::{debug, trace};
 use std::io::Read;
@@ -15,9 +16,14 @@ impl HttpRequestHandler {
     pub fn new(gerrit: GerritConn) -> Result<Self, failure::Error> {
         trace!("curl version: {}", curl::Version::get().version());
         let mut curl = CurlEasy::new();
-        curl.http_auth(curl::easy::Auth::new().basic(true).digest(true))?;
         curl.username(gerrit.username.as_str())?;
         curl.password(gerrit.http_password.as_str())?;
+        let mut http_auth = curl::easy::Auth::new();
+        match gerrit.http_auth {
+            HttpAuthMethod::Basic => http_auth.basic(true),
+            HttpAuthMethod::Digest => http_auth.digest(true),
+        };
+        curl.http_auth(&http_auth)?;
         if gerrit.no_ssl_verify {
             curl.ssl_verify_host(false)?;
             curl.ssl_verify_peer(false)?;

@@ -1,10 +1,11 @@
 use super::prelude::*;
+use gerlib::HttpAuthMethod;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("add")
         .about("Add a new remote.")
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}\n\n{after-help}")
-        .after_help("EXAMPLE:\n    ger remote add mygerrit https://mygerrit.company.com")
+        .after_help("EXAMPLE:\n    ger remote add mygerrit https://gerrit-review.company.com")
         .setting(clap::AppSettings::DeriveDisplayOrder)
         .arg(
             Arg::with_name("name")
@@ -22,7 +23,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("username")
                 .short("u")
                 .takes_value(true)
-                .value_name("ID")
+                .value_name("id")
                 .help("Username for login."),
         )
         .arg(
@@ -30,11 +31,20 @@ pub fn cli() -> App<'static, 'static> {
                 .long("http-password")
                 .short("p")
                 .takes_value(true)
-                .value_name("STRING")
+                .value_name("string")
                 .help(
                     "HTTP password. Can be generated in gerrit user settings menu.\n\
                      Note: this password is saved in plain text in the configuration file.",
                 ),
+        )
+        .arg(
+            Arg::with_name("http-auth")
+                .long("http-auth")
+                .takes_value(true)
+                .value_name("method")
+                .possible_values(&["basic", "digest"])
+                .default_value("basic")
+                .help("Use HTTP Basic Authentication or Digest Authentication."),
         )
         .arg(
             Arg::with_name("no-ssl-verify")
@@ -51,6 +61,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let username = args.value_of("username").map(|s| s.to_owned());
     let http_password = args.value_of("password").map(|s| s.to_owned());
     let no_ssl_verify = args.is_present("no-ssl-verify");
+    let http_auth: HttpAuthMethod = args.value_of("http-auth").unwrap().parse()?;
 
     if config.user.settings.remotes.contains_key(name) {
         return Err(failure::err_msg(format!(
@@ -75,6 +86,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
             url: url.to_owned(),
             username,
             http_password,
+            http_auth,
             no_ssl_verify,
         },
     );
