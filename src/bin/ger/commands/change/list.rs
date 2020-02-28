@@ -13,6 +13,7 @@ pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("list")
         .visible_alias("ls")
         .about("Lists changes.")
+        .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
         .arg(
             Arg::with_name("limit")
                 .long("limit")
@@ -30,10 +31,8 @@ pub fn cli() -> App<'static, 'static> {
                 .long("remote")
                 .short("r")
                 .takes_value(true)
-                .value_name("NAME")
                 .help("Specify an alternative remote to use."),
         )
-        .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
 /// Execute the command
@@ -70,8 +69,8 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let mut rest = get_remote_restapi_handler(config, remote)?;
 
     let uri: PathAndQuery = format!("/a/changes/?{}", query_str).parse()?;
-    info!("uri: {}", uri);
-    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
+    info!("get: {}", uri);
+    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
 
     list(config, &changes)?;

@@ -29,7 +29,7 @@ impl RestApiHandler {
             let mut err_str = String::new();
             write!(err_str, "HTTP request failed: code {}", code)?;
             if verbose {
-                write!(err_str, ", response:\n{}", response)?;
+                write!(err_str, "\nResponse: {}", response)?;
             }
             return Err(failure::err_msg(err_str));
         }
@@ -51,7 +51,7 @@ impl RestApiHandler {
             let mut err_str = String::new();
             write!(err_str, "HTTP request failed: code {}", code)?;
             if verbose {
-                write!(err_str, ", response:\n{}", response)?;
+                write!(err_str, "\nResponse: {}", response)?;
             }
             return Err(failure::err_msg(err_str));
         }
