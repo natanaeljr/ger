@@ -35,7 +35,7 @@ pub fn cli() -> App<'static, 'static> {
                 .required(true)
                 .help(
                     "The commit message of the change.\n\
-                        Comment lines (beginning with #) will be removed.",
+                     Comment lines (beginning with #) will be removed.",
                 ),
         )
         .arg(
@@ -88,7 +88,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         notify_details: None,
     };
 
-    let json_input = serde_json::to_string(&change_input)?;
+    let json_input = serde_json::to_string_pretty(&change_input)?;
     info!("post data: {}", json_input);
 
     let json_output = rest.post_json(uri, json_input.as_bytes(), verbose >= Verbosity::Verbose)?;

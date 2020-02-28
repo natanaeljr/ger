@@ -62,6 +62,7 @@ impl HttpRequestHandler {
         debug!("post url: {}", url.as_str());
         self.curl.url(url.as_str())?;
         self.curl.post(true)?;
+        self.curl.post_field_size(data.len() as u64)?;
         let mut headers = curl::easy::List::new();
         headers.append("Content-Type: application/json, charset=UTF-8")?;
         self.curl.http_headers(headers)?;
