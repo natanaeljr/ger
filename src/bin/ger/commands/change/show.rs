@@ -23,7 +23,6 @@ pub fn cli() -> App<'static, 'static> {
                 .long("remote")
                 .short("r")
                 .takes_value(true)
-                .value_name("name")
                 .help("Specify an alternative remote to use."),
         )
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
@@ -44,8 +43,8 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     )
     .parse()?;
 
-    info!("uri: {}", uri);
-    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
+    info!("get: {}", uri);
+    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
     let change: ChangeInfo = serde_json::from_str(json.as_str())?;
 
     show(config, &change)?;
@@ -67,16 +66,15 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     stdout.write_all(b"\n")?;
 
     stdout.reset()?;
-    write!(
-        stdout,
-        "Owner:       {}",
-        change
-            .owner
-            .name
-            .as_ref()
-            .or_else(|| change.owner.username.as_ref())
-            .unwrap()
-    )?;
+
+    write!(stdout, "Owner:       ")?;
+    if let Some(owner_name) = &change.owner.name {
+        write!(stdout, "{}", owner_name)?;
+    } else if let Some(owner_username) = &change.owner.username {
+        write!(stdout, "{}", owner_username)?;
+    } else {
+        write!(stdout, "({})", &change.owner.account_id)?;
+    }
     if let Some(owner_email) = &change.owner.email {
         write!(stdout, " <{}>", owner_email)?;
     }
@@ -96,32 +94,35 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
         writeln!(stdout, "Topic:       {}", topic)?;
     }
 
-    let current_revision = change
-        .revisions
-        .as_ref()
-        .unwrap()
-        .get(change.current_revision.as_ref().unwrap())
-        .unwrap();
+    let current_revision = change.current_revision.as_ref();
+    let revisions = change.revisions.as_ref();
+    //    let current_revision_info = revisions.and_then(|revisions|)
+    let current_revision_info = match revisions {
+        Some(revisions) => match current_revision {
+            Some(current_revision) => revisions.get(current_revision),
+            None => None,
+        },
+        None => None,
+    };
+    let current_commit =
+        current_revision_info.and_then(|curr_rev_info| curr_rev_info.commit.as_ref());
 
-    let current_commit = current_revision.commit.as_ref().unwrap();
-
-    if let Some(author) = current_commit.author.as_ref() {
-        writeln!(stdout, "Author:      {} <{}>", author.name, author.email)?;
+    if let Some(current_commit) = current_commit {
+        if let Some(author) = &current_commit.author {
+            writeln!(stdout, "Author:      {} <{}>", author.name, author.email)?;
+        }
+        if let Some(committer) = &current_commit.committer {
+            writeln!(
+                stdout,
+                "Committer:   {} <{}>",
+                committer.name, committer.email
+            )?;
+        }
     }
 
-    if let Some(committer) = current_commit.committer.as_ref() {
-        writeln!(
-            stdout,
-            "Committer:   {} <{}>",
-            committer.name, committer.email
-        )?;
+    if let Some(current_revision) = current_revision {
+        writeln!(stdout, "Commit:      {}", current_revision)?;
     }
-
-    writeln!(
-        stdout,
-        "Commit:      {}",
-        change.current_revision.as_ref().unwrap()
-    )?;
 
     if let Some(strategy) = &change.submit_type {
         writeln!(stdout, "Strategy:    {}", strategy)?;
@@ -201,112 +202,120 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
                 stdout.write_all(b"\n")?;
             }
         }
-    }
 
-    stdout.write_all(b"\n")?;
-
-    let lines = current_commit.message.as_ref().unwrap().lines();
-    for line in lines {
-        writeln!(stdout, "    {}", line)?;
-    }
-
-    stdout.write_all(b"\n")?;
-
-    let current_files = current_revision.files.as_ref().unwrap();
-    if !current_files.is_empty() {
-        writeln!(stdout, "Files:")?;
-    }
-
-    let mut file_maxlen = 0;
-    for file in current_files {
-        if file.0.len() > file_maxlen {
-            file_maxlen = file.0.len();
-        }
-    }
-
-    if !current_files.is_empty() {
-        //        let mut total_lines_inserted = 0;
-        //        let mut total_lines_deleted = 0;
-
-        for file in current_files {
-            match &file.1.status {
-                FileStatus::Modified => {
-                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?
-                }
-                FileStatus::Added => stdout.set_color(
-                    ColorSpec::new()
-                        .set_fg(Some(Color::Green))
-                        .set_intense(true),
-                )?,
-                FileStatus::Deleted => {
-                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?
-                }
-                FileStatus::Renamed => {
-                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?
-                }
-                FileStatus::Copied => stdout.set_color(
-                    ColorSpec::new()
-                        .set_fg(Some(Color::Magenta))
-                        .set_intense(true),
-                )?,
-                FileStatus::Rewritten => stdout.set_color(
-                    ColorSpec::new()
-                        .set_fg(Some(Color::White))
-                        .set_intense(true),
-                )?,
-            }
-            write!(stdout, " {}", file.1.status.initial())?;
-
-            stdout.reset()?;
-            write!(stdout, " {}", file.0,)?;
-
-            let padding = file_maxlen - file.0.len();
-            if padding > 0 {
-                write!(stdout, "{0:1$}", ' ', padding)?;
-            }
-            stdout.write_all(b" |")?;
-
-            if let Some(lines_inserted) = file.1.lines_inserted {
-                //                total_lines_inserted += lines_inserted;
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
-                stdout.write_all(b" +")?;
-                stdout.reset()?;
-                write!(stdout, "{}", lines_inserted)?;
-            }
-
-            if let Some(lines_deleted) = file.1.lines_deleted {
-                //                total_lines_deleted += lines_deleted;
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
-                stdout.write_all(b" -")?;
-                stdout.reset()?;
-                write!(stdout, "{}", lines_deleted)?;
-            }
-
-            stdout.reset()?;
+        if !labels.is_empty() {
             stdout.write_all(b"\n")?;
         }
+    }
 
-        //        let file_s = if current_files.len() > 1 { "s" } else { "" };
-        //        let total_str = format!(" total {} file{} changed", current_files.len(), file_s);
-        //        write!(stdout, "{}", total_str)?;
-        //
-        //        let padding = file_maxlen - total_str.len() + 3;
-        //        if padding > 0 {
-        //            write!(stdout, "{0:1$}", ' ', padding)?;
-        //        }
-        //        stdout.write_all(b" |")?;
-        //
-        //        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
-        //        stdout.write_all(b" +")?;
-        //        stdout.reset()?;
-        //        write!(stdout, "{}", total_lines_inserted)?;
-        //
-        //        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
-        //        stdout.write_all(b" -")?;
-        //        stdout.reset()?;
-        //        write!(stdout, "{}", total_lines_deleted)?;
-        //
-        //        stdout.write_all(b"\n")?;
+    if let Some(current_commit) = current_commit {
+        if let Some(message) = &current_commit.message {
+            let lines = message.lines();
+            for line in lines {
+                writeln!(stdout, "    {}", line)?;
+            }
+            stdout.write_all(b"\n")?;
+        }
+    }
+
+    let current_files = current_revision_info.and_then(|cri| cri.files.as_ref());
+
+    if let Some(current_files) = current_files {
+        if !current_files.is_empty() {
+            writeln!(stdout, "Files:")?;
+        }
+
+        let mut file_maxlen = 0;
+        for file in current_files {
+            if file.0.len() > file_maxlen {
+                file_maxlen = file.0.len();
+            }
+        }
+
+        if !current_files.is_empty() {
+            //        let mut total_lines_inserted = 0;
+            //        let mut total_lines_deleted = 0;
+
+            for file in current_files {
+                match &file.1.status {
+                    FileStatus::Modified => {
+                        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Cyan)))?
+                    }
+                    FileStatus::Added => stdout.set_color(
+                        ColorSpec::new()
+                            .set_fg(Some(Color::Green))
+                            .set_intense(true),
+                    )?,
+                    FileStatus::Deleted => {
+                        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?
+                    }
+                    FileStatus::Renamed => {
+                        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?
+                    }
+                    FileStatus::Copied => stdout.set_color(
+                        ColorSpec::new()
+                            .set_fg(Some(Color::Magenta))
+                            .set_intense(true),
+                    )?,
+                    FileStatus::Rewritten => stdout.set_color(
+                        ColorSpec::new()
+                            .set_fg(Some(Color::White))
+                            .set_intense(true),
+                    )?,
+                }
+                write!(stdout, " {}", file.1.status.initial())?;
+
+                stdout.reset()?;
+                write!(stdout, " {}", file.0,)?;
+
+                let padding = file_maxlen - file.0.len();
+                if padding > 0 {
+                    write!(stdout, "{0:1$}", ' ', padding)?;
+                }
+                stdout.write_all(b" |")?;
+
+                if let Some(lines_inserted) = file.1.lines_inserted {
+                    //                total_lines_inserted += lines_inserted;
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+                    stdout.write_all(b" +")?;
+                    stdout.reset()?;
+                    write!(stdout, "{}", lines_inserted)?;
+                }
+
+                if let Some(lines_deleted) = file.1.lines_deleted {
+                    //                total_lines_deleted += lines_deleted;
+                    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+                    stdout.write_all(b" -")?;
+                    stdout.reset()?;
+                    write!(stdout, "{}", lines_deleted)?;
+                }
+
+                stdout.reset()?;
+                stdout.write_all(b"\n")?;
+            }
+
+            //        let file_s = if current_files.len() > 1 { "s" } else { "" };
+            //        let total_str = format!(" total {} file{} changed", current_files.len(), file_s);
+            //        write!(stdout, "{}", total_str)?;
+            //
+            //        let padding = file_maxlen - total_str.len() + 3;
+            //        if padding > 0 {
+            //            write!(stdout, "{0:1$}", ' ', padding)?;
+            //        }
+            //        stdout.write_all(b" |")?;
+            //
+            //        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+            //        stdout.write_all(b" +")?;
+            //        stdout.reset()?;
+            //        write!(stdout, "{}", total_lines_inserted)?;
+            //
+            //        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)))?;
+            //        stdout.write_all(b" -")?;
+            //        stdout.reset()?;
+            //        write!(stdout, "{}", total_lines_deleted)?;
+            //
+            //        stdout.write_all(b"\n")?;
+        }
     }
 
     Ok(())
