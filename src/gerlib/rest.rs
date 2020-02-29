@@ -58,6 +58,43 @@ impl RestApiHandler {
         Ok(response)
     }
 
+    pub fn put_json(
+        &mut self, path_and_query: PathAndQuery, data: &[u8], verbose: bool,
+    ) -> Result<String, failure::Error> {
+        let response = self.put(path_and_query, data, verbose)?;
+        Self::json(response.as_str())
+    }
+
+    fn put(
+        &mut self, path_and_query: PathAndQuery, data: &[u8], verbose: bool,
+    ) -> Result<String, failure::Error> {
+        let (code, response) = self.http.put(path_and_query.as_str(), data)?;
+        if code != 200 {
+            let mut err_str = String::new();
+            write!(err_str, "HTTP request failed: code {}", code)?;
+            if verbose {
+                write!(err_str, "\nResponse: {}", response)?;
+            }
+            return Err(failure::err_msg(err_str));
+        }
+        Ok(response)
+    }
+
+    pub fn delete(
+        &mut self, path_and_query: PathAndQuery, verbose: bool,
+    ) -> Result<String, failure::Error> {
+        let (code, response) = self.http.delete(path_and_query.as_str())?;
+        if code != 204 {
+            let mut err_str = String::new();
+            write!(err_str, "HTTP request failed: code {}", code)?;
+            if verbose {
+                write!(err_str, "\nResponse: {}", response)?;
+            }
+            return Err(failure::err_msg(err_str));
+        }
+        Ok(response)
+    }
+
     fn json(response: &str) -> Result<String, failure::Error> {
         const MAGIC_PREFIX: &'static str = ")]}'\n";
         if !response.starts_with(MAGIC_PREFIX) {
