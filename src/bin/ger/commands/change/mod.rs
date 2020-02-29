@@ -5,6 +5,7 @@ mod create;
 mod dashboard;
 mod list;
 mod show;
+mod topic;
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {
@@ -16,6 +17,7 @@ pub fn cli() -> App<'static, 'static> {
             create::cli(),
             list::cli(),
             show::cli(),
+            topic::cli(),
         ])
 }
 
@@ -31,6 +33,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         ("create", subargs) => create::exec(config, subargs),
         ("list", subargs) => list::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
+        ("topic", subargs) => topic::exec(config, subargs),
         _ => Ok(()),
     }
 }
