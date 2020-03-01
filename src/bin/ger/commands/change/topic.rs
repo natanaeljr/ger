@@ -60,7 +60,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         info!("put request, data: {}", json_input);
         Some(rest.put_json(
             uri,
-            201,
+            200,
             json_input.as_bytes(),
             verbose >= Verbosity::Verbose,
         )?)
