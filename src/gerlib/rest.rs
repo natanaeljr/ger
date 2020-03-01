@@ -37,17 +37,17 @@ impl RestApiHandler {
     }
 
     pub fn post_json(
-        &mut self, path_and_query: PathAndQuery, data: &[u8], verbose: bool,
+        &mut self, path_and_query: PathAndQuery, rc: u32, data: &[u8], verbose: bool,
     ) -> Result<String, failure::Error> {
-        let response = self.post(path_and_query, data, verbose)?;
+        let response = self.post(path_and_query, rc, data, verbose)?;
         Self::json(response.as_str())
     }
 
     fn post(
-        &mut self, path_and_query: PathAndQuery, data: &[u8], verbose: bool,
+        &mut self, path_and_query: PathAndQuery, rc: u32, data: &[u8], verbose: bool,
     ) -> Result<String, failure::Error> {
         let (code, response) = self.http.post(path_and_query.as_str(), data)?;
-        if code != 201 {
+        if code != rc {
             let mut err_str = String::new();
             write!(err_str, "HTTP request failed: code {}", code)?;
             if verbose {
@@ -59,17 +59,17 @@ impl RestApiHandler {
     }
 
     pub fn put_json(
-        &mut self, path_and_query: PathAndQuery, data: &[u8], verbose: bool,
+        &mut self, path_and_query: PathAndQuery, rc: u32, data: &[u8], verbose: bool,
     ) -> Result<String, failure::Error> {
-        let response = self.put(path_and_query, data, verbose)?;
+        let response = self.put(path_and_query, rc, data, verbose)?;
         Self::json(response.as_str())
     }
 
     fn put(
-        &mut self, path_and_query: PathAndQuery, data: &[u8], verbose: bool,
+        &mut self, path_and_query: PathAndQuery, rc: u32, data: &[u8], verbose: bool,
     ) -> Result<String, failure::Error> {
         let (code, response) = self.http.put(path_and_query.as_str(), data)?;
-        if code != 200 {
+        if code != rc {
             let mut err_str = String::new();
             write!(err_str, "HTTP request failed: code {}", code)?;
             if verbose {

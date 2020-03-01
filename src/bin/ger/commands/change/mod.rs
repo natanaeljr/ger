@@ -6,6 +6,7 @@ mod dashboard;
 mod list;
 mod show;
 mod topic;
+mod abandon;
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {
@@ -18,6 +19,7 @@ pub fn cli() -> App<'static, 'static> {
             list::cli(),
             show::cli(),
             topic::cli(),
+            abandon::cli(),
         ])
 }
 
@@ -34,6 +36,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         ("list", subargs) => list::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
         ("topic", subargs) => topic::exec(config, subargs),
+        ("abandon", subargs) => abandon::exec(config, subargs),
         _ => Ok(()),
     }
 }

@@ -91,7 +91,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let json_input = serde_json::to_string_pretty(&change_input)?;
     info!("post data: {}", json_input);
 
-    let json_output = rest.post_json(uri, json_input.as_bytes(), verbose >= Verbosity::Verbose)?;
+    let json_output = rest.post_json(
+        uri,
+        201,
+        json_input.as_bytes(),
+        verbose >= Verbosity::Verbose,
+    )?;
 
     let change_info: ChangeInfo = serde_json::from_str(&json_output)?;
 

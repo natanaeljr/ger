@@ -58,7 +58,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         };
         let json_input = serde_json::to_string_pretty(&topic_input)?;
         info!("put request, data: {}", json_input);
-        Some(rest.put_json(uri, json_input.as_bytes(), verbose >= Verbosity::Verbose)?)
+        Some(rest.put_json(
+            uri,
+            201,
+            json_input.as_bytes(),
+            verbose >= Verbosity::Verbose,
+        )?)
     } else if args.is_present("delete") {
         info!("delete request");
         let res = rest.delete(uri, verbose >= Verbosity::Verbose)?;
