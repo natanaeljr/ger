@@ -1,12 +1,13 @@
 use crate::config::CliConfig;
 use clap::{App, ArgMatches, SubCommand};
 
+mod abandon;
 mod create;
 mod dashboard;
 mod list;
 mod show;
+mod submit;
 mod topic;
-mod abandon;
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {
@@ -19,6 +20,7 @@ pub fn cli() -> App<'static, 'static> {
             list::cli(),
             show::cli(),
             topic::cli(),
+            submit::cli(),
             abandon::cli(),
         ])
 }
@@ -36,6 +38,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         ("list", subargs) => list::exec(config, subargs),
         ("show", subargs) => show::exec(config, subargs),
         ("topic", subargs) => topic::exec(config, subargs),
+        ("submit", subargs) => submit::exec(config, subargs),
         ("abandon", subargs) => abandon::exec(config, subargs),
         _ => Ok(()),
     }
