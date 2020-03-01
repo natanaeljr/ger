@@ -1769,19 +1769,22 @@ pub struct WorkInProgressInput {
 /// Query parameters available for the change endpoint.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct QueryParams {
-    /// Search string for filtering the changes.
+    /// Queries strings for searching changes.
     #[serde(rename = "q", skip_serializing_if = "Option::is_none")]
-    pub search_query: Option<String>,
+    pub search_queries: Option<Vec<QueryStr>>,
     /// Additional Options to extend the query results
     #[serde(rename = "o", skip_serializing_if = "Option::is_none")]
     pub additional_opts: Option<Vec<AdditionalOpt>>,
     /// Limit the returned results to no more than X records.
     #[serde(rename = "n", skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
-    /// The S or start query parameter can be supplied to skip a number of changes from the list.
+    /// The start query parameter can be supplied to skip a number of changes from the list.
     #[serde(rename = "S", skip_serializing_if = "Option::is_none")]
     pub start: Option<u32>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct QueryStr(pub String);
 
 /// Additional fields can be obtained by adding `o` parameters, each option requires more database
 /// lookups and slows down the query response time to the client so they are generally disabled by default.

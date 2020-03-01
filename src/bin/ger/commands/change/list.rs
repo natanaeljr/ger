@@ -2,7 +2,7 @@ use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams};
+use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams, QueryStr};
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
@@ -56,7 +56,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         });
 
     let query_param = QueryParams {
-        search_query: Some("is:open".into()),
+        search_queries: Some(vec![QueryStr("is:open".into())]),
         additional_opts: Some(vec![
             AdditionalOpt::DetailedAccounts,
             AdditionalOpt::CurrentRevision,
