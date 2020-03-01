@@ -1751,7 +1751,8 @@ pub struct WebLinkInfo {
     /// The link URL.
     pub url: String,
     /// URL to the icon of the link.
-    pub image_url: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_url: Option<String>,
 }
 
 /// The WorkInProgressInput entity contains additional information for a change set to WorkInProgress/ReadyForReview.
