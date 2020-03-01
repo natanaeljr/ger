@@ -37,6 +37,8 @@ atty = "0.2.14"
 term_size = "1.0.0-beta1"
 rpassword = "4.0"
 serde_url_params = "0.2.0"
+strum = "0.17.1"
+strum_macros = "0.17.1"
 
 [dev-dependencies]
 tempfile = "3.1.0"
