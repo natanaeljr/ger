@@ -13,6 +13,8 @@ pub mod details;
 pub mod http;
 pub mod projects;
 pub mod rest;
+pub mod interface;
+pub mod error;
 
 #[derive(EnumString, Display, Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 #[serde(rename_all = "snake_case")]
