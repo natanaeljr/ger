@@ -1,7 +1,9 @@
 use crate::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
 use crate::details::Timestamp;
+use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use std::fmt::{Display, Error, Formatter};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// JSON Entities
@@ -1767,7 +1769,7 @@ pub struct WorkInProgressInput {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /// Query parameters available for the change endpoint.
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct QueryParams {
     /// Queries strings for searching changes.
     #[serde(rename = "q", skip_serializing_if = "Option::is_none")]
@@ -1783,13 +1785,11 @@ pub struct QueryParams {
     pub start: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct QueryStr(pub String);
-
 /// Additional fields can be obtained by adding `o` parameters, each option requires more database
 /// lookups and slows down the query response time to the client so they are generally disabled by default.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(AsRefStr, Display, Debug, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+#[strum(serialize_all = "shouty_snake_case")]
 pub enum AdditionalOpt {
     /// A summary of each label required for submit, and approvers that have granted (or rejected)
     /// with that label.
@@ -1853,37 +1853,106 @@ pub enum AdditionalOpt {
     TrackingIds,
 }
 
-//#[derive(Debug, Serialize, Deserialize)]
-//#[serde(rename_all = "lowercase")]
-//pub enum ChangeIs {
-//    Assigned,
-//    Unassigned,
-//    Starred,
-//    Watched,
-//    Reviewed,
-//    Owner,
-//    Reviewer,
-//    Cc,
-//    Ignored,
-//    New,
-//    Open,
-//    Pending,
-//    Draft,
-//    Closed,
-//    Merged,
-//    Abandoned,
-//    Submittable,
-//    Mergeable,
-//    Private,
-//    Wip,
-//}
-//
-///// Owner is the user who originally submitted the change
-//#[derive(Debug, Serialize, Deserialize)]
-//pub enum Owner {
-//    /// Owner is the account making the request
-//    #[serde(rename = "self")]
-//    Self_,
-//    /// Owner is another user
-//    User(String),
-//}
+#[derive(Debug)]
+pub enum QueryStr {
+    Raw(String),
+    Cooked(Vec<QueryOpr>),
+}
+
+#[derive(Debug)]
+pub enum QueryOpr {
+    Search(SearchOpr),
+    Bool(BoolOpr),
+    Group(GroupOpr),
+}
+
+#[derive(Debug)]
+pub enum SearchOpr {
+    Is(Is),
+    Owner(String),
+    Reviewer(String),
+    Limit(u32),
+}
+
+#[derive(AsRefStr, Display, Debug)]
+#[strum(serialize_all = "shouty_snake_case")]
+pub enum BoolOpr {
+    Not,
+    And,
+    Or,
+}
+
+#[derive(AsRefStr, Display, Debug)]
+pub enum GroupOpr {
+    #[strum(serialize = "(")]
+    Begin,
+    #[strum(serialize = ")")]
+    End,
+}
+
+#[derive(AsRefStr, Display, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum Is {
+    Assigned,
+    Unassigned,
+    Starred,
+    Watched,
+    Reviewed,
+    Owner,
+    Reviewer,
+    Cc,
+    Ignored,
+    New,
+    Open,
+    Pending,
+    Draft,
+    Closed,
+    Merged,
+    Abandoned,
+    Submittable,
+    Mergeable,
+    Private,
+    Wip,
+}
+
+impl Serialize for QueryStr {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            QueryStr::Raw(s) => serializer.serialize_str(s.as_str()),
+            QueryStr::Cooked(operators) => {
+                let mut strings: Vec<String> = Vec::new();
+                strings.reserve(operators.len());
+                for opr in operators {
+                    strings.push(format!("{}", opr));
+                }
+                let joined = strings.join(" ");
+                serializer.serialize_str(joined.as_str())
+            }
+        }
+    }
+}
+
+impl Display for QueryOpr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        match self {
+            QueryOpr::Search(s) => write!(f, "{}", s),
+            QueryOpr::Bool(b) => write!(f, "{}", b.as_ref()),
+            QueryOpr::Group(g) => write!(f, "{}", g.as_ref()),
+        }
+    }
+}
+
+impl Display for SearchOpr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+        match self {
+            SearchOpr::Is(o) => write!(f, "is:{}", o),
+            SearchOpr::Owner(o) => write!(f, "owner:{}", o),
+            SearchOpr::Reviewer(o) => write!(f, "reviewer:{}", o),
+            SearchOpr::Limit(o) => write!(f, "limit:{}", o),
+        }
+    }
+}
