@@ -379,8 +379,7 @@ pub struct ChangeMessageInfo {
     /// NOTE: To apply different tags on different votes/comments multiple invocations of the REST call are required.
     pub tag: String,
     /// Which patchset (if any) generated this message.
-    #[serde(rename = "_revision_number")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "_revision_number", skip_serializing_if = "Option::is_none")]
     pub revision_number: Option<u32>,
 }
 
@@ -1271,16 +1270,16 @@ pub struct RelatedChangeAndCommitInfo {
     /// The commit as a CommitInfo entity.
     pub commit: CommitInfo,
     /// The change number.
-    #[serde(rename = "_change_number")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "_change_number", skip_serializing_if = "Option::is_none")]
     pub change_number: Option<u32>,
     /// The revision number.
-    #[serde(rename = "_revision_number")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "_revision_number", skip_serializing_if = "Option::is_none")]
     pub revision_number: Option<u32>,
     /// The current revision number.
-    #[serde(rename = "_current_revision_number")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "_current_revision_number",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub current_revision_number: Option<u32>,
     /// The status of the change.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1771,20 +1770,16 @@ pub struct WorkInProgressInput {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct QueryParams {
     /// Search string for filtering the changes.
-    #[serde(rename = "q")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "q", skip_serializing_if = "Option::is_none")]
     pub search_query: Option<String>,
     /// Additional Options to extend the query results
-    #[serde(rename = "o")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "o", skip_serializing_if = "Option::is_none")]
     pub additional_opts: Option<Vec<AdditionalOpt>>,
     /// Limit the returned results to no more than X records.
-    #[serde(rename = "n")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "n", skip_serializing_if = "Option::is_none")]
     pub limit: Option<u32>,
     /// The S or start query parameter can be supplied to skip a number of changes from the list.
-    #[serde(rename = "S")]
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "S", skip_serializing_if = "Option::is_none")]
     pub start: Option<u32>,
 }
 
@@ -1855,34 +1850,37 @@ pub enum AdditionalOpt {
     TrackingIds,
 }
 
-// #[derive(Debug, Serialize, Deserialize)]
-// #[serde(rename_all = "lowercase")]
-// pub enum ChangeIs {
-//     Assigned,
-//     Unassigned,
-//     Starred,
-//     Watched,
-//     Reviewed,
-//     Owner,
-//     Reviewer,
-//     Cc,
-//     Ignored,
-//     New,
-//     Open,
-//     Pending,
-//     Draft,
-//     Closed,
-//     Merged,
-//     Abandoned,
-//     Submittable,
-//     Mergeable,
-//     Private,
-//     Wip,
-// }
+//#[derive(Debug, Serialize, Deserialize)]
+//#[serde(rename_all = "lowercase")]
+//pub enum ChangeIs {
+//    Assigned,
+//    Unassigned,
+//    Starred,
+//    Watched,
+//    Reviewed,
+//    Owner,
+//    Reviewer,
+//    Cc,
+//    Ignored,
+//    New,
+//    Open,
+//    Pending,
+//    Draft,
+//    Closed,
+//    Merged,
+//    Abandoned,
+//    Submittable,
+//    Mergeable,
+//    Private,
+//    Wip,
+//}
 //
-// #[derive(Debug, Serialize, Deserialize)]
-// pub enum Owner {
-//     #[serde(rename = "self")]
-//     _Self_,
-//     Other(String),
-// }
+///// Owner is the user who originally submitted the change
+//#[derive(Debug, Serialize, Deserialize)]
+//pub enum Owner {
+//    /// Owner is the account making the request
+//    #[serde(rename = "self")]
+//    Self_,
+//    /// Owner is another user
+//    User(String),
+//}
