@@ -1,5 +1,4 @@
 use crate::http::HttpRequestHandler;
-use crate::GerritConn;
 use http::uri::PathAndQuery;
 use std::fmt::Write;
 
@@ -8,9 +7,9 @@ pub struct RestApiHandler {
 }
 
 impl RestApiHandler {
-    pub fn new(gerrit: GerritConn) -> Result<Self, failure::Error> {
+    pub fn new() -> Result<Self, failure::Error> {
         Ok(Self {
-            http: HttpRequestHandler::new(gerrit)?,
+            http: HttpRequestHandler::new("".parse()?, "", "")?,
         })
     }
 
@@ -46,7 +45,7 @@ impl RestApiHandler {
     fn post(
         &mut self, path_and_query: PathAndQuery, rc: u32, data: &[u8], verbose: bool,
     ) -> Result<String, failure::Error> {
-        let (code, response) = self.http.post(path_and_query.as_str(), data)?;
+        let (code, response) = self.http.post(path_and_query.as_str(), Some(data))?;
         if code != rc {
             let mut err_str = String::new();
             write!(err_str, "HTTP request failed: code {}", code)?;
@@ -68,7 +67,7 @@ impl RestApiHandler {
     fn put(
         &mut self, path_and_query: PathAndQuery, rc: u32, data: &[u8], verbose: bool,
     ) -> Result<String, failure::Error> {
-        let (code, response) = self.http.put(path_and_query.as_str(), data)?;
+        let (code, response) = self.http.put(path_and_query.as_str(), Some(data))?;
         if code != rc {
             let mut err_str = String::new();
             write!(err_str, "HTTP request failed: code {}", code)?;

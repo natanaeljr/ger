@@ -1,6 +1,6 @@
 use crate::util;
 use failure::ResultExt;
-use gerlib::HttpAuthMethod;
+use gerlib::http::AuthMethod;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -102,7 +102,7 @@ pub struct RemoteOpts {
     pub url: String,
     pub username: String,
     pub http_password: String,
-    pub http_auth: HttpAuthMethod,
+    pub http_auth: AuthMethod,
     #[serde(skip_serializing_if = "util::is_false")]
     pub no_ssl_verify: bool,
 }
@@ -113,7 +113,7 @@ impl Default for RemoteOpts {
             url: Default::default(),
             username: Default::default(),
             http_password: Default::default(),
-            http_auth: HttpAuthMethod::Basic,
+            http_auth: AuthMethod::Basic,
             no_ssl_verify: false,
         }
     }

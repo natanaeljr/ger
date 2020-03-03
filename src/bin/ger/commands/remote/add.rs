@@ -1,5 +1,5 @@
 use super::prelude::*;
-use gerlib::HttpAuthMethod;
+use gerlib::http::AuthMethod;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("add")
@@ -61,7 +61,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let username = args.value_of("username").map(|s| s.to_owned());
     let http_password = args.value_of("password").map(|s| s.to_owned());
     let no_ssl_verify = args.is_present("no-ssl-verify");
-    let http_auth: HttpAuthMethod = args.value_of("http-auth").unwrap().parse()?;
+    let http_auth: AuthMethod = args.value_of("http-auth").unwrap().parse()?;
 
     if config.user.settings.remotes.contains_key(name) {
         return Err(failure::err_msg(format!(
