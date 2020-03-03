@@ -1,6 +1,5 @@
 use crate::util;
 use failure::ResultExt;
-use gerlib::http::AuthMethod;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -102,7 +101,7 @@ pub struct RemoteOpts {
     pub url: String,
     pub username: String,
     pub http_password: String,
-    pub http_auth: AuthMethod,
+    pub http_auth: HttpAuthMethod,
     #[serde(skip_serializing_if = "util::is_false")]
     pub no_ssl_verify: bool,
 }
@@ -113,8 +112,28 @@ impl Default for RemoteOpts {
             url: Default::default(),
             username: Default::default(),
             http_password: Default::default(),
-            http_auth: AuthMethod::Basic,
+            http_auth: HttpAuthMethod::Basic,
             no_ssl_verify: false,
+        }
+    }
+}
+
+/// HTTP Authentication Methods.
+#[derive(EnumString, Display, Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[strum(serialize_all = "snake_case")]
+pub enum HttpAuthMethod {
+    /// Basic HTTP authentication scheme.
+    Basic,
+    /// Digest HTTP authentication scheme.
+    Digest,
+}
+
+impl From<gerlib::http::AuthMethod> for HttpAuthMethod {
+    fn from(auth: gerlib::http::AuthMethod) -> Self {
+        match auth {
+            gerlib::http::AuthMethod::Basic => HttpAuthMethod::Basic,
+            gerlib::http::AuthMethod::Digest => HttpAuthMethod::Digest,
         }
     }
 }

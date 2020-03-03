@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
 extern crate log;
+extern crate strum;
+#[macro_use]
+extern crate strum_macros;
 
 pub mod cli;
 pub mod commands;
