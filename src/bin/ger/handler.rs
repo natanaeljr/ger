@@ -1,5 +1,5 @@
 use crate::config::CliConfig;
-use gerlib::rest::RestApiHandler;
+use gerlib::rest::rest::RestApiHandler;
 
 pub fn get_remote_restapi_handler(
     config: &CliConfig, remote: Option<&str>,

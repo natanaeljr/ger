@@ -129,11 +129,11 @@ pub enum HttpAuthMethod {
     Digest,
 }
 
-impl From<gerlib::http::AuthMethod> for HttpAuthMethod {
-    fn from(auth: gerlib::http::AuthMethod) -> Self {
+impl From<gerlib::rest::HttpAuthMethod> for HttpAuthMethod {
+    fn from(auth: gerlib::rest::HttpAuthMethod) -> Self {
         match auth {
-            gerlib::http::AuthMethod::Basic => HttpAuthMethod::Basic,
-            gerlib::http::AuthMethod::Digest => HttpAuthMethod::Digest,
+            gerlib::rest::HttpAuthMethod::Basic => HttpAuthMethod::Basic,
+            gerlib::rest::HttpAuthMethod::Digest => HttpAuthMethod::Digest,
         }
     }
 }

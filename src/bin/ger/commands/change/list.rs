@@ -2,7 +2,7 @@ use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams};
+use gerlib::rest::changes::{AdditionalOpt, ChangeInfo, QueryParams};
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;

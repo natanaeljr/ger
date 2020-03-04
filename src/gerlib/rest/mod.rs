@@ -9,9 +9,12 @@ pub mod changes;
 pub mod details;
 pub mod error;
 pub mod projects;
+pub mod rest;
 
 mod handler;
 mod http;
+
+pub use crate::rest::http::AuthMethod as HttpAuthMethod;
 
 type Result<T> = std::result::Result<T, crate::rest::error::Error>;
 

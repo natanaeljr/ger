@@ -1,10 +1,10 @@
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::TopicInput;
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
+use gerlib::rest::changes::TopicInput;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("topic")

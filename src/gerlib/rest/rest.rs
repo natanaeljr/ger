@@ -1,6 +1,6 @@
-use crate::http::HttpRequestHandler;
 use http::uri::PathAndQuery;
 use std::fmt::Write;
+use crate::rest::http::HttpRequestHandler;
 
 pub struct RestApiHandler {
     http: HttpRequestHandler,

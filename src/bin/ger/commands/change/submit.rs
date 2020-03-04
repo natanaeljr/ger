@@ -2,7 +2,7 @@ use super::show;
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{ChangeInfo, SubmitInput};
+use gerlib::rest::changes::{ChangeInfo, SubmitInput};
 use http::uri::PathAndQuery;
 use log::info;
 

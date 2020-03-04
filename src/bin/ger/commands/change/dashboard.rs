@@ -2,11 +2,11 @@ use super::list;
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::ChangeInfo;
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
 use termcolor::{ColorSpec, WriteColor};
+use gerlib::rest::changes::ChangeInfo;
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {

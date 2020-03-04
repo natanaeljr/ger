@@ -2,9 +2,9 @@ use super::show;
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{ChangeInfo, ChangeInput, ChangeStatus};
 use http::uri::PathAndQuery;
 use log::info;
+use gerlib::rest::changes::{ChangeInput, ChangeStatus, ChangeInfo};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("create")
