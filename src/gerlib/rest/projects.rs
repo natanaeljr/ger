@@ -1,4 +1,4 @@
-use crate::changes::WebLinkInfo;
+use crate::rest::changes::WebLinkInfo;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 

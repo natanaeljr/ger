@@ -1,4 +1,4 @@
-use crate::http;
+use crate::rest::http;
 
 #[derive(Display, Debug)]
 pub enum Error {
