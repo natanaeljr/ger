@@ -27,19 +27,19 @@ impl GerritRestApi {
     }
 
     pub fn get_topic(&mut self, change_id: &str) -> Result<String> {
-        let topic: String = self.rest.get_json(
+        let topic: String = serde_json::from_str(&self.rest.get_json(
             format!("/a/changes/{}/topic", change_id).as_str(),
             StatusCode::OK,
-        )?;
+        )?)?;
         Ok(topic)
     }
 
     pub fn set_topic(&mut self, change_id: &str, topic: &TopicInput) -> Result<String> {
-        let topic: String = self.rest.put_json(
+        let topic: String = serde_json::from_str(&self.rest.put_json(
             format!("/a/changes/{}/topic", change_id).as_str(),
             topic,
             StatusCode::CREATED,
-        )?;
+        )?)?;
         Ok(topic)
     }
 

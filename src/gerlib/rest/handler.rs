@@ -1,7 +1,7 @@
 use crate::rest::error::Error;
 use crate::rest::http::HttpRequestHandler;
 use http::StatusCode;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 type Result<T> = std::result::Result<T, crate::rest::error::Error>;
 
@@ -14,40 +14,32 @@ impl RestHandler {
         Self { http }
     }
 
-    pub fn get_json<'a, J>(&mut self, url: &str, expect_code: StatusCode) -> Result<J>
-    where
-        J: Deserialize<'a>,
-    {
+    pub fn get_json(&mut self, url: &str, expect_code: StatusCode) -> Result<String> {
         let (code, response) = self.http.get(url)?;
         Self::expect_response_code(expect_code.as_u16() as u32, code)?;
-        let response = Self::strip_json_magic_prefix(response)?;
-        let json: J = serde_json::from_str(&response)?;
+        let json = Self::strip_json_magic_prefix(response)?;
         Ok(json)
     }
 
-    pub fn put_json<'a, D, J>(&mut self, url: &str, data: &D, expect_code: StatusCode) -> Result<J>
+    pub fn put_json<T>(&mut self, url: &str, data: &T, expect_code: StatusCode) -> Result<String>
     where
-        D: Serialize + ?Sized,
-        J: Deserialize<'a>,
+        T: Serialize + ?Sized,
     {
         let data = serde_json::to_string(data)?;
         let (code, response) = self.http.put(url, Some(data.as_bytes()))?;
         Self::expect_response_code(expect_code.as_u16() as u32, code)?;
-        let response = Self::strip_json_magic_prefix(response)?;
-        let json: J = serde_json::from_str(&response)?;
+        let json = Self::strip_json_magic_prefix(response)?;
         Ok(json)
     }
 
-    pub fn post_json<'a, D, J>(&mut self, url: &str, data: &D, expect_code: StatusCode) -> Result<J>
+    pub fn post_json<T>(&mut self, url: &str, data: &T, expect_code: StatusCode) -> Result<String>
     where
-        D: Serialize + ?Sized,
-        J: Deserialize<'a>,
+        T: Serialize + ?Sized,
     {
         let data = serde_json::to_string(data)?;
         let (code, response) = self.http.post(url, Some(data.as_bytes()))?;
         Self::expect_response_code(expect_code.as_u16() as u32, code)?;
-        let response = Self::strip_json_magic_prefix(response)?;
-        let json: J = serde_json::from_str(&response)?;
+        let json = Self::strip_json_magic_prefix(response)?;
         Ok(json)
     }
 
