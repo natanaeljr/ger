@@ -1,9 +1,9 @@
 use crate::config::CliConfig;
-use gerlib::rest::rest::RestApiHandler;
+use gerlib::rest::GerritRestApi;
 
 pub fn get_remote_restapi_handler(
     config: &CliConfig, remote: Option<&str>,
-) -> Result<RestApiHandler, failure::Error> {
+) -> Result<GerritRestApi, failure::Error> {
     let remote = if let Some(this) = remote {
         this
     } else {
@@ -13,11 +13,13 @@ pub fn get_remote_restapi_handler(
         }
     };
 
-    let _remote = match config.user.settings.remotes.get(remote) {
+    let remote = match config.user.settings.remotes.get(remote) {
         Some(r) => r,
         None => return Err(failure::err_msg(format!("no such remote: {}", remote))),
     };
 
-    let handler = RestApiHandler::new()?;
+    let handler = GerritRestApi::new(remote.url.parse()?, &remote.username, &remote.http_password)?
+        .http_auth(&remote.http_auth.into())?
+        .ssl_verify(!remote.no_ssl_verify)?;
     Ok(handler)
 }

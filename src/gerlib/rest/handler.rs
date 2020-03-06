@@ -64,4 +64,8 @@ impl RestHandler {
         let json = response[MAGIC_PREFIX.len()..].to_string();
         Ok(json)
     }
+
+    pub fn http_mut(&mut self) -> &mut HttpRequestHandler {
+        &mut self.http
+    }
 }

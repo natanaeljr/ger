@@ -9,7 +9,6 @@ pub mod changes;
 pub mod details;
 pub mod error;
 pub mod projects;
-pub mod rest;
 
 mod handler;
 mod http;
@@ -27,6 +26,18 @@ impl GerritRestApi {
         let http = HttpRequestHandler::new(base_url, username, password)?;
         let rest = RestHandler::new(http);
         Ok(Self { rest })
+    }
+
+    /// Specify the HTTP authentication method.
+    pub fn http_auth(mut self, auth: &HttpAuthMethod) -> Result<Self> {
+        self.rest.http_mut().http_auth(auth)?;
+        Ok(self)
+    }
+
+    /// Enable/Disable SSL verification of both host and peer.
+    pub fn ssl_verify(mut self, enable: bool) -> Result<Self> {
+        self.rest.http_mut().ssl_verify(enable)?;
+        Ok(self)
     }
 
     pub fn get_topic(&mut self, change_id: &str) -> Result<String> {
