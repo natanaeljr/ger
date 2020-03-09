@@ -29,13 +29,13 @@ impl GerritRestApi {
     }
 
     /// Specify the HTTP authentication method.
-    pub fn http_auth(mut self, auth: &HttpAuthMethod) -> Result<Self> {
+    pub fn http_auth(&mut self, auth: &HttpAuthMethod) -> Result<&mut Self> {
         self.rest.http_mut().http_auth(auth)?;
         Ok(self)
     }
 
     /// Enable/Disable SSL verification of both host and peer.
-    pub fn ssl_verify(mut self, enable: bool) -> Result<Self> {
+    pub fn ssl_verify(&mut self, enable: bool) -> Result<&mut Self> {
         self.rest.http_mut().ssl_verify(enable)?;
         Ok(self)
     }
