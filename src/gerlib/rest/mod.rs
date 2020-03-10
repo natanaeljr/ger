@@ -1,4 +1,4 @@
-use crate::rest::changes::{ChangeInfo, ChangeInput, QueryParams, TopicInput};
+use crate::rest::changes::{AdditionalOpt, ChangeInfo, ChangeInput, QueryParams, TopicInput};
 use crate::rest::handler::RestHandler;
 use crate::rest::http::HttpRequestHandler;
 use ::http::StatusCode;
@@ -54,8 +54,8 @@ impl GerritRestApi {
     ///
     /// As response a ChangeInfo entity is returned that describes the resulting change.
     pub fn create_change(&mut self, change: &ChangeInput) -> Result<ChangeInfo> {
-        let change_info: ChangeInfo =
-            serde_json::from_str(&self.rest.post_json("/a/changes", change, StatusCode::OK)?)?;
+        let json = self.rest.post_json("/a/changes", change, StatusCode::OK)?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
         Ok(change_info)
     }
 
@@ -80,11 +80,11 @@ impl GerritRestApi {
             if params.is_empty() { "" } else { "?" },
             params
         );
-        let response = self.rest.get_json(&url, StatusCode::OK)?;
+        let json = self.rest.get_json(&url, StatusCode::OK)?;
         let changes = if query.search_queries.is_some() && query.search_queries.unwrap().len() > 1 {
-            serde_json::from_str::<Vec<Vec<ChangeInfo>>>(&response)?
+            serde_json::from_str::<Vec<Vec<ChangeInfo>>>(&json)?
         } else {
-            vec![serde_json::from_str::<Vec<ChangeInfo>>(&response)?]
+            vec![serde_json::from_str::<Vec<ChangeInfo>>(&json)?]
         };
         Ok(changes)
     }
@@ -96,12 +96,24 @@ impl GerritRestApi {
     /// by default. Fields are described in Query Changes.
     ///
     /// As response a ChangeInfo entity is returned that describes the change.
-    pub fn get_change(&mut self, change_id: &str) -> Result<ChangeInfo> {
-        let change_info: ChangeInfo = serde_json::from_str(
-            &self
-                .rest
-                .get_json(format!("/a/changes/{}", change_id).as_str(), StatusCode::OK)?,
-        )?;
+    pub fn get_change(
+        &mut self, change_id: &str, additional_opts: Option<Vec<AdditionalOpt>>,
+    ) -> Result<ChangeInfo> {
+        let query = QueryParams {
+            search_queries: None,
+            additional_opts,
+            limit: None,
+            start: None,
+        };
+        let params = serde_url_params::to_string(&query)?;
+        let url = format!(
+            "/a/changes/{}/{}{}",
+            change_id,
+            if params.is_empty() { "" } else { "?" },
+            params
+        );
+        let json = self.rest.get_json(&url, StatusCode::OK)?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
         Ok(change_info)
     }
 
@@ -115,11 +127,24 @@ impl GerritRestApi {
     /// This response will contain all votes for each label and include one combined vote.
     /// The combined label vote is calculated in the following order (from highest to lowest):
     /// REJECTED > APPROVED > DISLIKED > RECOMMENDED.
-    pub fn get_change_detail(&mut self, change_id: &str) -> Result<ChangeInfo> {
-        let change_info: ChangeInfo = serde_json::from_str(&self.rest.get_json(
-            format!("/a/changes/{}/detail", change_id).as_str(),
-            StatusCode::OK,
-        )?)?;
+    pub fn get_change_detail(
+        &mut self, change_id: &str, additional_opts: Option<Vec<AdditionalOpt>>,
+    ) -> Result<ChangeInfo> {
+        let query = QueryParams {
+            search_queries: None,
+            additional_opts,
+            limit: None,
+            start: None,
+        };
+        let params = serde_url_params::to_string(&query)?;
+        let url = format!(
+            "/a/changes/{}/detail/{}{}",
+            change_id,
+            if params.is_empty() { "" } else { "?" },
+            params
+        );
+        let json = self.rest.get_json(&url, StatusCode::OK)?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
         Ok(change_info)
     }
 
@@ -127,10 +152,11 @@ impl GerritRestApi {
     ///
     /// If the change does not have a topic an empty string is returned.
     pub fn get_topic(&mut self, change_id: &str) -> Result<String> {
-        let topic: String = serde_json::from_str(&self.rest.get_json(
+        let json = &self.rest.get_json(
             format!("/a/changes/{}/topic", change_id).as_str(),
             StatusCode::OK,
-        )?)?;
+        )?;
+        let topic: String = serde_json::from_str(&json)?;
         Ok(topic)
     }
 
@@ -141,11 +167,12 @@ impl GerritRestApi {
     ///
     /// As response the new topic is returned.
     pub fn set_topic(&mut self, change_id: &str, topic: &TopicInput) -> Result<String> {
-        let topic: String = serde_json::from_str(&self.rest.put_json(
+        let json = &self.rest.put_json(
             format!("/a/changes/{}/topic", change_id).as_str(),
             topic,
             StatusCode::CREATED,
-        )?)?;
+        )?;
+        let topic: String = serde_json::from_str(&json)?;
         Ok(topic)
     }
 
