@@ -12,7 +12,7 @@ pub mod projects;
 mod handler;
 mod http;
 
-use crate::rest::changes::ChangesEndpoint;
+use crate::rest::changes::RestApiChanges;
 pub use crate::rest::http::AuthMethod as HttpAuthMethod;
 
 type Result<T> = std::result::Result<T, crate::rest::error::Error>;
@@ -40,7 +40,7 @@ impl GerritRestApi {
         Ok(self)
     }
 
-    pub fn changes(&mut self) -> ChangesEndpoint {
-        ChangesEndpoint::new(&mut self.rest)
+    pub fn changes(&mut self) -> RestApiChanges {
+        RestApiChanges::new(&mut self.rest)
     }
 }

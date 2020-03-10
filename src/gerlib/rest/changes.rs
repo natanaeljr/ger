@@ -1,11 +1,11 @@
 use crate::rest::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
 use crate::rest::details::Timestamp;
 use crate::rest::handler::RestHandler;
+use ::http::StatusCode;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Error, Formatter};
-use ::http::StatusCode;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// JSON Entities
@@ -1959,13 +1959,52 @@ impl Display for SearchOpr {
     }
 }
 
-pub struct ChangesEndpoint<'a> {
+pub struct RestApiChanges<'a> {
     rest: &'a mut RestHandler,
 }
 
-impl<'a> ChangesEndpoint<'a> {
+impl<'a> RestApiChanges<'a> {
     pub fn new(rest: &'a mut RestHandler) -> Self {
         Self { rest }
+    }
+
+    pub fn create_change(&mut self, change: &ChangeInput) -> super::Result<ChangeInfo> {
+        let change_info: ChangeInfo =
+            serde_json::from_str(&self.rest.post_json("/a/changes", change, StatusCode::OK)?)?;
+        Ok(change_info)
+    }
+
+    pub fn query_changes(&mut self, query: &QueryParams) -> super::Result<Vec<Vec<ChangeInfo>>> {
+        let params = serde_url_params::to_string(query)?;
+        let url = format!(
+            "/a/changes/{}{}",
+            if params.is_empty() { "" } else { "?" },
+            params
+        );
+        let response = self.rest.get_json(&url, StatusCode::OK)?;
+        let changes = if query.search_queries.is_some() && query.search_queries.unwrap().len() > 1 {
+            serde_json::from_str::<Vec<Vec<ChangeInfo>>>(&response)?
+        } else {
+            vec![serde_json::from_str::<Vec<ChangeInfo>>(&response)?]
+        };
+        Ok(changes)
+    }
+
+    pub fn get_change(&mut self, change_id: &str) -> super::Result<ChangeInfo> {
+        let change_info: ChangeInfo = serde_json::from_str(
+            &self
+                .rest
+                .get_json(format!("/a/changes/{}", change_id).as_str(), StatusCode::OK)?,
+        )?;
+        Ok(change_info)
+    }
+
+    pub fn get_change_detail(&mut self, change_id: &str) -> super::Result<ChangeInfo> {
+        let change_info: ChangeInfo = serde_json::from_str(&self.rest.get_json(
+            format!("/a/changes/{}/detail", change_id).as_str(),
+            StatusCode::OK,
+        )?)?;
+        Ok(change_info)
     }
 
     pub fn get_topic(&mut self, change_id: &str) -> super::Result<String> {
