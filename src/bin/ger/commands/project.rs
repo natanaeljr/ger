@@ -55,7 +55,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let limit = args.value_of("limit");
     let prefix = args.value_of("prefix");
 
-    let mut rest = get_remote_restapi_handler(config, remote)?;
+    let mut _rest = get_remote_restapi_handler(config, remote)?;
 
     let mut query_str = "?d".to_owned();
     if let Some(prefix) = prefix {
@@ -67,7 +67,8 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let uri: PathAndQuery = format!("/a/projects/{}", query_str).parse()?;
     info!("uri: {}", uri);
 
-    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
+    let json = String::new();
+//    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
     let projects: HashMap<String, ProjectInfo> = serde_json::from_str(json.as_str())?;
     if projects.is_empty() {
         writeln!(config.stdout, "No projects.")?;

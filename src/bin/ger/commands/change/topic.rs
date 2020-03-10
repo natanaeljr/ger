@@ -1,10 +1,10 @@
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::rest::changes::TopicInput;
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
-use gerlib::rest::changes::TopicInput;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("topic")
@@ -49,35 +49,21 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let change_id = args.value_of("change-id").unwrap();
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
-    let uri: PathAndQuery = format!("/a/changes/{}/topic", change_id).parse()?;
-    info!("uri: {}", uri);
+    let mut changes_rest = rest.changes();
 
-    let json_output = if let Some(topic) = args.value_of("set") {
-        let topic_input = TopicInput {
+    let topic_res = if let Some(topic) = args.value_of("set") {
+        let topic = TopicInput {
             topic: Some(topic.into()),
         };
-        let json_input = serde_json::to_string_pretty(&topic_input)?;
-        info!("put request, data: {}", json_input);
-        Some(rest.put_json(
-            uri,
-            200,
-            json_input.as_bytes(),
-            verbose >= Verbosity::Verbose,
-        )?)
+        Some(changes_rest.set_topic(change_id, &topic)?)
     } else if args.is_present("delete") {
-        info!("delete request");
-        let res = rest.delete(uri, verbose >= Verbosity::Verbose)?;
-        if !res.is_empty() {
-            writeln!(config.stdout, "{}", res)?;
-        }
+        changes_rest.delete_topic(change_id)?;
         None
     } else {
-        info!("get request");
-        Some(rest.get_json(uri, verbose >= Verbosity::Verbose)?)
+        Some(changes_rest.get_topic(change_id)?)
     };
 
-    if let Some(json_output) = json_output {
-        let topic: String = serde_json::from_str(&json_output)?;
+    if let Some(topic) = &topic_res {
         writeln!(config.stdout, "{}", topic)?;
     }
 

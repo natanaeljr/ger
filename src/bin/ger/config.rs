@@ -138,6 +138,15 @@ impl From<gerlib::rest::HttpAuthMethod> for HttpAuthMethod {
     }
 }
 
+impl Into<gerlib::rest::HttpAuthMethod> for HttpAuthMethod {
+    fn into(self) -> gerlib::rest::HttpAuthMethod {
+        match self {
+            HttpAuthMethod::Basic => gerlib::rest::HttpAuthMethod::Basic,
+            HttpAuthMethod::Digest => gerlib::rest::HttpAuthMethod::Digest,
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// TESTS
 #[cfg(test)]

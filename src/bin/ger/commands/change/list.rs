@@ -66,11 +66,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     };
     let query_str = serde_url_params::to_string(&query_param).unwrap();
 
-    let mut rest = get_remote_restapi_handler(config, remote)?;
+    let mut _rest = get_remote_restapi_handler(config, remote)?;
 
     let uri: PathAndQuery = format!("/a/changes/?{}", query_str).parse()?;
     info!("get: {}", uri);
-    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
+//    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
+    let json = String::new();
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
 
     list(config, &changes)?;

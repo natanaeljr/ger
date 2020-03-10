@@ -35,7 +35,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let remote = args.value_of("remote");
     let change_id = args.value_of("change").unwrap();
 
-    let mut rest = get_remote_restapi_handler(config, remote)?;
+    let mut _rest = get_remote_restapi_handler(config, remote)?;
 
     let uri: PathAndQuery = format!(
         "/a/changes/{}/?o=CURRENT_REVISION&o=CURRENT_COMMIT&o=DETAILED_ACCOUNTS&o=CURRENT_FILES&o=DETAILED_LABELS",
@@ -44,7 +44,8 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     .parse()?;
 
     info!("get: {}", uri);
-    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
+    let json = String::new();
+//    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
     let change: ChangeInfo = serde_json::from_str(json.as_str())?;
 
     show(config, &change)?;

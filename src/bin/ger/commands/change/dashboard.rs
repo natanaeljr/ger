@@ -33,14 +33,15 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
 
-    let mut rest = get_remote_restapi_handler(config, remote)?;
+    let mut _rest = get_remote_restapi_handler(config, remote)?;
 
     let uri: PathAndQuery =
         "/a/changes/?q=is:open+owner:self&q=is:open+reviewer:self+-owner:self&q=is:closed+(owner:self+OR+reviewer:self)+limit:10&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION".to_string()
         .parse()?;
 
     info!("uri: {}", uri);
-    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
+//    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
+    let json = String::new();
     let changes_vec: Vec<Vec<ChangeInfo>> = serde_json::from_str(json.as_str())?;
 
     config

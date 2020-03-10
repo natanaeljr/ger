@@ -1,9 +1,11 @@
 use crate::rest::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
 use crate::rest::details::Timestamp;
+use crate::rest::handler::RestHandler;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::{Display, Error, Formatter};
+use ::http::StatusCode;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// JSON Entities
@@ -1954,5 +1956,39 @@ impl Display for SearchOpr {
             SearchOpr::Reviewer(o) => write!(f, "reviewer:{}", o),
             SearchOpr::Limit(o) => write!(f, "limit:{}", o),
         }
+    }
+}
+
+pub struct ChangesEndpoint<'a> {
+    rest: &'a mut RestHandler,
+}
+
+impl<'a> ChangesEndpoint<'a> {
+    pub fn new(rest: &'a mut RestHandler) -> Self {
+        Self { rest }
+    }
+
+    pub fn get_topic(&mut self, change_id: &str) -> super::Result<String> {
+        let topic: String = serde_json::from_str(&self.rest.get_json(
+            format!("/a/changes/{}/topic", change_id).as_str(),
+            StatusCode::OK,
+        )?)?;
+        Ok(topic)
+    }
+
+    pub fn set_topic(&mut self, change_id: &str, topic: &TopicInput) -> super::Result<String> {
+        let topic: String = serde_json::from_str(&self.rest.put_json(
+            format!("/a/changes/{}/topic", change_id).as_str(),
+            topic,
+            StatusCode::CREATED,
+        )?)?;
+        Ok(topic)
+    }
+
+    pub fn delete_topic(&mut self, change_id: &str) -> super::Result<()> {
+        self.rest.delete(
+            format!("/a/changes/{}/topic", change_id).as_str(),
+            StatusCode::NO_CONTENT,
+        )
     }
 }
