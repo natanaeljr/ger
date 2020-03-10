@@ -1323,9 +1323,18 @@ pub enum RequirementStatus {
     RuleError,
 }
 
+/// The RestoreInput entity contains information for restoring a change.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RestoreInput {
+    /// Message to be added as review comment to the change when restoring the change.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
 /// The RevertInput entity contains information for reverting a change.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RevertInput {
+    /// Message to be added as review comment to the change when reverting the change.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
     /// Notify handling that defines to whom email notifications should be sent

@@ -1,4 +1,7 @@
-use crate::rest::changes::{AdditionalOpt, ChangeInfo, ChangeInput, QueryParams, TopicInput};
+use crate::rest::changes::{
+    AbandonInput, AdditionalOpt, ChangeInfo, ChangeInput, QueryParams, RestoreInput, SubmitInput,
+    TopicInput,
+};
 use crate::rest::handler::RestHandler;
 use crate::rest::http::HttpRequestHandler;
 use ::http::StatusCode;
@@ -182,5 +185,66 @@ impl GerritRestApi {
             format!("/a/changes/{}/topic", change_id).as_str(),
             StatusCode::NO_CONTENT,
         )
+    }
+
+    /// Abandons a change.
+    ///
+    /// The request body does not need to include a AbandonInput entity if no review comment is added.
+    ///
+    /// As response a ChangeInfo entity is returned that describes the abandoned change.
+    ///
+    /// If the change cannot be abandoned because the change state doesn’t allow abandoning of the change,
+    /// the response is “409 Conflict” and the error message is contained in the response body.
+    ///
+    /// An email will be sent using the "abandon" template. The notify handling is ALL.
+    /// Notifications are suppressed on WIP changes that have never started review.
+    pub fn abandon_change(
+        &mut self, change_id: &str, abandon: &AbandonInput,
+    ) -> Result<ChangeInfo> {
+        let json = self.rest.post_json(
+            format!("/a/changes/{}/abandon", change_id).as_str(),
+            abandon,
+            StatusCode::OK,
+        )?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
+        Ok(change_info)
+    }
+
+    /// Restores a change.
+    ///
+    /// The request body does not need to include a RestoreInput entity if no review comment is added.
+    ///
+    /// As response a ChangeInfo entity is returned that describes the restored change.
+    ///
+    /// If the change cannot be restored because the change state doesn’t allow restoring the change,
+    /// the response is “409 Conflict” and the error message is contained in the response body.
+    pub fn restore_change(
+        &mut self, change_id: &str, restore: &RestoreInput,
+    ) -> Result<ChangeInfo> {
+        let json = self.rest.post_json(
+            format!("/a/changes/{}/restore", change_id).as_str(),
+            restore,
+            StatusCode::OK,
+        )?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
+        Ok(change_info)
+    }
+
+    /// Submits a change.
+    ///
+    /// The request body only needs to include a SubmitInput entity if submitting on behalf of another user.
+    ///
+    /// As response a ChangeInfo entity is returned that describes the submitted/merged change.
+    ///
+    /// If the change cannot be submitted because the submit rule doesn’t allow submitting the change,
+    /// the response is “409 Conflict” and the error message is contained in the response body.
+    pub fn submit_change(&mut self, change_id: &str, submit: &SubmitInput) -> Result<ChangeInfo> {
+        let json = self.rest.post_json(
+            format!("/a/changes/{}/submit", change_id).as_str(),
+            submit,
+            StatusCode::OK,
+        )?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
+        Ok(change_info)
     }
 }
