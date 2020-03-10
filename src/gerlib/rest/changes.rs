@@ -1,7 +1,5 @@
 use crate::rest::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
 use crate::rest::details::Timestamp;
-use crate::rest::handler::RestHandler;
-use ::http::StatusCode;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
@@ -1723,9 +1721,7 @@ pub struct SuggestedReviewerInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TopicInput {
     /// The topic.
-    /// The topic will be deleted if not set.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub topic: Option<String>,
+    pub topic: String,
 }
 
 /// The TrackingIdInfo entity describes a reference to an external tracking system.
@@ -1956,78 +1952,5 @@ impl Display for SearchOpr {
             SearchOpr::Reviewer(o) => write!(f, "reviewer:{}", o),
             SearchOpr::Limit(o) => write!(f, "limit:{}", o),
         }
-    }
-}
-
-pub struct RestApiChanges<'a> {
-    rest: &'a mut RestHandler,
-}
-
-impl<'a> RestApiChanges<'a> {
-    pub fn new(rest: &'a mut RestHandler) -> Self {
-        Self { rest }
-    }
-
-    pub fn create_change(&mut self, change: &ChangeInput) -> super::Result<ChangeInfo> {
-        let change_info: ChangeInfo =
-            serde_json::from_str(&self.rest.post_json("/a/changes", change, StatusCode::OK)?)?;
-        Ok(change_info)
-    }
-
-    pub fn query_changes(&mut self, query: &QueryParams) -> super::Result<Vec<Vec<ChangeInfo>>> {
-        let params = serde_url_params::to_string(query)?;
-        let url = format!(
-            "/a/changes/{}{}",
-            if params.is_empty() { "" } else { "?" },
-            params
-        );
-        let response = self.rest.get_json(&url, StatusCode::OK)?;
-        let changes = if query.search_queries.is_some() && query.search_queries.unwrap().len() > 1 {
-            serde_json::from_str::<Vec<Vec<ChangeInfo>>>(&response)?
-        } else {
-            vec![serde_json::from_str::<Vec<ChangeInfo>>(&response)?]
-        };
-        Ok(changes)
-    }
-
-    pub fn get_change(&mut self, change_id: &str) -> super::Result<ChangeInfo> {
-        let change_info: ChangeInfo = serde_json::from_str(
-            &self
-                .rest
-                .get_json(format!("/a/changes/{}", change_id).as_str(), StatusCode::OK)?,
-        )?;
-        Ok(change_info)
-    }
-
-    pub fn get_change_detail(&mut self, change_id: &str) -> super::Result<ChangeInfo> {
-        let change_info: ChangeInfo = serde_json::from_str(&self.rest.get_json(
-            format!("/a/changes/{}/detail", change_id).as_str(),
-            StatusCode::OK,
-        )?)?;
-        Ok(change_info)
-    }
-
-    pub fn get_topic(&mut self, change_id: &str) -> super::Result<String> {
-        let topic: String = serde_json::from_str(&self.rest.get_json(
-            format!("/a/changes/{}/topic", change_id).as_str(),
-            StatusCode::OK,
-        )?)?;
-        Ok(topic)
-    }
-
-    pub fn set_topic(&mut self, change_id: &str, topic: &TopicInput) -> super::Result<String> {
-        let topic: String = serde_json::from_str(&self.rest.put_json(
-            format!("/a/changes/{}/topic", change_id).as_str(),
-            topic,
-            StatusCode::CREATED,
-        )?)?;
-        Ok(topic)
-    }
-
-    pub fn delete_topic(&mut self, change_id: &str) -> super::Result<()> {
-        self.rest.delete(
-            format!("/a/changes/{}/topic", change_id).as_str(),
-            StatusCode::NO_CONTENT,
-        )
     }
 }
