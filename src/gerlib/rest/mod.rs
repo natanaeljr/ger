@@ -1,6 +1,6 @@
 use crate::rest::changes::{
-    AbandonInput, AdditionalOpt, ChangeInfo, ChangeInput, QueryParams, RestoreInput, SubmitInput,
-    TopicInput,
+    AbandonInput, AdditionalOpt, ChangeInfo, ChangeInput, MoveInput, QueryParams, RebaseInput,
+    RestoreInput, RevertInput, SubmitInput, TopicInput,
 };
 use crate::rest::handler::RestHandler;
 use crate::rest::http::HttpRequestHandler;
@@ -216,7 +216,7 @@ impl GerritRestApi {
     ///
     /// As response a ChangeInfo entity is returned that describes the restored change.
     ///
-    /// If the change cannot be restored because the change state doesn’t allow restoring the change,
+    /// If the change cannot be restored because the change state doesn't allow restoring the change,
     /// the response is “409 Conflict” and the error message is contained in the response body.
     pub fn restore_change(
         &mut self, change_id: &str, restore: &RestoreInput,
@@ -224,6 +224,70 @@ impl GerritRestApi {
         let json = self.rest.post_json(
             format!("/a/changes/{}/restore", change_id).as_str(),
             restore,
+            StatusCode::OK,
+        )?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
+        Ok(change_info)
+    }
+
+    /// Rebases a change.
+    ///
+    /// Optionally, the parent revision can be changed to another patch set through the RebaseInput entity.
+    ///
+    /// As response a ChangeInfo entity is returned that describes the rebased change.
+    /// Information about the current patch set is included.
+    ///
+    /// If the change cannot be rebased, e.g. due to conflicts, the response is “409 Conflict” and
+    /// the error message is contained in the response body.
+    pub fn rebase_change(&mut self, change_id: &str, rebase: &RebaseInput) -> Result<ChangeInfo> {
+        let json = self.rest.post_json(
+            format!("/a/changes/{}/rebase", change_id).as_str(),
+            rebase,
+            StatusCode::OK,
+        )?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
+        Ok(change_info)
+    }
+
+    /// Move a change.
+    ///
+    /// The destination branch must be provided in the request body inside a MoveInput entity.
+    ///
+    /// As response a ChangeInfo entity is returned that describes the moved change.
+    ///
+    /// Note that this endpoint will not update the change’s parents, which is different from the cherry-pick endpoint.
+    ///
+    /// If the change cannot be moved because the change state doesn't allow moving the change,
+    /// the response is “409 Conflict” and the error message is contained in the response body.
+    ///
+    /// If the change cannot be moved because the user doesn't have abandon permission on the change
+    /// or upload permission on the destination, the response is “409 Conflict” and the error message
+    /// is contained in the response body.
+    pub fn move_change(&mut self, change_id: &str, move_input: &MoveInput) -> Result<ChangeInfo> {
+        let json = self.rest.post_json(
+            format!("/a/changes/{}/move", change_id).as_str(),
+            move_input,
+            StatusCode::OK,
+        )?;
+        let change_info: ChangeInfo = serde_json::from_str(&json)?;
+        Ok(change_info)
+    }
+
+    /// Reverts a change.
+    ///
+    /// The subject of the newly created change will be 'Revert "<subject-of-reverted-change>"'.
+    /// If the subject of the change reverted is above 63 characters, it will be cut down to 59 characters with "…​" in the end.
+    ///
+    /// The request body does not need to include a RevertInput entity if no review comment is added.
+    ///
+    /// As response a ChangeInfo entity is returned that describes the reverting change.
+    ///
+    /// If the change cannot be reverted because the change state doesn’t allow reverting the change,
+    /// the response is “409 Conflict” and the error message is contained in the response body.
+    pub fn revert_change(&mut self, change_id: &str, revert: &RevertInput) -> Result<ChangeInfo> {
+        let json = self.rest.post_json(
+            format!("/a/changes/{}/revert", change_id).as_str(),
+            revert,
             StatusCode::OK,
         )?;
         let change_info: ChangeInfo = serde_json::from_str(&json)?;
