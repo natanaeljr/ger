@@ -44,14 +44,14 @@ impl GerritRestApi {
     }
 
     /// Specify the HTTP authentication method.
-    pub fn http_auth(&mut self, auth: &HttpAuthMethod) -> Result<&mut Self> {
-        self.rest.http_mut().http_auth(auth)?;
+    pub fn http_auth(mut self, auth: &HttpAuthMethod) -> Result<Self> {
+        self.rest = RestHandler::new(self.rest.http().http_auth(auth)?);
         Ok(self)
     }
 
     /// Enable/Disable SSL verification of both host and peer.
-    pub fn ssl_verify(&mut self, enable: bool) -> Result<&mut Self> {
-        self.rest.http_mut().ssl_verify(enable)?;
+    pub fn ssl_verify(mut self, enable: bool) -> Result<Self> {
+        self.rest = RestHandler::new(self.rest.http().ssl_verify(enable)?);
         Ok(self)
     }
 
@@ -90,11 +90,12 @@ impl GerritRestApi {
             params
         );
         let json = self.rest.get_json(&url, StatusCode::OK)?;
-        let changes = if query.search_queries.is_some() && query.search_queries.unwrap().len() > 1 {
-            serde_json::from_str::<Vec<Vec<ChangeInfo>>>(&json)?
-        } else {
-            vec![serde_json::from_str::<Vec<ChangeInfo>>(&json)?]
-        };
+        let changes =
+            if query.search_queries.is_some() && query.search_queries.as_ref().unwrap().len() > 1 {
+                serde_json::from_str::<Vec<Vec<ChangeInfo>>>(&json)?
+            } else {
+                vec![serde_json::from_str::<Vec<ChangeInfo>>(&json)?]
+            };
         Ok(changes)
     }
 

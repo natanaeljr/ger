@@ -65,7 +65,7 @@ impl RestHandler {
         Ok(json)
     }
 
-    pub fn http_mut(&mut self) -> &mut HttpRequestHandler {
-        &mut self.http
+    pub fn http(self) -> HttpRequestHandler {
+        self.http
     }
 }

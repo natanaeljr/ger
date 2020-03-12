@@ -2,8 +2,6 @@ use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use gerlib::changes::TopicInput;
-use http::uri::PathAndQuery;
-use log::info;
 use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
@@ -49,18 +47,17 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let change_id = args.value_of("change-id").unwrap();
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
-    let mut changes_rest = rest.changes();
 
     let topic_res = if let Some(topic) = args.value_of("set") {
         let topic = TopicInput {
             topic: topic.into(),
         };
-        Some(changes_rest.set_topic(change_id, &topic)?)
+        Some(rest.set_topic(change_id, &topic)?)
     } else if args.is_present("delete") {
-        changes_rest.delete_topic(change_id)?;
+        rest.delete_topic(change_id)?;
         None
     } else {
-        Some(changes_rest.get_topic(change_id)?)
+        Some(rest.get_topic(change_id)?)
     };
 
     if let Some(topic) = &topic_res {

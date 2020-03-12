@@ -21,5 +21,5 @@ pub fn get_remote_restapi_handler(
     let handler = GerritRestApi::new(remote.url.parse()?, &remote.username, &remote.http_password)?
         .http_auth(&remote.http_auth.into())?
         .ssl_verify(!remote.no_ssl_verify)?;
-    Ok(*handler)
+    Ok(handler)
 }

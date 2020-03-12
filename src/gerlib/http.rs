@@ -56,7 +56,7 @@ impl HttpRequestHandler {
     }
 
     /// Specify the HTTP authentication method.
-    pub fn http_auth(&mut self, auth: &AuthMethod) -> Result<&mut Self> {
+    pub fn http_auth(mut self, auth: &AuthMethod) -> Result<Self> {
         let mut http_auth = curl::easy::Auth::new();
         match auth {
             AuthMethod::Basic => http_auth.basic(true),
@@ -67,7 +67,7 @@ impl HttpRequestHandler {
     }
 
     /// Enable/Disable SSL verification of both host and peer.
-    pub fn ssl_verify(&mut self, enable: bool) -> Result<&mut Self> {
+    pub fn ssl_verify(mut self, enable: bool) -> Result<Self> {
         self.curl.ssl_verify_host(enable)?;
         self.curl.ssl_verify_peer(enable)?;
         Ok(self)
