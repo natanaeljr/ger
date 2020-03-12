@@ -2,9 +2,9 @@ use super::show;
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::{ChangeInfo, ChangeInput, ChangeStatus};
 use http::uri::PathAndQuery;
 use log::info;
-use gerlib::rest::changes::{ChangeInput, ChangeStatus, ChangeInfo};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("create")
@@ -92,12 +92,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     info!("post data: {}", json_input);
 
     let json_output = String::new();
-//    let json_output = rest.post_json(
-//        uri,
-//        201,
-//        json_input.as_bytes(),
-//        verbose >= Verbosity::Verbose,
-//    )?;
+    //    let json_output = rest.post_json(
+    //        uri,
+    //        201,
+    //        json_input.as_bytes(),
+    //        verbose >= Verbosity::Verbose,
+    //    )?;
 
     let change_info: ChangeInfo = serde_json::from_str(&json_output)?;
 

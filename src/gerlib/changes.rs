@@ -1,5 +1,5 @@
-use crate::rest::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
-use crate::rest::details::Timestamp;
+use crate::accounts::{AccountInfo, AccountInput, GpgKeyInfo};
+use crate::details::Timestamp;
 use serde::{Serialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};

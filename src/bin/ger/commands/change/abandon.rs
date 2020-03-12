@@ -2,7 +2,7 @@ use super::show;
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::rest::changes::{AbandonInput, ChangeInfo};
+use gerlib::changes::{AbandonInput, ChangeInfo};
 use http::uri::PathAndQuery;
 use log::info;
 
@@ -51,12 +51,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     };
     let json_input = serde_json::to_string_pretty(&abandon_input)?;
     let json_output = String::new();
-//    let json_output = rest.post_json(
-//        uri,
-//        200,
-//        json_input.as_bytes(),
-//        verbose >= Verbosity::Verbose,
-//    )?;
+    //    let json_output = rest.post_json(
+    //        uri,
+    //        200,
+    //        json_input.as_bytes(),
+    //        verbose >= Verbosity::Verbose,
+    //    )?;
     let change: ChangeInfo = serde_json::from_str(&json_output)?;
 
     show::show(config, &change)?;

@@ -2,7 +2,7 @@ use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::rest::changes::{AdditionalOpt, ChangeInfo, QueryParams};
+use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams};
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
@@ -70,7 +70,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
 
     let uri: PathAndQuery = format!("/a/changes/?{}", query_str).parse()?;
     info!("get: {}", uri);
-//    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
+    //    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
     let json = String::new();
     let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
 

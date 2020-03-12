@@ -2,11 +2,11 @@ use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::projects::ProjectInfo;
 use http::uri::PathAndQuery;
 use log::info;
 use std::collections::HashMap;
 use std::io::Write;
-use gerlib::rest::projects::ProjectInfo;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("project")
@@ -68,7 +68,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     info!("uri: {}", uri);
 
     let json = String::new();
-//    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
+    //    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
     let projects: HashMap<String, ProjectInfo> = serde_json::from_str(json.as_str())?;
     if projects.is_empty() {
         writeln!(config.stdout, "No projects.")?;

@@ -1,9 +1,9 @@
-use crate::rest::error::Error;
-use crate::rest::http::HttpRequestHandler;
+use crate::error::Error;
+use crate::http::HttpRequestHandler;
 use http::StatusCode;
 use serde::Serialize;
 
-type Result<T> = std::result::Result<T, crate::rest::error::Error>;
+type Result<T> = std::result::Result<T, crate::error::Error>;
 
 pub struct RestHandler {
     http: HttpRequestHandler,
