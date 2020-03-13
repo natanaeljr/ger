@@ -1,12 +1,15 @@
+use std::io::Write;
+
+use clap::{App, Arg, ArgMatches, SubCommand};
+use http::uri::PathAndQuery;
+use log::info;
+use termcolor::{Color, ColorSpec, WriteColor};
+
+use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
+
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
-use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
-use http::uri::PathAndQuery;
-use log::info;
-use std::io::Write;
-use termcolor::{Color, ColorSpec, WriteColor};
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {

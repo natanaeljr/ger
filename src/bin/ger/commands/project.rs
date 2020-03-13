@@ -1,12 +1,15 @@
+use std::collections::HashMap;
+use std::io::Write;
+
+use clap::{App, Arg, ArgMatches, SubCommand};
+use http::uri::PathAndQuery;
+use log::info;
+
+use gerlib::projects::ProjectInfo;
+
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
-use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::projects::ProjectInfo;
-use http::uri::PathAndQuery;
-use log::info;
-use std::collections::HashMap;
-use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("project")

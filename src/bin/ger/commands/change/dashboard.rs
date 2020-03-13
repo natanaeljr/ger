@@ -1,12 +1,16 @@
-use super::list;
-use crate::config::{CliConfig, Verbosity};
-use crate::handler::get_remote_restapi_handler;
+use std::io::Write;
+
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams, QueryStr};
 use http::uri::PathAndQuery;
 use log::info;
-use std::io::Write;
 use termcolor::{ColorSpec, WriteColor};
+
+use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams, QueryStr};
+
+use crate::config::{CliConfig, Verbosity};
+use crate::handler::get_remote_restapi_handler;
+
+use super::list;
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {
@@ -44,7 +48,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
             AdditionalOpt::DetailedAccounts,
             AdditionalOpt::CurrentRevision,
         ]),
-        limit: Some(limit),
+        limit: None,
         start: None,
     };
     let changes_vec: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;

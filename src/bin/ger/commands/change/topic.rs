@@ -1,8 +1,11 @@
+use std::io::Write;
+
+use clap::{App, Arg, ArgMatches, SubCommand};
+
+use gerlib::changes::TopicInput;
+
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
-use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::TopicInput;
-use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("topic")

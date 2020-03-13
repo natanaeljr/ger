@@ -1,10 +1,13 @@
-use super::show;
-use crate::config::{CliConfig, Verbosity};
-use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{ChangeInfo, SubmitInput};
 use http::uri::PathAndQuery;
 use log::info;
+
+use gerlib::changes::{ChangeInfo, SubmitInput};
+
+use crate::config::{CliConfig, Verbosity};
+use crate::handler::get_remote_restapi_handler;
+
+use super::show;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("submit")
