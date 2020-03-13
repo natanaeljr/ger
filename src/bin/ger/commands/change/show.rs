@@ -2,7 +2,7 @@ use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::{ChangeInfo, FileStatus};
+use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
@@ -35,18 +35,15 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let remote = args.value_of("remote");
     let change_id = args.value_of("change").unwrap();
 
-    let mut _rest = get_remote_restapi_handler(config, remote)?;
-
-    let uri: PathAndQuery = format!(
-        "/a/changes/{}/?o=CURRENT_REVISION&o=CURRENT_COMMIT&o=DETAILED_ACCOUNTS&o=CURRENT_FILES&o=DETAILED_LABELS",
-        change_id
-    )
-    .parse()?;
-
-    info!("get: {}", uri);
-    let json = String::new();
-    //    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
-    let change: ChangeInfo = serde_json::from_str(json.as_str())?;
+    let mut rest = get_remote_restapi_handler(config, remote)?;
+    let additional_opts = vec![
+        AdditionalOpt::CurrentRevision,
+        AdditionalOpt::CurrentCommit,
+        AdditionalOpt::CurrentFiles,
+        AdditionalOpt::DetailedAccounts,
+        AdditionalOpt::DetailedLabels,
+    ];
+    let change: ChangeInfo = rest.get_change(change_id, Some(additional_opts))?;
 
     show(config, &change)?;
 

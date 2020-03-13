@@ -32,24 +32,13 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let remote = args.value_of("remote");
     let change_id = args.value_of("change-id").unwrap();
 
-    let mut _rest = get_remote_restapi_handler(config, remote)?;
-    let uri: PathAndQuery = format!("/a/changes/{}/submit", change_id).parse()?;
-    info!("uri: {}", uri);
-
+    let mut rest = get_remote_restapi_handler(config, remote)?;
     let submit_input = SubmitInput {
         on_behalf_of: None, // TODO
         notify: None,
         notify_details: None,
     };
-    let json_input = serde_json::to_string_pretty(&submit_input)?;
-    let json_output = String::new();
-    //    let json_output = rest.post_json(
-    //        uri,
-    //        200,
-    //        json_input.as_bytes(),
-    //        verbose >= Verbosity::Verbose,
-    //    )?;
-    let change: ChangeInfo = serde_json::from_str(&json_output)?;
+    let change: ChangeInfo = rest.submit_change(change_id, &submit_input)?;
 
     show::show(config, &change)?;
 

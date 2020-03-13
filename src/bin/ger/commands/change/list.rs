@@ -55,6 +55,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
             None => 25,
         });
 
+    let mut rest = get_remote_restapi_handler(config, remote)?;
     let query_param = QueryParams {
         search_queries: None,
         additional_opts: Some(vec![
@@ -64,17 +65,15 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         limit: Some(limit),
         start: None,
     };
-    let query_str = serde_url_params::to_string(&query_param).unwrap();
+    let changes_list: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;
 
-    let mut _rest = get_remote_restapi_handler(config, remote)?;
-
-    let uri: PathAndQuery = format!("/a/changes/?{}", query_str).parse()?;
-    info!("get: {}", uri);
-    //    let json = rest.get_json(uri, verbose >= Verbosity::Verbose)?;
-    let json = String::new();
-    let changes: Vec<ChangeInfo> = serde_json::from_str(json.as_str())?;
-
-    list(config, &changes)?;
+    if changes_list.is_empty() {
+        writeln!(config.stdout, "No changes.")?;
+        return Ok(());
+    }
+    for changes in &changes_list {
+        list(config, changes)?;
+    }
 
     Ok(())
 }

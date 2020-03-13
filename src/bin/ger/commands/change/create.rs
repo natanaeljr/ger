@@ -64,9 +64,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
 
-    let mut _rest = get_remote_restapi_handler(config, remote)?;
-    let uri: PathAndQuery = format!("/a/changes/").parse()?;
-    info!("get: {}", uri);
+    let mut rest = get_remote_restapi_handler(config, remote)?;
 
     let change_input = ChangeInput {
         project: args.value_of("project").unwrap().into(),
@@ -88,18 +86,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         notify_details: None,
     };
 
-    let json_input = serde_json::to_string_pretty(&change_input)?;
-    info!("post data: {}", json_input);
-
-    let json_output = String::new();
-    //    let json_output = rest.post_json(
-    //        uri,
-    //        201,
-    //        json_input.as_bytes(),
-    //        verbose >= Verbosity::Verbose,
-    //    )?;
-
-    let change_info: ChangeInfo = serde_json::from_str(&json_output)?;
+    let change_info: ChangeInfo = rest.create_change(&change_input)?;
 
     show::show(config, &change_info)?;
 

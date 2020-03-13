@@ -2,7 +2,7 @@ use super::list;
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::ChangeInfo;
+use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams, QueryStr};
 use http::uri::PathAndQuery;
 use log::info;
 use std::io::Write;
@@ -33,16 +33,21 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
 
-    let mut _rest = get_remote_restapi_handler(config, remote)?;
-
-    let uri: PathAndQuery =
-        "/a/changes/?q=is:open+owner:self&q=is:open+reviewer:self+-owner:self&q=is:closed+(owner:self+OR+reviewer:self)+limit:10&o=DETAILED_ACCOUNTS&o=CURRENT_REVISION".to_string()
-        .parse()?;
-
-    info!("uri: {}", uri);
-    //    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
-    let json = String::new();
-    let changes_vec: Vec<Vec<ChangeInfo>> = serde_json::from_str(json.as_str())?;
+    let mut rest = get_remote_restapi_handler(config, remote)?;
+    let query_param = QueryParams {
+        search_queries: Some(vec![
+            QueryStr::Raw("is:open+owner:self".into()),
+            QueryStr::Raw("is:open+reviewer:self+-owner:self".into()),
+            QueryStr::Raw("is:closed+(owner:self+OR+reviewer:self)+limit:10".into()),
+        ]),
+        additional_opts: Some(vec![
+            AdditionalOpt::DetailedAccounts,
+            AdditionalOpt::CurrentRevision,
+        ]),
+        limit: Some(limit),
+        start: None,
+    };
+    let changes_vec: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;
 
     config
         .stdout

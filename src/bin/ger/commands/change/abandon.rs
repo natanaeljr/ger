@@ -40,24 +40,13 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let change_id = args.value_of("change-id").unwrap();
     let message = args.value_of("message");
 
-    let mut _rest = get_remote_restapi_handler(config, remote)?;
-    let uri: PathAndQuery = format!("/a/changes/{}/abandon", change_id).parse()?;
-    info!("uri: {}", uri);
-
+    let mut rest = get_remote_restapi_handler(config, remote)?;
     let abandon_input = AbandonInput {
         message: message.map(|m| m.into()),
         notify: None,
         notify_details: None,
     };
-    let json_input = serde_json::to_string_pretty(&abandon_input)?;
-    let json_output = String::new();
-    //    let json_output = rest.post_json(
-    //        uri,
-    //        200,
-    //        json_input.as_bytes(),
-    //        verbose >= Verbosity::Verbose,
-    //    )?;
-    let change: ChangeInfo = serde_json::from_str(&json_output)?;
+    let change: ChangeInfo = rest.abandon_change(change_id, &abandon_input)?;
 
     show::show(config, &change)?;
 
