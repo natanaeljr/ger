@@ -11,7 +11,7 @@ pub enum Error {
     /// The HTTP handler returned error
     HttpHandler(http::Error),
     /// Failed to generate query parameters
-    WrongQuery(serde_url_params::Error),
+    WrongQuery(String),
 }
 
 impl std::error::Error for Error {
@@ -21,7 +21,7 @@ impl std::error::Error for Error {
             Error::NotJsonResponse(_) => None,
             Error::InvalidJsonResponse(ref e) => Some(e),
             Error::HttpHandler(ref e) => Some(e),
-            Error::WrongQuery(ref e) => Some(e),
+            Error::WrongQuery(_) => None,
         }
     }
 }
@@ -40,6 +40,6 @@ impl From<http::Error> for Error {
 
 impl From<serde_url_params::Error> for Error {
     fn from(e: serde_url_params::Error) -> Self {
-        Error::WrongQuery(e)
+        Error::WrongQuery(e.to_string())
     }
 }
