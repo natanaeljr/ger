@@ -1,15 +1,10 @@
-use std::io::Write;
-
-use clap::{App, Arg, ArgMatches, SubCommand};
-use http::uri::PathAndQuery;
-use log::info;
-use termcolor::{Color, ColorSpec, WriteColor};
-
-use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams};
-
-use crate::config::{CliConfig, Verbosity};
+use crate::config::CliConfig;
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams};
+use std::io::Write;
+use termcolor::{Color, ColorSpec, WriteColor};
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {
@@ -41,7 +36,6 @@ pub fn cli() -> App<'static, 'static> {
 /// Execute the command
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
-    let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
     let limit = args
         .value_of("limit")

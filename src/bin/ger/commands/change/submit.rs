@@ -1,13 +1,8 @@
-use clap::{App, Arg, ArgMatches, SubCommand};
-use http::uri::PathAndQuery;
-use log::info;
-
-use gerlib::changes::{ChangeInfo, SubmitInput};
-
-use crate::config::{CliConfig, Verbosity};
-use crate::handler::get_remote_restapi_handler;
-
 use super::show;
+use crate::config::CliConfig;
+use crate::handler::get_remote_restapi_handler;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::{ChangeInfo, SubmitInput};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("submit")
@@ -31,7 +26,6 @@ pub fn cli() -> App<'static, 'static> {
 
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
-    let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
     let change_id = args.value_of("change-id").unwrap();
 

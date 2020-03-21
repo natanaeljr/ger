@@ -1,11 +1,8 @@
-use std::io::Write;
-
-use clap::{App, Arg, ArgMatches, SubCommand};
-
-use gerlib::changes::TopicInput;
-
-use crate::config::{CliConfig, Verbosity};
+use crate::config::CliConfig;
 use crate::handler::get_remote_restapi_handler;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::TopicInput;
+use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("topic")
@@ -45,7 +42,6 @@ pub fn cli() -> App<'static, 'static> {
 
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
-    let verbose: Verbosity = args.occurrences_of("verbose").into();
     let remote = args.value_of("remote");
     let change_id = args.value_of("change-id").unwrap();
 
