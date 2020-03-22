@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::http::HttpRequestHandler;
+use crate::http::{Header, HttpRequestHandler};
 use http::StatusCode;
 use serde::Serialize;
 
@@ -15,6 +15,7 @@ impl RestHandler {
     }
 
     pub fn get_json(&mut self, url: &str, expect_code: StatusCode) -> Result<String> {
+        self.http.headers(&[Header::AcceptAppJson])?;
         let (code, response) = self.http.get(url)?;
         Self::expect_response_code(expect_code.as_u16() as u32, code)?;
         let json = Self::strip_json_magic_prefix(response)?;
@@ -25,6 +26,8 @@ impl RestHandler {
     where
         T: Serialize + ?Sized,
     {
+        self.http
+            .headers(&[Header::ContentTypeAppJson, Header::AcceptAppJson])?;
         let data = serde_json::to_string(data)?;
         let (code, response) = self.http.put(url, Some(data.as_bytes()))?;
         Self::expect_response_code(expect_code.as_u16() as u32, code)?;
@@ -36,6 +39,8 @@ impl RestHandler {
     where
         T: Serialize + ?Sized,
     {
+        self.http
+            .headers(&[Header::ContentTypeAppJson, Header::AcceptAppJson])?;
         let data = serde_json::to_string(data)?;
         let (code, response) = self.http.post(url, Some(data.as_bytes()))?;
         Self::expect_response_code(expect_code.as_u16() as u32, code)?;
@@ -50,7 +55,7 @@ impl RestHandler {
 
     fn expect_response_code(expected: u32, actual: u32) -> Result<()> {
         if expected != actual {
-            Err(Error::WrongHttpResponseCode(actual))
+            Err(Error::UnexpectedHttpResponse(actual))
         } else {
             Ok(())
         }

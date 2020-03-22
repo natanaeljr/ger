@@ -63,7 +63,9 @@ impl GerritRestApi {
     ///
     /// As response a ChangeInfo entity is returned that describes the resulting change.
     pub fn create_change(&mut self, change: &ChangeInput) -> Result<ChangeInfo> {
-        let json = self.rest.post_json("/a/changes", change, StatusCode::OK)?;
+        let json = self
+            .rest
+            .post_json("/a/changes/", change, StatusCode::CREATED)?;
         let change_info: ChangeInfo = serde_json::from_str(&json)?;
         Ok(change_info)
     }
@@ -180,7 +182,7 @@ impl GerritRestApi {
         let json = &self.rest.put_json(
             format!("/a/changes/{}/topic", change_id).as_str(),
             topic,
-            StatusCode::CREATED,
+            StatusCode::OK,
         )?;
         let topic: String = serde_json::from_str(&json)?;
         Ok(topic)

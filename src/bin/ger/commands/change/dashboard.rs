@@ -31,11 +31,12 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let remote = args.value_of("remote");
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
+    // ?q=is:open+owner:self&q=is:open+reviewer:self+-owner:self+-star:ignore&q=is:closed+(owner:self+OR+reviewer:self)+-age:4w+limit:10
     let query_param = QueryParams {
         search_queries: Some(vec![
             QueryStr::Raw("is:open+owner:self".into()),
             QueryStr::Raw("is:open+reviewer:self+-owner:self".into()),
-            QueryStr::Raw("is:closed+(owner:self+OR+reviewer:self)+limit:10".into()),
+            QueryStr::Raw("is:closed+(+owner:self+OR+reviewer:self+)+limit:10".into()),
         ]),
         additional_opts: Some(vec![
             AdditionalOpt::DetailedAccounts,

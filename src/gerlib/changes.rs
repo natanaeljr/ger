@@ -1936,6 +1936,7 @@ impl Serialize for QueryStr {
                 for opr in operators {
                     strings.push(format!("{}", opr));
                 }
+                println!("{:#?}", strings);
                 let joined = strings.join(" ");
                 serializer.serialize_str(joined.as_str())
             }
