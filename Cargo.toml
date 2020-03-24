@@ -7,15 +7,8 @@ readme = "README.md"
 description = "Gerrit command-line interface"
 edition = "2018"
 
-[lib]
-name = "gerlib"
-path = "src/gerlib/lib.rs"
-
-[[bin]]
-name = "ger"
-path = "src/bin/ger/main.rs"
-
 [dependencies]
+gerlib = { path = "../gerlib" }
 simple-error = "0.2.1"
 ansi_term = "0.12"
 chrono = { version = "0.4.9", features = ["serde"] }
