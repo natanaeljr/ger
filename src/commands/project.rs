@@ -1,15 +1,11 @@
-use std::collections::HashMap;
-use std::io::Write;
-
-use clap::{App, Arg, ArgMatches, SubCommand};
-use http::uri::PathAndQuery;
-use log::info;
-
-use gerlib::projects::ProjectInfo;
-
 use crate::config::{CliConfig, Verbosity};
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
+use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::projects::ProjectInfo;
+use log::info;
+use std::collections::HashMap;
+use std::io::Write;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("project")
@@ -67,12 +63,13 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     if let Some(limit) = limit {
         query_str = format!("{}&n={}", query_str, limit);
     }
-    let uri: PathAndQuery = format!("/a/projects/{}", query_str).parse()?;
+    let uri: String = format!("/a/projects/{}", query_str).parse()?;
     info!("uri: {}", uri);
 
-    let json = String::new();
+    let _json = String::new();
     //    let json = rest.get_json(uri, verbose >= Verbosity::Debug)?;
-    let projects: HashMap<String, ProjectInfo> = serde_json::from_str(json.as_str())?;
+    // let projects: HashMap<String, ProjectInfo> = serde_json::from_str(json.as_str())?;
+    let projects: HashMap<String, ProjectInfo> = HashMap::new();
     if projects.is_empty() {
         writeln!(config.stdout, "No projects.")?;
         return Ok(());
