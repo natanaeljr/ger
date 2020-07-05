@@ -2,6 +2,7 @@ use super::show;
 use crate::config::CliConfig;
 use crate::handler::get_remote_restapi_handler;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::ChangeEndpoints;
 use gerlib::changes::{ChangeInfo, SubmitInput};
 
 pub fn cli() -> App<'static, 'static> {

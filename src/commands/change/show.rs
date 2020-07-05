@@ -2,6 +2,7 @@ use crate::config::CliConfig;
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::ChangeEndpoints;
 use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
 use std::io::Write;
 use termcolor::{Color, ColorSpec, WriteColor};
@@ -258,7 +259,7 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
                             .set_intense(true),
                     )?,
                 }
-                write!(stdout, " {}", file.1.status.initial())?;
+                write!(stdout, " {}", file_status_initial(&file.1.status))?;
 
                 stdout.reset()?;
                 write!(stdout, " {}", file.0,)?;
@@ -314,4 +315,15 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     }
 
     Ok(())
+}
+
+fn file_status_initial(status: &FileStatus) -> char {
+    match status {
+        FileStatus::Added => 'A',
+        FileStatus::Modified => 'M',
+        FileStatus::Deleted => 'D',
+        FileStatus::Renamed => 'R',
+        FileStatus::Copied => 'C',
+        FileStatus::Rewritten => 'W',
+    }
 }

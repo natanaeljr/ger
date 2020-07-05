@@ -2,6 +2,7 @@ use crate::config::CliConfig;
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
+use gerlib::changes::ChangeEndpoints;
 use gerlib::changes::{AdditionalOpt, ChangeInfo, QueryParams};
 use std::io::Write;
 use termcolor::{Color, ColorSpec, WriteColor};
