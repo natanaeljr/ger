@@ -48,9 +48,22 @@ impl UserConfig {
         let default_config_file =
             format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
         let config_file = config_file.unwrap_or(default_config_file);
-        let contents = std::fs::read_to_string(&config_file)?;
-        let settings: UserSettings = toml::from_str(contents.as_str())
-            .with_context(|_| format!("failed to parse config file: {}", config_file))?;
+        let contents = match std::fs::read_to_string(&config_file) {
+            Ok(c) => Some(c),
+            Err(e) => match e.kind() {
+                std::io::ErrorKind::NotFound => None,
+                _ => {
+                    return Err(failure::Error::from(e)).with_context(|_| {
+                        format!("failed to open config file: {}", config_file)
+                    })?;
+                }
+            },
+        };
+        let settings: UserSettings = match contents {
+            Some(contents) => toml::from_str(contents.as_str())
+                .with_context(|_| format!("failed to parse config file: {}", config_file))?,
+            None => Default::default(),
+        };
         Ok(UserConfig {
             filepath: config_file.into(),
             settings,
