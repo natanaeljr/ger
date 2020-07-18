@@ -18,6 +18,12 @@ pub fn cli() -> App<'static, 'static> {
              or commit SHA-1 (e.g. d81b32ef).",
         ))
         .arg(
+            Arg::with_name("detail")
+                .long("detail")
+                .short("d")
+                .help("Show change with more detailed information"),
+        )
+        .arg(
             Arg::with_name("remote")
                 .long("remote")
                 .short("r")
@@ -32,6 +38,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     let args = args.unwrap();
     let remote = args.value_of("remote");
     let change_id = args.value_of("change").unwrap();
+    let detail = args.is_present("detail");
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
     let additional_opts = vec![
@@ -41,9 +48,16 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         AdditionalOpt::DetailedAccounts,
         AdditionalOpt::DetailedLabels,
     ];
-    let change: ChangeInfo = rest.get_change(change_id, Some(additional_opts))?;
+    let change: ChangeInfo = if detail {
+        rest.get_change_detail(change_id, Some(additional_opts))?
+    } else {
+        rest.get_change(change_id, Some(additional_opts))?
+    };
 
     show(config, &change)?;
+    if detail {
+        show_details(config, &change)?;
+    }
 
     Ok(())
 }
@@ -311,6 +325,18 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
             //        write!(stdout, "{}", total_lines_deleted)?;
             //
             //        stdout.write_all(b"\n")?;
+        }
+    }
+
+    Ok(())
+}
+
+pub fn show_details(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::Error> {
+    let mut stdout = config.stdout.lock();
+
+    if let Some(messages) = &change.messages {
+        for message in messages {
+            writeln!(stdout, "{}", message.message)?;
         }
     }
 
