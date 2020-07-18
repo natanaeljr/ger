@@ -43,27 +43,22 @@ pub struct UserSettings {
 }
 
 impl UserConfig {
-    /// Read user config from TOML config file
+    /// Read user config from TOML config file.
+    ///
+    /// If `config_file` path is not passed, the default `$HOME/.ger.toml` is used.
+    /// If file does not exists or is empty, the default `UserConfig` is returned.
     pub fn from_file(config_file: Option<String>) -> Result<Self, failure::Error> {
-        let default_config_file =
-            format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap());
-        let config_file = config_file.unwrap_or(default_config_file);
-        let contents = match std::fs::read_to_string(&config_file) {
-            Ok(c) => Some(c),
-            Err(e) => match e.kind() {
-                std::io::ErrorKind::NotFound => None,
-                _ => {
-                    return Err(failure::Error::from(e)).with_context(|_| {
-                        format!("failed to open config file: {}", config_file)
-                    })?;
-                }
-            },
-        };
-        let settings: UserSettings = match contents {
-            Some(contents) => toml::from_str(contents.as_str())
-                .with_context(|_| format!("failed to parse config file: {}", config_file))?,
-            None => Default::default(),
-        };
+        let config_file = config_file.unwrap_or_else(|| {
+            format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap())
+        });
+        let contents = std::fs::read_to_string(&config_file)
+            .or_else(|error| match error.kind() {
+                std::io::ErrorKind::NotFound => Ok(String::new()),
+                _ => Err(error),
+            })
+            .with_context(|_| format!("failed to open config file: {}", config_file))?;
+        let settings: UserSettings = toml::from_str(&contents)
+            .with_context(|_| format!("failed to parse config file: {}", config_file))?;
         Ok(UserConfig {
             filepath: config_file.into(),
             settings,
