@@ -73,9 +73,19 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     if change.work_in_progress {
         write!(stdout, " (WIP)")?;
     }
-    stdout.write_all(b"\n")?;
 
     stdout.reset()?;
+
+    if let Some(total_comment_count) = change.total_comment_count {
+        write!(stdout, " > comments {}", total_comment_count)?;
+        if let Some(unresolved_comment_count) = change.unresolved_comment_count {
+            stdout.set_color(ColorSpec::new().set_bold(true))?;
+            write!(stdout, " [new: {}]", unresolved_comment_count)?;
+        }
+    }
+
+    stdout.reset()?;
+    stdout.write_all(b"\n")?;
 
     write!(stdout, "Owner:       ")?;
     if let Some(owner_name) = &change.owner.name {
