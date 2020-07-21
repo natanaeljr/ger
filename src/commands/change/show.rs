@@ -115,15 +115,9 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     }
 
     let current_revision = change.current_revision.as_ref();
-    let revisions = change.revisions.as_ref();
-    //    let current_revision_info = revisions.and_then(|revisions|)
-    let current_revision_info = match revisions {
-        Some(revisions) => match current_revision {
-            Some(current_revision) => revisions.get(current_revision),
-            None => None,
-        },
-        None => None,
-    };
+    let current_revision_info = change.revisions.as_ref().and_then(|revisions| {
+        current_revision.and_then(|current_revision| revisions.get(current_revision))
+    });
     let current_commit =
         current_revision_info.and_then(|curr_rev_info| curr_rev_info.commit.as_ref());
 
