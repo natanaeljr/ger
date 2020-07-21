@@ -30,6 +30,8 @@ strum = "0.17.1"
 strum_macros = "0.17.1"
 tui = "0.9.5"
 termion = "1.5"
+rand = "0.7"
+unicode-width = "0.1"
 
 [dev-dependencies]
 tempfile = "3.1.0"
