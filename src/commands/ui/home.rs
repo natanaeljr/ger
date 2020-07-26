@@ -1,6 +1,7 @@
 use crate::commands::ui::util::event::{Event, Events};
 use termion::event::Key;
 use termion::{input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
+use tui::layout::Rect;
 use tui::style::{Modifier, Style};
 use tui::{
     backend::{Backend, TermionBackend},
@@ -40,8 +41,21 @@ where
     B: Backend,
 {
     let windows = Layout::default()
-        .constraints([Constraint::Percentage(100)])
+        .constraints([
+            Constraint::Percentage(34),
+            Constraint::Percentage(33),
+            Constraint::Percentage(33),
+        ])
         .split(frame.size());
+    outgoing_reviews(&mut frame, windows[0]);
+    incoming_reviews(&mut frame, windows[1]);
+    recently_closed(&mut frame, windows[2]);
+}
+
+fn outgoing_reviews<B>(frame: &mut Frame<B>, window: Rect)
+where
+    B: Backend,
+{
     let header = ["number", "project", "subject"];
     let data = [
         [
@@ -70,5 +84,75 @@ where
             Constraint::Length(30),
             Constraint::Percentage(100),
         ]);
-    frame.render_widget(table, windows[0]);
+    frame.render_widget(table, window);
+}
+
+fn incoming_reviews<B>(frame: &mut Frame<B>, window: Rect)
+where
+    B: Backend,
+{
+    let header = ["number", "project", "subject"];
+    let data = [
+        [
+            "96895",
+            "dmos-hal-filters-ll-bcm",
+            "[US92241] Implement ActionMplsPortIgnoreVlanAndStgCheck",
+        ],
+        [
+            "98677",
+            "dmos-hal-switch-vpn-ll-bcm",
+            "[US93084] Also remove encap when deleting all VPNs",
+        ],
+    ];
+    let rows = data.iter().map(|value| Row::Data(value.iter()));
+    let table = Table::new(header.iter(), rows)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Incoming Reviews")
+                .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
+        )
+        .header_gap(0)
+        .header_style(Style::new().modifier(Modifier::DIM))
+        .widths(&[
+            Constraint::Length(6),
+            Constraint::Length(30),
+            Constraint::Percentage(100),
+        ]);
+    frame.render_widget(table, window);
+}
+
+fn recently_closed<B>(frame: &mut Frame<B>, window: Rect)
+where
+    B: Backend,
+{
+    let header = ["number", "project", "subject"];
+    let data = [
+        [
+            "96895",
+            "dmos-hal-filters-ll-bcm",
+            "[US92241] Implement ActionMplsPortIgnoreVlanAndStgCheck",
+        ],
+        [
+            "98677",
+            "dmos-hal-switch-vpn-ll-bcm",
+            "[US93084] Also remove encap when deleting all VPNs",
+        ],
+    ];
+    let rows = data.iter().map(|value| Row::Data(value.iter()));
+    let table = Table::new(header.iter(), rows)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Recently Closed")
+                .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
+        )
+        .header_gap(0)
+        .header_style(Style::new().modifier(Modifier::DIM))
+        .widths(&[
+            Constraint::Length(6),
+            Constraint::Length(30),
+            Constraint::Percentage(100),
+        ]);
+    frame.render_widget(table, window);
 }
