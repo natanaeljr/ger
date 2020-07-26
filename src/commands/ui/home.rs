@@ -1,4 +1,4 @@
-use crate::commands::browser::util::event::{Event, Events};
+use crate::commands::ui::util::event::{Event, Events};
 use termion::event::Key;
 use termion::{input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::style::{Modifier, Style};

@@ -10,7 +10,7 @@
 //!   * Pressing Enter pushes the current input in the history of previous
 //!   messages
 
-use crate::commands::browser::util::event::{Event, Events};
+use crate::commands::ui::util::event::{Event, Events};
 use std::{
     error::Error,
     io::{self, Write},

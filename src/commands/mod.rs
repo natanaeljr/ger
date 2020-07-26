@@ -1,13 +1,13 @@
 use crate::config::CliConfig;
 use clap::{App, ArgMatches};
 
-pub mod browser;
 pub mod change;
 pub mod project;
 pub mod remote;
+pub mod ui;
 
 pub fn builtin() -> Vec<App<'static, 'static>> {
-    vec![change::cli(), project::cli(), remote::cli(), browser::cli()]
+    vec![change::cli(), project::cli(), remote::cli(), ui::cli()]
 }
 
 pub fn builtin_exec(
@@ -17,7 +17,7 @@ pub fn builtin_exec(
         "change" => change::exec,
         "project" => project::exec,
         "remote" => remote::exec,
-        "enter" => browser::exec,
+        "ui" => ui::exec,
         _ => return None,
     };
     Some(func)

@@ -1,4 +1,4 @@
-use crate::commands::browser::util::event::{Event, Events};
+use crate::commands::ui::util::event::{Event, Events};
 use std::{error::Error, io};
 use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{

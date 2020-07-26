@@ -8,7 +8,7 @@ mod user_input;
 pub mod util;
 
 pub fn cli() -> App<'static, 'static> {
-    SubCommand::with_name("enter")
+    SubCommand::with_name("ui")
         .about("Interactive terminal browser")
         .setting(AppSettings::Hidden)
         .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
