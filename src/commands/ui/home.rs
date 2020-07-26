@@ -1,4 +1,7 @@
 use crate::commands::ui::util::event::{Event, Events};
+use crate::config::CliConfig;
+use crate::handler::get_remote_restapi_handler;
+use gerlib::changes::{AdditionalOpt, ChangeEndpoints, ChangeInfo, QueryParams, QueryStr};
 use termion::event::Key;
 use termion::{input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::layout::Rect;
@@ -10,7 +13,7 @@ use tui::{
     Frame, Terminal,
 };
 
-pub fn main() -> Result<(), failure::Error> {
+pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     let stdout = std::io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
     let stdout = AlternateScreen::from(stdout);
@@ -20,8 +23,24 @@ pub fn main() -> Result<(), failure::Error> {
 
     let events = Events::new();
 
+    let mut rest = get_remote_restapi_handler(config, None)?;
+    let query_param = QueryParams {
+        search_queries: Some(vec![
+            QueryStr::Raw("is:open owner:self".into()),
+            QueryStr::Raw("is:open reviewer:self -owner:self".into()),
+            QueryStr::Raw("is:closed (owner:self OR reviewer:self) limit:10".into()),
+        ]),
+        additional_opts: Some(vec![
+            AdditionalOpt::DetailedAccounts,
+            AdditionalOpt::CurrentRevision,
+        ]),
+        limit: None,
+        start: None,
+    };
+    let change_vec: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;
+
     loop {
-        terminal.draw(|frame| draw(frame))?;
+        terminal.draw(|frame| draw(frame, &change_vec))?;
 
         if let Event::Input(key) = events.next()? {
             match key {
@@ -36,7 +55,7 @@ pub fn main() -> Result<(), failure::Error> {
     Ok(())
 }
 
-fn draw<B>(mut frame: Frame<B>)
+fn draw<B>(mut frame: Frame<B>, change_vec: &Vec<Vec<ChangeInfo>>)
 where
     B: Backend,
 {
@@ -47,29 +66,28 @@ where
             Constraint::Percentage(33),
         ])
         .split(frame.size());
-    outgoing_reviews(&mut frame, windows[0]);
-    incoming_reviews(&mut frame, windows[1]);
-    recently_closed(&mut frame, windows[2]);
+    outgoing_reviews(&mut frame, windows[0], &change_vec[0]);
+    incoming_reviews(&mut frame, windows[1], &change_vec[1]);
+    recently_closed(&mut frame, windows[2], &change_vec[2]);
 }
 
-fn outgoing_reviews<B>(frame: &mut Frame<B>, window: Rect)
+fn outgoing_reviews<B>(frame: &mut Frame<B>, window: Rect, changes: &Vec<ChangeInfo>)
 where
     B: Backend,
 {
-    let header = ["number", "project", "subject"];
-    let data = [
-        [
-            "96895",
-            "dmos-hal-filters-ll-bcm",
-            "[US92241] Implement ActionMplsPortIgnoreVlanAndStgCheck",
-        ],
-        [
-            "98677",
-            "dmos-hal-switch-vpn-ll-bcm",
-            "[US93084] Also remove encap when deleting all VPNs",
-        ],
-    ];
-    let rows = data.iter().map(|value| Row::Data(value.iter()));
+    let header = ["number", "project", "status", "subject"];
+    let list: Vec<Vec<String>> = changes
+        .into_iter()
+        .map(|change| {
+            vec![
+                change.number.to_string(),
+                change.project.to_owned(),
+                change.status.to_string(),
+                change.subject.to_owned(),
+            ]
+        })
+        .collect();
+    let rows = list.iter().map(|row| Row::Data(row.iter()));
     let table = Table::new(header.iter(), rows)
         .block(
             Block::default()
@@ -82,29 +100,29 @@ where
         .widths(&[
             Constraint::Length(6),
             Constraint::Length(30),
+            Constraint::Length(10),
             Constraint::Percentage(100),
         ]);
     frame.render_widget(table, window);
 }
 
-fn incoming_reviews<B>(frame: &mut Frame<B>, window: Rect)
+fn incoming_reviews<B>(frame: &mut Frame<B>, window: Rect, changes: &Vec<ChangeInfo>)
 where
     B: Backend,
 {
-    let header = ["number", "project", "subject"];
-    let data = [
-        [
-            "96895",
-            "dmos-hal-filters-ll-bcm",
-            "[US92241] Implement ActionMplsPortIgnoreVlanAndStgCheck",
-        ],
-        [
-            "98677",
-            "dmos-hal-switch-vpn-ll-bcm",
-            "[US93084] Also remove encap when deleting all VPNs",
-        ],
-    ];
-    let rows = data.iter().map(|value| Row::Data(value.iter()));
+    let header = ["number", "project", "status", "subject"];
+    let list: Vec<Vec<String>> = changes
+        .into_iter()
+        .map(|change| {
+            vec![
+                change.number.to_string(),
+                change.project.to_owned(),
+                change.status.to_string(),
+                change.subject.to_owned(),
+            ]
+        })
+        .collect();
+    let rows = list.iter().map(|row| Row::Data(row.iter()));
     let table = Table::new(header.iter(), rows)
         .block(
             Block::default()
@@ -117,29 +135,29 @@ where
         .widths(&[
             Constraint::Length(6),
             Constraint::Length(30),
+            Constraint::Length(10),
             Constraint::Percentage(100),
         ]);
     frame.render_widget(table, window);
 }
 
-fn recently_closed<B>(frame: &mut Frame<B>, window: Rect)
+fn recently_closed<B>(frame: &mut Frame<B>, window: Rect, changes: &Vec<ChangeInfo>)
 where
     B: Backend,
 {
-    let header = ["number", "project", "subject"];
-    let data = [
-        [
-            "96895",
-            "dmos-hal-filters-ll-bcm",
-            "[US92241] Implement ActionMplsPortIgnoreVlanAndStgCheck",
-        ],
-        [
-            "98677",
-            "dmos-hal-switch-vpn-ll-bcm",
-            "[US93084] Also remove encap when deleting all VPNs",
-        ],
-    ];
-    let rows = data.iter().map(|value| Row::Data(value.iter()));
+    let header = ["number", "project", "status", "subject"];
+    let list: Vec<Vec<String>> = changes
+        .into_iter()
+        .map(|change| {
+            vec![
+                change.number.to_string(),
+                change.project.to_owned(),
+                change.status.to_string(),
+                change.subject.to_owned(),
+            ]
+        })
+        .collect();
+    let rows = list.iter().map(|row| Row::Data(row.iter()));
     let table = Table::new(header.iter(), rows)
         .block(
             Block::default()
@@ -152,6 +170,7 @@ where
         .widths(&[
             Constraint::Length(6),
             Constraint::Length(30),
+            Constraint::Length(10),
             Constraint::Percentage(100),
         ]);
     frame.render_widget(table, window);

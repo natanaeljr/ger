@@ -22,18 +22,18 @@ pub fn cli() -> App<'static, 'static> {
         )
 }
 
-pub fn exec(_config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     let _verbose: Verbosity = args.occurrences_of("verbose").into();
     let mode = args.value_of("mode").unwrap_or("home");
-    browser(mode)
+    browser(config, mode)
 }
 
-pub fn browser(mode: &str) -> Result<(), failure::Error> {
+pub fn browser(config: &mut CliConfig, mode: &str) -> Result<(), failure::Error> {
     match mode {
         "input" => user_input::main().unwrap(),
         "table" => table::main().unwrap(),
-        "home" => home::main().unwrap(),
+        "home" => home::main(config).unwrap(),
         &_ => panic!(),
     }
     Ok(())
