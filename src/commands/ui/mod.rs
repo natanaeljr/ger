@@ -34,7 +34,7 @@ pub fn browser(config: &mut CliConfig, mode: &str) -> Result<(), failure::Error>
         "input" => user_input::main().unwrap(),
         "table" => table::main().unwrap(),
         "home" => home::main(config).unwrap(),
-        &_ => panic!(),
+        &_ => unreachable!(),
     }
     Ok(())
 }

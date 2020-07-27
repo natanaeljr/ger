@@ -7,9 +7,37 @@ use termion::{input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::backend::{Backend, TermionBackend};
 use tui::layout::Rect;
 use tui::layout::{Constraint, Layout};
-use tui::style::{Modifier, Style};
-use tui::widgets::{Block, Borders, Row, Table};
+use tui::style::{Color, Modifier, Style};
+use tui::widgets::{Block, BorderType, Borders, Row, Table};
 use tui::{Frame, Terminal};
+
+struct WindowState {
+    count: usize,
+    index: usize,
+}
+
+impl WindowState {
+    pub fn new(count: usize) -> Self {
+        assert!(count > 0);
+        Self { count, index: 0 }
+    }
+    pub fn count(&self) -> usize {
+        self.count
+    }
+    pub fn index(&self) -> usize {
+        self.index
+    }
+    pub fn next(&mut self) {
+        if self.index < self.count - 1 {
+            self.index += 1;
+        }
+    }
+    pub fn previous(&mut self) {
+        if self.index > 0 {
+            self.index -= 1;
+        }
+    }
+}
 
 pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     let stdout = std::io::stdout().into_raw_mode()?;
@@ -20,6 +48,8 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     terminal.hide_cursor()?;
 
     let events = Events::new();
+
+    let mut window_state = WindowState::new(3);
 
     let mut rest = get_remote_restapi_handler(config, None)?;
     let query_param = QueryParams {
@@ -38,12 +68,18 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     let change_vec: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;
 
     loop {
-        terminal.draw(|frame| draw_dashboard(frame, &change_vec))?;
+        terminal.draw(|frame| draw_dashboard(frame, &window_state, &change_vec))?;
 
         if let Event::Input(key) = events.next()? {
             match key {
                 Key::Char('q') | Key::Ctrl('c') => {
                     break;
+                }
+                Key::Char('J') => {
+                    window_state.next();
+                }
+                Key::Char('K') => {
+                    window_state.previous();
                 }
                 _ => {}
             }
@@ -53,8 +89,9 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     Ok(())
 }
 
-fn draw_dashboard<B>(mut frame: Frame<B>, change_vec: &Vec<Vec<ChangeInfo>>)
-where
+fn draw_dashboard<B>(
+    mut frame: Frame<B>, window_state: &WindowState, change_vec: &Vec<Vec<ChangeInfo>>,
+) where
     B: Backend,
 {
     let windows = Layout::default()
@@ -65,13 +102,29 @@ where
         ])
         .split(frame.size());
 
-    outgoing_reviews(&mut frame, windows[0], &change_vec[0]);
-    incoming_reviews(&mut frame, windows[1], &change_vec[1]);
-    recently_closed(&mut frame, windows[2], &change_vec[2]);
+    outgoing_reviews(
+        &mut frame,
+        windows[0],
+        window_state.index() == 0,
+        &change_vec[0],
+    );
+    incoming_reviews(
+        &mut frame,
+        windows[1],
+        window_state.index() == 1,
+        &change_vec[1],
+    );
+    recently_closed(
+        &mut frame,
+        windows[2],
+        window_state.index() == 2,
+        &change_vec[2],
+    );
 }
 
-fn outgoing_reviews<B>(frame: &mut Frame<B>, window: Rect, changes: &Vec<ChangeInfo>)
-where
+fn outgoing_reviews<B>(
+    frame: &mut Frame<B>, window: Rect, selected: bool, changes: &Vec<ChangeInfo>,
+) where
     B: Backend,
 {
     let header = ["number", "project", "status", "subject"];
@@ -95,6 +148,11 @@ where
         .block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_style(if selected {
+                    Style::new().fg(Color::Yellow).modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                })
                 .title("Outgoing Reviews")
                 .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
         )
@@ -109,8 +167,9 @@ where
     frame.render_widget(table, window);
 }
 
-fn incoming_reviews<B>(frame: &mut Frame<B>, window: Rect, changes: &Vec<ChangeInfo>)
-where
+fn incoming_reviews<B>(
+    frame: &mut Frame<B>, window: Rect, selected: bool, changes: &Vec<ChangeInfo>,
+) where
     B: Backend,
 {
     let header = ["number", "project", "status", "subject"];
@@ -130,6 +189,11 @@ where
         .block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_style(if selected {
+                    Style::new().fg(Color::Yellow).modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                })
                 .title("Incoming Reviews")
                 .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
         )
@@ -144,7 +208,7 @@ where
     frame.render_widget(table, window);
 }
 
-fn recently_closed<B>(frame: &mut Frame<B>, window: Rect, changes: &Vec<ChangeInfo>)
+fn recently_closed<B>(frame: &mut Frame<B>, window: Rect, selected: bool, changes: &Vec<ChangeInfo>)
 where
     B: Backend,
 {
@@ -165,6 +229,11 @@ where
         .block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_style(if selected {
+                    Style::new().fg(Color::Yellow).modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                })
                 .title("Recently Closed")
                 .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
         )
