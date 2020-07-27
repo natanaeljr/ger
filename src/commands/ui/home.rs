@@ -8,7 +8,7 @@ use tui::backend::{Backend, TermionBackend};
 use tui::layout::Rect;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
-use tui::widgets::{Block, BorderType, Borders, Row, Table};
+use tui::widgets::{Block, Borders, Row, Table, TableState};
 use tui::{Frame, Terminal};
 
 struct WindowState {
@@ -39,6 +39,46 @@ impl WindowState {
     }
 }
 
+struct StatefulTable {
+    count: usize,
+    state: TableState,
+}
+
+impl StatefulTable {
+    pub fn new(count: usize) -> Self {
+        Self {
+            count,
+            state: TableState::default(),
+        }
+    }
+    pub fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i < self.count - 1 {
+                    i + 1
+                } else {
+                    i
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+    pub fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i > 0 {
+                    i - 1
+                } else {
+                    i
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+}
+
 pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     let stdout = std::io::stdout().into_raw_mode()?;
     let stdout = MouseTerminal::from(stdout);
@@ -48,8 +88,6 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     terminal.hide_cursor()?;
 
     let events = Events::new();
-
-    let mut window_state = WindowState::new(3);
 
     let mut rest = get_remote_restapi_handler(config, None)?;
     let query_param = QueryParams {
@@ -67,20 +105,24 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     };
     let change_vec: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;
 
+    let mut window_state = WindowState::new(3);
+    let mut table_states = vec![
+        StatefulTable::new(change_vec[0].len()),
+        StatefulTable::new(change_vec[1].len()),
+        StatefulTable::new(change_vec[2].len()),
+    ];
+
     loop {
-        terminal.draw(|frame| draw_dashboard(frame, &window_state, &change_vec))?;
+        terminal
+            .draw(|frame| draw_dashboard(frame, &window_state, &mut table_states, &change_vec))?;
 
         if let Event::Input(key) = events.next()? {
             match key {
-                Key::Char('q') | Key::Ctrl('c') => {
-                    break;
-                }
-                Key::Char('J') => {
-                    window_state.next();
-                }
-                Key::Char('K') => {
-                    window_state.previous();
-                }
+                Key::Char('q') | Key::Ctrl('c') => break,
+                Key::Char('J') => window_state.next(),
+                Key::Char('K') => window_state.previous(),
+                Key::Char('j') => table_states[window_state.index()].next(),
+                Key::Char('k') => table_states[window_state.index()].previous(),
                 _ => {}
             }
         };
@@ -90,7 +132,8 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
 }
 
 fn draw_dashboard<B>(
-    mut frame: Frame<B>, window_state: &WindowState, change_vec: &Vec<Vec<ChangeInfo>>,
+    mut frame: Frame<B>, window_state: &WindowState, table_states: &mut Vec<StatefulTable>,
+    change_vec: &Vec<Vec<ChangeInfo>>,
 ) where
     B: Backend,
 {
@@ -106,24 +149,28 @@ fn draw_dashboard<B>(
         &mut frame,
         windows[0],
         window_state.index() == 0,
+        &mut table_states[0],
         &change_vec[0],
     );
     incoming_reviews(
         &mut frame,
         windows[1],
         window_state.index() == 1,
+        &mut table_states[1],
         &change_vec[1],
     );
     recently_closed(
         &mut frame,
         windows[2],
         window_state.index() == 2,
+        &mut table_states[2],
         &change_vec[2],
     );
 }
 
 fn outgoing_reviews<B>(
-    frame: &mut Frame<B>, window: Rect, selected: bool, changes: &Vec<ChangeInfo>,
+    frame: &mut Frame<B>, window: Rect, selected: bool, state: &mut StatefulTable,
+    changes: &Vec<ChangeInfo>,
 ) where
     B: Backend,
 {
@@ -158,17 +205,19 @@ fn outgoing_reviews<B>(
         )
         .header_gap(0)
         .header_style(Style::new().modifier(Modifier::DIM))
+        .highlight_style(Style::new().fg(Color::Yellow))
         .widths(&[
             Constraint::Length(6),
             Constraint::Length(30),
             Constraint::Length(10),
             Constraint::Percentage(100),
         ]);
-    frame.render_widget(table, window);
+    frame.render_stateful_widget(table, window, &mut state.state);
 }
 
 fn incoming_reviews<B>(
-    frame: &mut Frame<B>, window: Rect, selected: bool, changes: &Vec<ChangeInfo>,
+    frame: &mut Frame<B>, window: Rect, selected: bool, state: &mut StatefulTable,
+    changes: &Vec<ChangeInfo>,
 ) where
     B: Backend,
 {
@@ -199,17 +248,20 @@ fn incoming_reviews<B>(
         )
         .header_gap(0)
         .header_style(Style::new().modifier(Modifier::DIM))
+        .highlight_style(Style::new().fg(Color::Yellow))
         .widths(&[
             Constraint::Length(6),
             Constraint::Length(30),
             Constraint::Length(10),
             Constraint::Percentage(100),
         ]);
-    frame.render_widget(table, window);
+    frame.render_stateful_widget(table, window, &mut state.state);
 }
 
-fn recently_closed<B>(frame: &mut Frame<B>, window: Rect, selected: bool, changes: &Vec<ChangeInfo>)
-where
+fn recently_closed<B>(
+    frame: &mut Frame<B>, window: Rect, selected: bool, state: &mut StatefulTable,
+    changes: &Vec<ChangeInfo>,
+) where
     B: Backend,
 {
     let header = ["number", "project", "status", "subject"];
@@ -239,11 +291,12 @@ where
         )
         .header_gap(0)
         .header_style(Style::new().modifier(Modifier::DIM))
+        .highlight_style(Style::new().fg(Color::Yellow))
         .widths(&[
             Constraint::Length(6),
             Constraint::Length(30),
             Constraint::Length(10),
             Constraint::Percentage(100),
         ]);
-    frame.render_widget(table, window);
+    frame.render_stateful_widget(table, window, &mut state.state);
 }
