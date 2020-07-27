@@ -4,14 +4,12 @@ use crate::handler::get_remote_restapi_handler;
 use gerlib::changes::{AdditionalOpt, ChangeEndpoints, ChangeInfo, QueryParams, QueryStr};
 use termion::event::Key;
 use termion::{input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
+use tui::backend::{Backend, TermionBackend};
 use tui::layout::Rect;
+use tui::layout::{Constraint, Layout};
 use tui::style::{Modifier, Style};
-use tui::{
-    backend::{Backend, TermionBackend},
-    layout::{Constraint, Layout},
-    widgets::{Block, Borders, Row, Table},
-    Frame, Terminal,
-};
+use tui::widgets::{Block, Borders, Row, Table};
+use tui::{Frame, Terminal};
 
 pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     let stdout = std::io::stdout().into_raw_mode()?;
@@ -40,7 +38,7 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     let change_vec: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;
 
     loop {
-        terminal.draw(|frame| draw(frame, &change_vec))?;
+        terminal.draw(|frame| draw_dashboard(frame, &change_vec))?;
 
         if let Event::Input(key) = events.next()? {
             match key {
@@ -55,7 +53,7 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     Ok(())
 }
 
-fn draw<B>(mut frame: Frame<B>, change_vec: &Vec<Vec<ChangeInfo>>)
+fn draw_dashboard<B>(mut frame: Frame<B>, change_vec: &Vec<Vec<ChangeInfo>>)
 where
     B: Backend,
 {
@@ -66,6 +64,7 @@ where
             Constraint::Percentage(33),
         ])
         .split(frame.size());
+
     outgoing_reviews(&mut frame, windows[0], &change_vec[0]);
     incoming_reviews(&mut frame, windows[1], &change_vec[1]);
     recently_closed(&mut frame, windows[2], &change_vec[2]);
@@ -81,9 +80,13 @@ where
         .map(|change| {
             vec![
                 change.number.to_string(),
-                change.project.to_owned(),
-                change.status.to_string(),
-                change.subject.to_owned(),
+                change.project.to_string(),
+                if change.work_in_progress {
+                    "WIP".to_owned()
+                } else {
+                    change.status.to_string()
+                },
+                change.subject.to_string(),
             ]
         })
         .collect();
@@ -116,9 +119,9 @@ where
         .map(|change| {
             vec![
                 change.number.to_string(),
-                change.project.to_owned(),
+                change.project.to_string(),
                 change.status.to_string(),
-                change.subject.to_owned(),
+                change.subject.to_string(),
             ]
         })
         .collect();
@@ -151,9 +154,9 @@ where
         .map(|change| {
             vec![
                 change.number.to_string(),
-                change.project.to_owned(),
+                change.project.to_string(),
                 change.status.to_string(),
-                change.subject.to_owned(),
+                change.subject.to_string(),
             ]
         })
         .collect();
