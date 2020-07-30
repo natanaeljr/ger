@@ -198,11 +198,13 @@ fn draw_change_list<B>(
                 })
                 .title(Span::styled(
                     title,
-                    Style::default().add_modifier(Modifier::BOLD | Modifier::ITALIC),
+                    Style::default()
+                        .fg(Color::Gray)
+                        .add_modifier(Modifier::DIM | Modifier::BOLD | Modifier::ITALIC),
                 )),
         )
         .header_gap(0)
-        .header_style(Style::default().add_modifier(Modifier::DIM))
+        .header_style(Style::default().fg(Color::Gray).add_modifier(Modifier::DIM))
         .highlight_style(Style::default().fg(Color::Yellow))
         .widths(&[
             Constraint::Length(6),
