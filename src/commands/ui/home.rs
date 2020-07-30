@@ -145,31 +145,22 @@ fn draw_dashboard<B>(
         ])
         .split(frame.size());
 
-    outgoing_reviews(
-        &mut frame,
-        windows[0],
-        window_state.index() == 0,
-        &mut table_states[0],
-        &change_vec[0],
-    );
-    incoming_reviews(
-        &mut frame,
-        windows[1],
-        window_state.index() == 1,
-        &mut table_states[1],
-        &change_vec[1],
-    );
-    recently_closed(
-        &mut frame,
-        windows[2],
-        window_state.index() == 2,
-        &mut table_states[2],
-        &change_vec[2],
-    );
+    let titles = ["Outgoing Reviews", "Incoming Reviews", "Recently Closed"];
+
+    for i in 0..3 {
+        draw_change_list(
+            titles[i],
+            &mut frame,
+            windows[i],
+            window_state.index() == i,
+            &mut table_states[i],
+            &change_vec[i],
+        );
+    }
 }
 
-fn outgoing_reviews<B>(
-    frame: &mut Frame<B>, window: Rect, selected: bool, state: &mut StatefulTable,
+fn draw_change_list<B>(
+    title: &str, frame: &mut Frame<B>, window: Rect, selected: bool, state: &mut StatefulTable,
     changes: &Vec<ChangeInfo>,
 ) where
     B: Backend,
@@ -200,93 +191,7 @@ fn outgoing_reviews<B>(
                 } else {
                     Style::default()
                 })
-                .title("Outgoing Reviews")
-                .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
-        )
-        .header_gap(0)
-        .header_style(Style::new().modifier(Modifier::DIM))
-        .highlight_style(Style::new().fg(Color::Yellow))
-        .widths(&[
-            Constraint::Length(6),
-            Constraint::Length(30),
-            Constraint::Length(10),
-            Constraint::Percentage(100),
-        ]);
-    frame.render_stateful_widget(table, window, &mut state.state);
-}
-
-fn incoming_reviews<B>(
-    frame: &mut Frame<B>, window: Rect, selected: bool, state: &mut StatefulTable,
-    changes: &Vec<ChangeInfo>,
-) where
-    B: Backend,
-{
-    let header = ["number", "project", "status", "subject"];
-    let list: Vec<Vec<String>> = changes
-        .into_iter()
-        .map(|change| {
-            vec![
-                change.number.to_string(),
-                change.project.to_string(),
-                change.status.to_string(),
-                change.subject.to_string(),
-            ]
-        })
-        .collect();
-    let rows = list.iter().map(|row| Row::Data(row.iter()));
-    let table = Table::new(header.iter(), rows)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(if selected {
-                    Style::new().fg(Color::Yellow).modifier(Modifier::BOLD)
-                } else {
-                    Style::default()
-                })
-                .title("Incoming Reviews")
-                .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
-        )
-        .header_gap(0)
-        .header_style(Style::new().modifier(Modifier::DIM))
-        .highlight_style(Style::new().fg(Color::Yellow))
-        .widths(&[
-            Constraint::Length(6),
-            Constraint::Length(30),
-            Constraint::Length(10),
-            Constraint::Percentage(100),
-        ]);
-    frame.render_stateful_widget(table, window, &mut state.state);
-}
-
-fn recently_closed<B>(
-    frame: &mut Frame<B>, window: Rect, selected: bool, state: &mut StatefulTable,
-    changes: &Vec<ChangeInfo>,
-) where
-    B: Backend,
-{
-    let header = ["number", "project", "status", "subject"];
-    let list: Vec<Vec<String>> = changes
-        .into_iter()
-        .map(|change| {
-            vec![
-                change.number.to_string(),
-                change.project.to_string(),
-                change.status.to_string(),
-                change.subject.to_string(),
-            ]
-        })
-        .collect();
-    let rows = list.iter().map(|row| Row::Data(row.iter()));
-    let table = Table::new(header.iter(), rows)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(if selected {
-                    Style::new().fg(Color::Yellow).modifier(Modifier::BOLD)
-                } else {
-                    Style::default()
-                })
-                .title("Recently Closed")
+                .title(title)
                 .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
         )
         .header_gap(0)
