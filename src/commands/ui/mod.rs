@@ -2,8 +2,6 @@ use crate::config::{CliConfig, Verbosity};
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 
 mod home;
-mod table;
-mod user_input;
 #[allow(dead_code)]
 pub mod util;
 
@@ -17,7 +15,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("mode")
                 .short("m")
                 .help("UI mode [testing]")
-                .possible_values(&["input", "table", "home"])
+                .possible_values(&["input"])
                 .takes_value(true),
         )
 }
@@ -31,8 +29,6 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
 
 pub fn browser(config: &mut CliConfig, mode: &str) -> Result<(), failure::Error> {
     match mode {
-        "input" => user_input::main().unwrap(),
-        "table" => table::main().unwrap(),
         "home" => home::main(config).unwrap(),
         &_ => unreachable!(),
     }

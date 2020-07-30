@@ -8,6 +8,7 @@ use tui::backend::{Backend, TermionBackend};
 use tui::layout::Rect;
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
+use tui::text::Span;
 use tui::widgets::{Block, Borders, Row, Table, TableState};
 use tui::{Frame, Terminal};
 
@@ -116,23 +117,25 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
         terminal
             .draw(|frame| draw_dashboard(frame, &window_state, &mut table_states, &change_vec))?;
 
-        if let Event::Input(key) = events.next()? {
-            match key {
+        match events.next()? {
+            Event::Input(key) => match key {
                 Key::Char('q') | Key::Ctrl('c') => break,
                 Key::Char('J') => window_state.next(),
                 Key::Char('K') => window_state.previous(),
                 Key::Char('j') => table_states[window_state.index()].next(),
                 Key::Char('k') => table_states[window_state.index()].previous(),
                 _ => {}
-            }
-        };
+            },
+            Event::Resize => continue,
+            Event::Tick => { /* Not transmitted at the moment */ }
+        }
     }
 
     Ok(())
 }
 
 fn draw_dashboard<B>(
-    mut frame: Frame<B>, window_state: &WindowState, table_states: &mut Vec<StatefulTable>,
+    frame: &mut Frame<B>, window_state: &WindowState, table_states: &mut Vec<StatefulTable>,
     change_vec: &Vec<Vec<ChangeInfo>>,
 ) where
     B: Backend,
@@ -150,7 +153,7 @@ fn draw_dashboard<B>(
     for i in 0..3 {
         draw_change_list(
             titles[i],
-            &mut frame,
+            frame,
             windows[i],
             window_state.index() == i,
             &mut table_states[i],
@@ -187,16 +190,20 @@ fn draw_change_list<B>(
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(if selected {
-                    Style::new().fg(Color::Yellow).modifier(Modifier::BOLD)
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
                 })
-                .title(title)
-                .title_style(Style::new().modifier(Modifier::BOLD | Modifier::ITALIC)),
+                .title(Span::styled(
+                    title,
+                    Style::default().add_modifier(Modifier::BOLD | Modifier::ITALIC),
+                )),
         )
         .header_gap(0)
-        .header_style(Style::new().modifier(Modifier::DIM))
-        .highlight_style(Style::new().fg(Color::Yellow))
+        .header_style(Style::default().add_modifier(Modifier::DIM))
+        .highlight_style(Style::default().fg(Color::Yellow))
         .widths(&[
             Constraint::Length(6),
             Constraint::Length(30),

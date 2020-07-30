@@ -7,12 +7,14 @@ use std::sync::{
 use std::thread;
 use std::time::Duration;
 
+use signal_hook::iterator::Signals;
 use termion::event::Key;
 use termion::input::TermRead;
 
 pub enum Event<I> {
     Input(I),
     Tick,
+    Resize,
 }
 
 /// A small event handler that wrap termion input and tick events. Each event
@@ -22,6 +24,7 @@ pub struct Events {
     input_handle: thread::JoinHandle<()>,
     ignore_exit_key: Arc<AtomicBool>,
     tick_handle: thread::JoinHandle<()>,
+    resize_handle: thread::JoinHandle<()>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -52,14 +55,21 @@ impl Events {
             let ignore_exit_key = ignore_exit_key.clone();
             thread::spawn(move || {
                 let stdin = io::stdin();
-                for evt in stdin.keys() {
-                    if let Ok(key) = evt {
-                        if let Err(err) = tx.send(Event::Input(key)) {
-                            eprintln!("{}", err);
-                            return;
-                        }
-                        if !ignore_exit_key.load(Ordering::Relaxed) && key == config.exit_key {
-                            return;
+                for event in stdin.events() {
+                    if let Ok(event) = event {
+                        match event {
+                            termion::event::Event::Key(key) => {
+                                if let Err(err) = tx.send(Event::Input(key)) {
+                                    eprintln!("{}", err);
+                                    return;
+                                }
+                                if !ignore_exit_key.load(Ordering::Relaxed)
+                                    && key == config.exit_key
+                                {
+                                    return;
+                                }
+                            }
+                            _ => {}
                         }
                     }
                 }
@@ -72,11 +82,18 @@ impl Events {
                 return;
             })
         };
+        let signals = Signals::new(&[libc::SIGWINCH]).unwrap();
+        let resize_handle = thread::spawn(move || {
+            for _signal in signals.forever() {
+                tx.send(Event::Resize).unwrap();
+            }
+        });
         Events {
             rx,
             ignore_exit_key,
             input_handle,
             tick_handle,
+            resize_handle,
         }
     }
 
