@@ -1,15 +1,16 @@
 use crate::commands::ui::util::event::{Event, Events};
 use crate::config::CliConfig;
 use crate::handler::get_remote_restapi_handler;
+use crate::util;
 use gerlib::changes::{AdditionalOpt, ChangeEndpoints, ChangeInfo, QueryParams, QueryStr};
 use termion::event::Key;
 use termion::{input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::backend::{Backend, TermionBackend};
-use tui::layout::Rect;
+use tui::layout::{Alignment, Direction, Rect};
 use tui::layout::{Constraint, Layout};
 use tui::style::{Color, Modifier, Style};
-use tui::text::Span;
-use tui::widgets::{Block, Borders, Row, Table, TableState};
+use tui::text::{Span, Spans};
+use tui::widgets::{Block, Borders, Paragraph, Row, Table, TableState};
 use tui::{Frame, Terminal};
 
 struct WindowState {
@@ -106,7 +107,7 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
     };
     let change_vec: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param)?;
 
-    let mut window_state = WindowState::new(3);
+    let mut window_state = WindowState::new(4);
     let mut table_states = vec![
         StatefulTable::new(change_vec[0].len()),
         StatefulTable::new(change_vec[1].len()),
@@ -122,8 +123,16 @@ pub fn main(config: &mut CliConfig) -> Result<(), failure::Error> {
                 Key::Char('q') | Key::Ctrl('c') => break,
                 Key::Char('J') => window_state.next(),
                 Key::Char('K') => window_state.previous(),
-                Key::Char('j') => table_states[window_state.index()].next(),
-                Key::Char('k') => table_states[window_state.index()].previous(),
+                Key::Char('j') => {
+                    if window_state.index < 3 {
+                        table_states[window_state.index()].next()
+                    }
+                }
+                Key::Char('k') => {
+                    if window_state.index < 3 {
+                        table_states[window_state.index()].previous()
+                    }
+                }
                 _ => {}
             },
             Event::Resize => continue,
@@ -141,12 +150,18 @@ fn draw_dashboard<B>(
     B: Backend,
 {
     let windows = Layout::default()
-        .constraints([
-            Constraint::Percentage(34),
-            Constraint::Percentage(33),
-            Constraint::Percentage(33),
-        ])
+        .direction(Direction::Horizontal)
+        .constraints([Constraint::Ratio(2, 3), Constraint::Ratio(1, 3)])
         .split(frame.size());
+
+    let list_windows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+            Constraint::Ratio(1, 3),
+        ])
+        .split(windows[0]);
 
     let titles = ["Outgoing Reviews", "Incoming Reviews", "Recently Closed"];
 
@@ -154,12 +169,80 @@ fn draw_dashboard<B>(
         draw_change_list(
             titles[i],
             frame,
-            windows[i],
+            list_windows[i],
             window_state.index() == i,
             &mut table_states[i],
             &change_vec[i],
         );
     }
+
+    if let Some(change) = change_vec[0].get(0) {
+        draw_change_show(
+            format!("Change {}", change.number).as_str(),
+            frame,
+            windows[1],
+            window_state.index() == 3,
+            &change,
+        );
+    }
+}
+
+fn draw_change_show<B>(
+    title: &str, frame: &mut Frame<B>, window: Rect, selected: bool, change: &ChangeInfo,
+) where
+    B: Backend,
+{
+    let text = vec![
+        Spans::from(vec![
+            Span::raw("Status: "),
+            Span::styled(
+                if change.work_in_progress {
+                    "WIP".to_owned()
+                } else {
+                    change.status.to_string()
+                },
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Spans::from(Span::raw(format!(
+            "Owner: {} <{}>",
+            change.owner.name.as_ref().unwrap(),
+            change.owner.email.as_ref().unwrap(),
+        ))),
+        Spans::from(Span::raw(format!(
+            "Updated: {}",
+            util::format_long_datetime(&change.updated.0)
+        ))),
+        Spans::from(Span::raw(format!("Project: {}", change.project))),
+        Spans::from(Span::raw(format!("Branch: {}", change.branch))),
+        Spans::from(Span::raw(format!(
+            "Commit: {}",
+            change.current_revision.as_ref().unwrap()
+        ))),
+    ];
+
+    let paragraph = Paragraph::new(text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(if selected {
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default()
+                })
+                .title(Span::styled(
+                    title,
+                    Style::default()
+                        .fg(Color::Gray)
+                        .add_modifier(Modifier::DIM | Modifier::BOLD | Modifier::ITALIC),
+                )),
+        )
+        .alignment(Alignment::Left);
+    frame.render_widget(paragraph, window);
 }
 
 fn draw_change_list<B>(
