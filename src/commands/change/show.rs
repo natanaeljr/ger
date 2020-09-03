@@ -4,6 +4,7 @@ use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use gerlib::changes::ChangeEndpoints;
 use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
+use git2::{Repository, RepositoryOpenFlags};
 use std::io::Write;
 use termcolor::{Color, ColorSpec, WriteColor};
 
@@ -11,7 +12,7 @@ use termcolor::{Color, ColorSpec, WriteColor};
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("show")
         .about("Show information about changes.")
-        .arg(Arg::with_name("change").required(true).help(
+        .arg(Arg::with_name("change-id").help(
             "Change identifier. \
              Can be either a legacy numerical id (e.g. 15813), \
              full or abbreviated Change-Id (e.g. Ic0ff33) \
@@ -37,8 +38,12 @@ pub fn cli() -> App<'static, 'static> {
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     let remote = args.value_of("remote");
-    let change_id = args.value_of("change").unwrap();
     let detail = args.is_present("detail");
+    let change_id = args.value_of("change-id").map(|c| c.to_string());
+    let change_id = match change_id {
+        Some(c) => c,
+        None => get_change_id_from_git()?,
+    };
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
     let additional_opts = vec![
@@ -49,9 +54,9 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
         AdditionalOpt::DetailedLabels,
     ];
     let change: ChangeInfo = if detail {
-        rest.get_change_detail(change_id, Some(additional_opts))?
+        rest.get_change_detail(&change_id, Some(additional_opts))?
     } else {
-        rest.get_change(change_id, Some(additional_opts))?
+        rest.get_change(&change_id, Some(additional_opts))?
     };
 
     show(config, &change)?;
@@ -356,4 +361,24 @@ fn file_status_initial(status: &FileStatus) -> char {
         FileStatus::Copied => 'C',
         FileStatus::Rewritten => 'W',
     }
+}
+
+fn get_change_id_from_git() -> Result<String, failure::Error> {
+    let repo = Repository::discover(std::env::current_dir()?)?;
+    let head = repo.head()?;
+    let commit = head.peel_to_commit()?;
+    let message = commit.message().ok_or(failure::err_msg(
+        "Could not discover change-id: HEAD commit message empty",
+    ))?;
+    let index = message.rfind("Change-Id: ").ok_or(failure::err_msg(
+        "Could not discover change-id: HEAD commit message does not contain a \" Change-Id: \"",
+    ))?;
+    let begin = index + "Change-Id: ".len();
+    let end = begin + 41;
+    if end >= message.len() {
+        return Err(failure::err_msg(
+            "Could not discover change-id: HEAD commit message does not contain a \" Change-Id: \"",
+        ));
+    };
+    Ok(message.get(begin..end).unwrap().to_string())
 }
