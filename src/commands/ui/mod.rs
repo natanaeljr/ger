@@ -14,8 +14,8 @@ pub fn cli() -> App<'static, 'static> {
             Arg::with_name("mode")
                 .long("mode")
                 .short("m")
-                .help("UI mode [testing]")
-                .possible_values(&["input"])
+                .help("UI mode")
+                .possible_values(&["home"])
                 .takes_value(true),
         )
 }
@@ -29,8 +29,7 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
 
 pub fn browser(config: &mut CliConfig, mode: &str) -> Result<(), failure::Error> {
     match mode {
-        "home" => home::main(config).unwrap(),
+        "home" => home::main(config),
         &_ => unreachable!(),
     }
-    Ok(())
 }

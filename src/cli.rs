@@ -20,7 +20,7 @@ pub fn cli() -> App<'static, 'static> {
                 .env("GER_COLOR")
                 .visible_alias("colour")
                 .takes_value(true)
-                .value_name("WHEN")
+                .value_name("when")
                 .require_equals(true)
                 .possible_values(&["auto", "always", "never"])
                 .hide_env_values(true)
