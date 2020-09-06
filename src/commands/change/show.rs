@@ -4,7 +4,7 @@ use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use gerlib::changes::ChangeEndpoints;
 use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
-use git2::{Repository, RepositoryOpenFlags};
+use git2::Repository;
 use std::io::Write;
 use termcolor::{Color, ColorSpec, WriteColor};
 

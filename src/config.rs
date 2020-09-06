@@ -2,6 +2,8 @@ use crate::util;
 use failure::ResultExt;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 use termcolor::StandardStream;
 use toml;
@@ -68,7 +70,9 @@ impl UserConfig {
     /// Write user config to filepath
     pub fn store(&self) -> Result<(), failure::Error> {
         let toml = toml::to_string_pretty(&self.settings)?;
-        std::fs::write(&self.filepath, toml)?;
+        let mut file = std::fs::File::create(&self.filepath)?;
+        file.set_permissions(std::fs::Permissions::from_mode(0o640))?;
+        file.write(toml.as_bytes())?;
         Ok(())
     }
 }
