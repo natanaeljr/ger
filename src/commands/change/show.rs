@@ -16,7 +16,9 @@ pub fn cli() -> App<'static, 'static> {
             "Change identifier. \
              Can be either a legacy numerical id (e.g. 15813), \
              full or abbreviated Change-Id (e.g. Ic0ff33) \
-             or commit SHA-1 (e.g. d81b32ef).",
+             or commit SHA-1 (e.g. d81b32ef).\n\
+             If not specified, ger will try to retrieve and show \
+             the Change-id from current directory's git HEAD commit.",
         ))
         .arg(
             Arg::with_name("log")
