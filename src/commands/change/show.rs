@@ -25,6 +25,11 @@ pub fn cli() -> App<'static, 'static> {
                 .help("Show the change log (messages and comments)"),
         )
         .arg(
+            Arg::with_name("no-pager")
+                .long("no-pager")
+                .help("Output directly to stdout instead of to a pager."),
+        )
+        .arg(
             Arg::with_name("remote")
                 .long("remote")
                 .short("r")
@@ -38,6 +43,7 @@ pub fn cli() -> App<'static, 'static> {
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     let remote = args.value_of("remote");
+    let no_pager = args.is_present("no-pager");
     let log = args.is_present("log");
     let change_id = args.value_of("change-id");
     let change_id = match change_id {
@@ -46,6 +52,10 @@ pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), fai
     };
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
+
+    if !no_pager {
+        pager::Pager::new().setup();
+    }
 
     if log {
         let additional_opts = vec![AdditionalOpt::DetailedAccounts, AdditionalOpt::Messages];
