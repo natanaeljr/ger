@@ -2,8 +2,8 @@ use crate::config::CliConfig;
 use crate::handler::get_remote_restapi_handler;
 use crate::util;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use gerlib::changes::ChangeEndpoints;
 use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
+use gerlib::changes::{ChangeEndpoints, ChangeMessageInfo};
 use git2::Repository;
 use std::io::Write;
 use termcolor::{Color, ColorSpec, WriteColor};
@@ -19,10 +19,10 @@ pub fn cli() -> App<'static, 'static> {
              or commit SHA-1 (e.g. d81b32ef).",
         ))
         .arg(
-            Arg::with_name("detail")
-                .long("detail")
-                .short("d")
-                .help("Show change with more detailed information"),
+            Arg::with_name("log")
+                .long("log")
+                .short("l")
+                .help("Show the change log (messages and comments)"),
         )
         .arg(
             Arg::with_name("remote")
@@ -38,30 +38,29 @@ pub fn cli() -> App<'static, 'static> {
 pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
     let args = args.unwrap();
     let remote = args.value_of("remote");
-    let detail = args.is_present("detail");
-    let change_id = args.value_of("change-id").map(|c| c.to_string());
+    let log = args.is_present("log");
+    let change_id = args.value_of("change-id");
     let change_id = match change_id {
-        Some(c) => c,
+        Some(c) => c.to_string(),
         None => get_change_id_from_git()?,
     };
 
     let mut rest = get_remote_restapi_handler(config, remote)?;
-    let additional_opts = vec![
-        AdditionalOpt::CurrentRevision,
-        AdditionalOpt::CurrentCommit,
-        AdditionalOpt::CurrentFiles,
-        AdditionalOpt::DetailedAccounts,
-        AdditionalOpt::DetailedLabels,
-    ];
-    let change: ChangeInfo = if detail {
-        rest.get_change_detail(&change_id, Some(additional_opts))?
-    } else {
-        rest.get_change(&change_id, Some(additional_opts))?
-    };
 
-    show(config, &change)?;
-    if detail {
-        show_details(config, &change)?;
+    if log {
+        let additional_opts = vec![AdditionalOpt::DetailedAccounts, AdditionalOpt::Messages];
+        let change: ChangeInfo = rest.get_change(&change_id, Some(additional_opts))?;
+        show_messages(config, change.messages.as_ref().unwrap())?;
+    } else {
+        let additional_opts = vec![
+            AdditionalOpt::CurrentRevision,
+            AdditionalOpt::CurrentCommit,
+            AdditionalOpt::CurrentFiles,
+            AdditionalOpt::DetailedAccounts,
+            AdditionalOpt::DetailedLabels,
+        ];
+        let change: ChangeInfo = rest.get_change(&change_id, Some(additional_opts))?;
+        show(config, &change)?;
     }
 
     Ok(())
@@ -340,13 +339,47 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     Ok(())
 }
 
-pub fn show_details(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::Error> {
+pub fn show_messages(
+    config: &mut CliConfig, messages: &Vec<ChangeMessageInfo>,
+) -> Result<(), failure::Error> {
     let mut stdout = config.stdout.lock();
 
-    if let Some(messages) = &change.messages {
-        for message in messages {
-            writeln!(stdout, "{}", message.message)?;
+    if messages.is_empty() {
+        writeln!(stdout, "No messages.")?;
+        return Ok(());
+    }
+
+    for message in messages {
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)))?;
+        write!(stdout, "°")?;
+        stdout.reset()?;
+        if let Some(author) = &message.author {
+            static UNNAMED: &'static str = "{unnamed}";
+            let name = author
+                .display_name
+                .as_ref()
+                .map(|v| v.as_str())
+                .or(author.name.as_ref().map(|v| v.as_str()))
+                .unwrap_or(&UNNAMED);
+            stdout.set_color(
+                ColorSpec::new()
+                    .set_fg(Some(Color::Black))
+                    .set_intense(true),
+            )?;
+            write!(stdout, " {}", name)?;
+            if let Some(email) = author.email.as_ref() {
+                write!(stdout, " <{}>", email)?;
+            }
+            stdout.reset()?;
         }
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
+        writeln!(
+            stdout,
+            " ({})",
+            crate::util::format_long_datetime(&message.date.0)
+        )?;
+        stdout.reset()?;
+        writeln!(stdout, "{}\n", message.message)?;
     }
 
     Ok(())
