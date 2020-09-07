@@ -101,6 +101,19 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     }
 
     stdout.reset()?;
+
+    let current_revision = change.current_revision.as_ref();
+    let current_revision_info = change.revisions.as_ref().and_then(|revisions| {
+        current_revision.and_then(|current_revision| revisions.get(current_revision))
+    });
+    let current_commit =
+        current_revision_info.and_then(|curr_rev_info| curr_rev_info.commit.as_ref());
+    let patch_set = current_revision_info.and_then(|curr_rev_info| Some(curr_rev_info._number));
+
+    if let Some(patch_set) = patch_set {
+        write!(stdout, "   [patch set: {}/{}]", patch_set, patch_set)?;
+    }
+
     stdout.write_all(b"\n")?;
 
     write!(stdout, "Owner:       ")?;
@@ -129,13 +142,6 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     if let Some(topic) = &change.topic {
         writeln!(stdout, "Topic:       {}", topic)?;
     }
-
-    let current_revision = change.current_revision.as_ref();
-    let current_revision_info = change.revisions.as_ref().and_then(|revisions| {
-        current_revision.and_then(|current_revision| revisions.get(current_revision))
-    });
-    let current_commit =
-        current_revision_info.and_then(|curr_rev_info| curr_rev_info.commit.as_ref());
 
     if let Some(current_commit) = current_commit {
         if let Some(author) = &current_commit.author {
