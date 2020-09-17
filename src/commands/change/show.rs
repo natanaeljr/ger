@@ -111,7 +111,7 @@ pub fn show(config: &mut CliConfig, change: &ChangeInfo) -> Result<(), failure::
     let patch_set = current_revision_info.and_then(|curr_rev_info| Some(curr_rev_info._number));
 
     if let Some(patch_set) = patch_set {
-        write!(stdout, "   [patch set: {}/{}]", patch_set, patch_set)?;
+        write!(stdout, "  [patch set: {}/{}]", patch_set, patch_set)?;
     }
 
     stdout.write_all(b"\n")?;
