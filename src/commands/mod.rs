@@ -1,10 +1,11 @@
-use crate::config::CliConfig;
 use clap::{App, ArgMatches};
+
+use crate::config::CliConfig;
+use crate::ui;
 
 pub mod change;
 pub mod project;
 pub mod remote;
-pub mod ui;
 
 pub fn builtin() -> Vec<App<'static, 'static>> {
     vec![change::cli(), project::cli(), remote::cli(), ui::cli()]

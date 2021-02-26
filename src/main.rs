@@ -5,13 +5,14 @@ extern crate strum;
 #[macro_use]
 extern crate strum_macros;
 
+use exitfailure::ExitFailure;
+
 pub mod cli;
 pub mod commands;
 pub mod config;
 pub mod handler;
+pub mod ui;
 pub mod util;
-
-use exitfailure::ExitFailure;
 
 fn main() -> Result<(), ExitFailure> {
     pretty_env_logger::init_custom_env("GER_LOG");
