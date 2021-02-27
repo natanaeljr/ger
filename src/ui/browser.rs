@@ -1,6 +1,8 @@
 use super::r#box::{BorderChars, Box, Rect};
+use crate::util::format_long_datetime;
+use crossterm::event::KeyCode::Char;
 use crossterm::event::{KeyModifiers, MouseEventKind};
-use crossterm::style::{Attribute, Color, ContentStyle};
+use crossterm::style::{Attribute, Color, ContentStyle, StyledContent};
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode},
@@ -99,8 +101,7 @@ where
                     _ => {}
                 },
                 Event::Resize(cols, rows) => {
-                    let (term_width, term_height) = terminal::size().unwrap();
-                    if term_width >= 3 || term_height >= 3 {
+                    if cols >= 3 && rows >= 3 {
                         state.changelist.resize(cols, rows);
                         break;
                     }
@@ -122,7 +123,7 @@ fn init_state<'a>() -> State<'a> {
             width: term_width,
             height: term_height,
         },
-        borders: BorderChars::simple_dashed(),
+        borders: BorderChars::simple(),
     });
     State { changelist }
 }
@@ -135,8 +136,244 @@ where
     if term_width < 3 || term_height < 3 {
         return;
     }
+
+    // CHANGELIST
     let columns = get_columns();
     state.changelist.draw(stdout, &columns);
+
+    // SCROLLBAR
+    let inner_area = state.changelist.box_.inner_area();
+    let scrollbar = ScrollBar {
+        x: inner_area.x + inner_area.width - 1,
+        y: inner_area.y,
+        height: inner_area.height - 1,
+        symbols: &ScrollBarChars::modern(),
+    };
+    scrollbar.draw(
+        stdout,
+        RangeTotal {
+            begin: state.changelist.scrolled_rows,
+            end: state.changelist.scrolled_rows + (inner_area.height - 1) as usize,
+            total: DATA.len(),
+        },
+    );
+}
+
+struct CharStyle {
+    char: char,
+    style: ContentStyle,
+}
+
+struct ScrollBarChars {
+    up: CharStyle,
+    up_clicked: CharStyle,
+    up_disabled: CharStyle,
+    bar: CharStyle,
+    bar_clicked: CharStyle,
+    down: CharStyle,
+    down_clicked: CharStyle,
+    down_disabled: CharStyle,
+    space: CharStyle,
+    space_clicked: CharStyle,
+}
+
+impl ScrollBarChars {
+    pub fn modern() -> Self {
+        Self {
+            up: CharStyle {
+                char: '↑',
+                style: ContentStyle::new().attribute(Attribute::Bold),
+            },
+            up_clicked: CharStyle {
+                char: '↑',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Reverse),
+            },
+            up_disabled: CharStyle {
+                char: '↑',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Dim)
+                    .attribute(Attribute::Bold),
+            },
+            bar: CharStyle {
+                char: '█',
+                style: ContentStyle::new(),
+            },
+            bar_clicked: CharStyle {
+                char: '█',
+                style: ContentStyle::new().attribute(Attribute::Bold),
+            },
+            down: CharStyle {
+                char: '↓',
+                style: ContentStyle::new().attribute(Attribute::Bold),
+            },
+            down_clicked: CharStyle {
+                char: '↓',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Reverse),
+            },
+            down_disabled: CharStyle {
+                char: '↓',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Dim)
+                    .attribute(Attribute::Bold),
+            },
+            space: CharStyle {
+                char: ' ',
+                style: ContentStyle::new(),
+            },
+            space_clicked: CharStyle {
+                char: '·',
+                style: ContentStyle::new().attribute(Attribute::Dim),
+            },
+        }
+    }
+    pub fn simple() -> Self {
+        Self {
+            up: CharStyle {
+                char: '^',
+                style: ContentStyle::new().attribute(Attribute::Bold),
+            },
+            up_clicked: CharStyle {
+                char: '^',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Reverse),
+            },
+            up_disabled: CharStyle {
+                char: '^',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Dim)
+                    .attribute(Attribute::Bold),
+            },
+            bar: CharStyle {
+                char: '*',
+                style: ContentStyle::new(),
+            },
+            bar_clicked: CharStyle {
+                char: '*',
+                style: ContentStyle::new().attribute(Attribute::Bold),
+            },
+            down: CharStyle {
+                char: 'v',
+                style: ContentStyle::new().attribute(Attribute::Bold),
+            },
+            down_clicked: CharStyle {
+                char: 'v',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Reverse),
+            },
+            down_disabled: CharStyle {
+                char: 'v',
+                style: ContentStyle::new()
+                    .attribute(Attribute::Dim)
+                    .attribute(Attribute::Bold),
+            },
+            space: CharStyle {
+                char: '|',
+                style: ContentStyle::new(),
+            },
+            space_clicked: CharStyle {
+                char: '|',
+                style: ContentStyle::new().attribute(Attribute::Dim),
+            },
+        }
+    }
+}
+
+struct ScrollBar<'a> {
+    x: u16,
+    y: u16,
+    height: u16,
+    symbols: &'a ScrollBarChars,
+}
+
+struct RangeTotal {
+    begin: usize,
+    end: usize,
+    total: usize,
+}
+
+impl<'a> ScrollBar<'a> {
+    pub fn draw<W>(&self, stdout: &mut W, range_shown: RangeTotal)
+    where
+        W: std::io::Write,
+    {
+        // verifications
+        if self.height < 1 {
+            return;
+        }
+        let visible_count = (range_shown.end - range_shown.begin);
+        if visible_count >= (range_shown.total) {
+            return;
+        }
+        let max_begin = range_shown.total - (visible_count);
+
+        struct Symbols<'a> {
+            up: &'a CharStyle,
+            down: &'a CharStyle,
+            bar: &'a CharStyle,
+            space: &'a CharStyle,
+        }
+        let symbols = Symbols {
+            up: if range_shown.begin == 0 {
+                &self.symbols.up_disabled
+            } else {
+                &self.symbols.up
+            },
+            down: if range_shown.begin == max_begin {
+                &self.symbols.down_disabled
+            } else {
+                &self.symbols.down
+            },
+            bar: &self.symbols.bar,
+            space: &self.symbols.space,
+        };
+
+        // SPACE
+        for y in (self.y + 1)..(self.y + self.height) {
+            queue!(
+                stdout,
+                cursor::MoveTo(self.x, y),
+                style::PrintStyledContent(StyledContent::new(
+                    symbols.space.style,
+                    symbols.space.char
+                )),
+            )
+            .unwrap();
+        }
+        // UP
+        queue!(
+            stdout,
+            cursor::MoveTo(self.x, self.y),
+            style::PrintStyledContent(StyledContent::new(symbols.up.style, symbols.up.char)),
+        )
+        .unwrap();
+        // BAR
+        if self.height > 1 {
+            let bar_ypos_value = {
+                // ratio: 0 ~ 1.0
+                let ratio = range_shown.begin as f32 / max_begin as f32;
+                (ratio * (self.height - /*arrows*/2) as f32) + (self.y + /*up arrow*/1) as f32
+            };
+            queue!(
+                stdout,
+                cursor::MoveTo(self.x, bar_ypos_value as u16),
+                style::PrintStyledContent(StyledContent::new(symbols.bar.style, symbols.bar.char)),
+            )
+            .unwrap();
+        }
+        // DOWN
+        queue!(
+            stdout,
+            cursor::MoveTo(self.x, self.y + self.height),
+            style::PrintStyledContent(StyledContent::new(symbols.down.style, symbols.down.char)),
+        )
+        .unwrap();
+    }
 }
 
 struct ChangeList<'a> {
@@ -246,62 +483,63 @@ impl<'a> ChangeList<'a> {
 }
 
 fn get_columns() -> Vec<(&'static str, u16, ContentStyle)> {
-    let mut columns: Vec<(&'static str, u16, ContentStyle)> = Vec::new();
-    columns.push(("commit", 8, ContentStyle::new().attribute(Attribute::Bold)));
-    columns.push((
-        "number",
-        8,
-        ContentStyle::new()
-            .foreground(Color::DarkYellow)
-            .attribute(Attribute::Bold),
-    ));
-    columns.push((
-        "owner",
-        17,
-        ContentStyle::new()
-            .foreground(Color::DarkGrey)
-            .attribute(Attribute::Bold),
-    ));
-    columns.push((
-        "time",
-        10,
-        ContentStyle::new()
-            .foreground(Color::Magenta)
-            .attribute(Attribute::Bold),
-    ));
-    columns.push((
-        "project",
-        30,
-        ContentStyle::new()
-            .foreground(Color::Cyan)
-            .attribute(Attribute::Bold),
-    ));
-    columns.push((
-        "branch",
-        20,
-        ContentStyle::new()
-            .foreground(Color::DarkCyan)
-            .attribute(Attribute::Bold),
-    ));
-    columns.push((
-        "topic",
-        20,
-        ContentStyle::new()
-            .foreground(Color::DarkCyan)
-            .attribute(Attribute::Bold),
-    ));
-    columns.push((
-        "status",
-        10,
-        ContentStyle::new()
-            .foreground(Color::Green)
-            .attribute(Attribute::Bold),
-    ));
-    columns.push((
-        "subject",
-        80,
-        ContentStyle::new().attribute(Attribute::Bold),
-    ));
+    let columns = vec![
+        ("commit", 8, ContentStyle::new().attribute(Attribute::Bold)),
+        (
+            "number",
+            8,
+            ContentStyle::new()
+                .foreground(Color::DarkYellow)
+                .attribute(Attribute::Bold),
+        ),
+        (
+            "owner",
+            17,
+            ContentStyle::new()
+                .foreground(Color::DarkGrey)
+                .attribute(Attribute::Bold),
+        ),
+        (
+            "time",
+            10,
+            ContentStyle::new()
+                .foreground(Color::Magenta)
+                .attribute(Attribute::Bold),
+        ),
+        (
+            "project",
+            30,
+            ContentStyle::new()
+                .foreground(Color::Cyan)
+                .attribute(Attribute::Bold),
+        ),
+        (
+            "branch",
+            20,
+            ContentStyle::new()
+                .foreground(Color::DarkCyan)
+                .attribute(Attribute::Bold),
+        ),
+        (
+            "topic",
+            20,
+            ContentStyle::new()
+                .foreground(Color::DarkCyan)
+                .attribute(Attribute::Bold),
+        ),
+        (
+            "status",
+            10,
+            ContentStyle::new()
+                .foreground(Color::Green)
+                .attribute(Attribute::Bold),
+        ),
+        (
+            "subject",
+            80,
+            ContentStyle::new().attribute(Attribute::Bold),
+        ),
+    ];
     columns
 }
 
