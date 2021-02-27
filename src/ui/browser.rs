@@ -10,14 +10,14 @@ use crossterm::{
 pub fn main() {
     let mut stdout = std::io::stdout();
 
-    // terminal::enable_raw_mode().unwrap();
+    terminal::enable_raw_mode().unwrap();
     execute!(
         stdout,
         terminal::SetTitle("Ger UI"),
-        // terminal::EnterAlternateScreen,
-        // terminal::Clear(ClearType::All),
-        // event::EnableMouseCapture,
-        // cursor::Hide
+        terminal::EnterAlternateScreen,
+        terminal::Clear(ClearType::All),
+        event::EnableMouseCapture,
+        cursor::Hide
     )
     .unwrap();
 
@@ -25,17 +25,15 @@ pub fn main() {
 
     execute!(
         stdout,
-        // terminal::Clear(ClearType::All),
+        terminal::Clear(ClearType::All),
         style::ResetColor,
-        // cursor::Show,
-        // event::DisableMouseCapture,
-        // terminal::LeaveAlternateScreen,
+        cursor::Show,
+        event::DisableMouseCapture,
+        terminal::LeaveAlternateScreen,
         terminal::SetTitle(""),
     )
     .unwrap();
-    //terminal::disable_raw_mode().unwrap();
-
-    println!("\n");
+    terminal::disable_raw_mode().unwrap();
 }
 
 fn main_loop<W>(stdout: &mut W)
@@ -46,14 +44,9 @@ where
         // TODO: Update tick
 
         // Rendering
-        queue!(
-            stdout,
-            style::ResetColor, /*terminal::Clear(ClearType::All)*/
-        )
-        .unwrap();
+        queue!(stdout, style::ResetColor, terminal::Clear(ClearType::All)).unwrap();
         draw(stdout);
         stdout.flush().unwrap();
-        break;
 
         // Event handling
         match event::read().unwrap() {
@@ -74,13 +67,12 @@ where
     W: std::io::Write,
 {
     let term_size = terminal::size().unwrap();
-    let (x, y) = cursor::position().unwrap();
     let window = Box {
         area: Rect {
             x: 0,
-            y: y,
+            y: 0,
             width: term_size.0,
-            height: 8,
+            height: term_size.1,
         },
         borders: BorderChars::simple_dashed(),
     };
