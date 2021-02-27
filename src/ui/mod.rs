@@ -1,6 +1,7 @@
 use crate::config::{CliConfig, Verbosity};
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 
+pub mod r#box;
 mod browser;
 
 pub fn cli() -> App<'static, 'static> {

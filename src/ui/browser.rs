@@ -1,3 +1,5 @@
+use super::r#box::{BorderChars, Box, Rect};
+use crossterm::style::{Attribute, Color, ContentStyle};
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode},
@@ -8,33 +10,35 @@ use crossterm::{
 pub fn main() {
     let mut stdout = std::io::stdout();
 
-    terminal::enable_raw_mode().unwrap();
+    // terminal::enable_raw_mode().unwrap();
     execute!(
         stdout,
         terminal::SetTitle("Ger UI"),
-        terminal::EnterAlternateScreen,
-        terminal::Clear(ClearType::All),
-        event::EnableMouseCapture,
-        cursor::Hide
+        // terminal::EnterAlternateScreen,
+        // terminal::Clear(ClearType::All),
+        // event::EnableMouseCapture,
+        // cursor::Hide
     )
     .unwrap();
 
-    run_loop(&mut stdout);
+    main_loop(&mut stdout);
 
     execute!(
         stdout,
-        terminal::Clear(ClearType::All),
+        // terminal::Clear(ClearType::All),
         style::ResetColor,
-        cursor::Show,
-        event::DisableMouseCapture,
-        terminal::LeaveAlternateScreen,
+        // cursor::Show,
+        // event::DisableMouseCapture,
+        // terminal::LeaveAlternateScreen,
         terminal::SetTitle(""),
     )
     .unwrap();
-    terminal::disable_raw_mode().unwrap();
+    //terminal::disable_raw_mode().unwrap();
+
+    println!("\n");
 }
 
-fn run_loop<W>(stdout: &mut W)
+fn main_loop<W>(stdout: &mut W)
 where
     W: std::io::Write,
 {
@@ -42,9 +46,14 @@ where
         // TODO: Update tick
 
         // Rendering
-        queue!(stdout, style::ResetColor, terminal::Clear(ClearType::All)).unwrap();
+        queue!(
+            stdout,
+            style::ResetColor, /*terminal::Clear(ClearType::All)*/
+        )
+        .unwrap();
         draw(stdout);
         stdout.flush().unwrap();
+        break;
 
         // Event handling
         match event::read().unwrap() {
@@ -65,136 +74,171 @@ where
     W: std::io::Write,
 {
     let term_size = terminal::size().unwrap();
+    let (x, y) = cursor::position().unwrap();
     let window = Box {
         area: Rect {
             x: 0,
-            y: 0,
+            y: y,
             width: term_size.0,
-            height: term_size.1,
+            height: 8,
         },
-        borders: BorderChars::simple(),
+        borders: BorderChars::simple_dashed(),
     };
     window.draw(stdout);
-}
 
-#[derive(Debug, Copy, Clone)]
-struct Rect {
-    x: u16,
-    y: u16,
-    width: u16,
-    height: u16,
-}
+    let inner = window.inner_area();
 
-#[derive(Debug, Copy, Clone)]
-struct BorderChars {
-    upper_left: char,
-    upper_right: char,
-    lower_left: char,
-    lower_right: char,
-    horizontal: char,
-    vertical: char,
-}
+    let data = [
+        [
+            "8f524ac",
+            "104508",
+            "Auto QA",
+            "11:24 AM",
+            "packetsubsystem",
+            "develop",
+            "",
+            "NEW",
+            "Remove conditional that verifies if info is filled",
+        ],
+        [
+            "8f524ac",
+            "104508",
+            "Auto QA",
+            "11:24 AM",
+            "packetsubsystem",
+            "develop",
+            "",
+            "NEW",
+            "Remove conditional that verifies if info is filled",
+        ],
+        [
+            "8f524ac",
+            "104508",
+            "Auto QA",
+            "11:24 AM",
+            "packetsubsystem",
+            "develop",
+            "",
+            "NEW",
+            "Remove conditional that verifies if info is filled",
+        ],
+        [
+            "8f524ac",
+            "104508",
+            "Auto QA",
+            "11:24 AM",
+            "packetsubsystem",
+            "develop",
+            "",
+            "NEW",
+            "Remove conditional that verifies if info is filled",
+        ],
+        [
+            "8f524ac",
+            "104508",
+            "Auto QA",
+            "11:24 AM",
+            "packetsubsystem",
+            "develop",
+            "",
+            "NEW",
+            "Remove conditional that verifies if info is filled",
+        ],
+    ];
 
-impl BorderChars {
-    pub fn simple() -> &'static Self {
-        static SIMPLE: BorderChars = BorderChars {
-            upper_left: '┌',
-            upper_right: '┐',
-            lower_left: '└',
-            lower_right: '┘',
-            horizontal: '─',
-            vertical: '│',
+    let mut columns: Vec<(&str, u16, ContentStyle)> = Vec::new();
+    columns.push(("commit", 8, ContentStyle::new().attribute(Attribute::Bold)));
+    columns.push((
+        "number",
+        8,
+        ContentStyle::new()
+            .foreground(Color::DarkYellow)
+            .attribute(Attribute::Bold),
+    ));
+    columns.push((
+        "owner",
+        16,
+        ContentStyle::new()
+            .foreground(Color::DarkGrey)
+            .attribute(Attribute::Bold),
+    ));
+    columns.push((
+        "time",
+        10,
+        ContentStyle::new()
+            .foreground(Color::Magenta)
+            .attribute(Attribute::Bold),
+    ));
+    columns.push((
+        "project",
+        30,
+        ContentStyle::new()
+            .foreground(Color::Cyan)
+            .attribute(Attribute::Bold),
+    ));
+    columns.push((
+        "branch",
+        20,
+        ContentStyle::new()
+            .foreground(Color::DarkCyan)
+            .attribute(Attribute::Bold),
+    ));
+    columns.push((
+        "topic",
+        20,
+        ContentStyle::new()
+            .foreground(Color::DarkCyan)
+            .attribute(Attribute::Bold),
+    ));
+    columns.push((
+        "status",
+        10,
+        ContentStyle::new()
+            .foreground(Color::Green)
+            .attribute(Attribute::Bold),
+    ));
+    columns.push((
+        "subject",
+        80,
+        ContentStyle::new().attribute(Attribute::Bold),
+    ));
+
+    let mut walked_len = 0;
+    for (column, (column_name, column_len, column_style)) in columns.iter().enumerate() {
+        let remaining_len = {
+            let value = (inner.width - walked_len) as i32;
+            if value.is_positive() {
+                value as u16
+            } else {
+                0 as u16
+            }
         };
-        &SIMPLE
-    }
-    pub fn double() -> &'static Self {
-        static DOUBLE: BorderChars = BorderChars {
-            upper_left: '╔',
-            upper_right: '╗',
-            lower_left: '╚',
-            lower_right: '╝',
-            horizontal: '═',
-            vertical: '║',
-        };
-        &DOUBLE
-    }
-    pub fn dashed() -> &'static Self {
-        static DASHED: BorderChars = BorderChars {
-            upper_left: '+',
-            upper_right: '+',
-            lower_left: '+',
-            lower_right: '+',
-            horizontal: '-',
-            vertical: '|',
-        };
-        &DASHED
-    }
-    pub fn simple_dashed() -> &'static Self {
-        static SIMPLE_DASHED: BorderChars = BorderChars {
-            upper_left: '┌',
-            upper_right: '┐',
-            lower_left: '└',
-            lower_right: '┘',
-            horizontal: '-',
-            vertical: '|',
-        };
-        &SIMPLE_DASHED
-    }
-}
 
-#[derive(Debug, Copy, Clone)]
-struct Box<'a> {
-    area: Rect,
-    borders: &'a BorderChars,
-}
-
-impl<'a> Box<'a> {
-    pub fn draw<W>(&self, stdout: &mut W)
-    where
-        W: std::io::Write,
-    {
-        // TODO: constrain creation of Box to width/height >= 2
-
-        let inner_y = self.area.y + 1;
-        let inner_width = self.area.width - 2;
-        let inner_height = self.area.height - 2;
-        let height_y = self.area.y + self.area.height - 1;
-        let horizontal = self
-            .borders
-            .horizontal
-            .to_string()
-            .repeat(inner_width as usize);
-
-        // top border
+        // HEADER
+        let column_len = std::cmp::min(column_len.clone(), remaining_len);
+        let column_name = column_name
+            .split_at(std::cmp::min(column_len as usize, column_name.len()))
+            .0;
         queue!(
             stdout,
-            cursor::MoveTo(self.area.x, self.area.y),
-            style::Print(self.borders.upper_left),
-            style::Print(&horizontal),
-            style::Print(self.borders.upper_right),
+            cursor::MoveTo(inner.x + walked_len, inner.y),
+            style::PrintStyledContent(style::StyledContent::new(*column_style, column_name))
         )
         .unwrap();
 
-        // bottom border
-        queue!(
-            stdout,
-            cursor::MoveTo(self.area.x, height_y),
-            style::Print(self.borders.lower_left),
-            style::Print(&horizontal),
-            style::Print(self.borders.lower_right),
-        )
-        .unwrap();
-
-        // left/right borders
-        for y in inner_y..(inner_y + inner_height) {
+        // DATA
+        for row in 0..std::cmp::min(data.len(), (inner.height - 1) as usize) {
+            let value = data[row][column]
+                .split_at(std::cmp::min(column_len as usize, data[row][column].len()))
+                .0;
             queue!(
                 stdout,
-                cursor::MoveTo(self.area.x, y),
-                style::Print(self.borders.vertical),
-                cursor::MoveRight(inner_width),
-                style::Print(self.borders.vertical)
+                cursor::MoveTo(inner.x + walked_len, inner.y + row as u16 + 1),
+                style::Print(value)
             )
             .unwrap();
         }
+
+        walked_len += column_len;
     }
 }
