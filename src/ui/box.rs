@@ -1,9 +1,4 @@
-use crossterm::{
-    cursor,
-    event::{self, Event, KeyCode},
-    execute, queue, style,
-    terminal::{self, ClearType},
-};
+use crossterm::{cursor, queue, style};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Rect {
