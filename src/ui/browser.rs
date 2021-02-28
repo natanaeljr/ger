@@ -49,8 +49,6 @@ where
     let mut state = init_state();
 
     loop {
-        // TODO: Update tick
-
         // Rendering
         queue!(stdout, style::ResetColor, terminal::Clear(ClearType::All)).unwrap();
         draw(stdout, &state);
@@ -58,57 +56,61 @@ where
 
         // Event handling
         let mut quit = false;
-        loop {
-            match event::read().unwrap() {
-                Event::Key(key) => {
-                    if key.modifiers == KeyModifiers::CONTROL {
-                        match key.code {
-                            KeyCode::Char('e') => {
-                                if state.changelist.scroll(1) {
-                                    break;
-                                }
-                            }
-                            KeyCode::Char('y') => {
-                                if state.changelist.scroll(-1) {
-                                    break;
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    if key.modifiers == KeyModifiers::empty() {
-                        match key.code {
-                            KeyCode::Char('q') => {
-                                quit = true;
+        event_loop(&mut state, &mut quit);
+        if quit {
+            break;
+        }
+    }
+}
+
+fn event_loop(state: &mut State, quit: &mut bool) {
+    loop {
+        match event::read().unwrap() {
+            Event::Key(key) => {
+                if key.modifiers == KeyModifiers::CONTROL {
+                    match key.code {
+                        KeyCode::Char('e') => {
+                            if state.changelist.scroll(1) {
                                 break;
                             }
-                            _ => {}
                         }
+                        KeyCode::Char('y') => {
+                            if state.changelist.scroll(-1) {
+                                break;
+                            }
+                        }
+                        _ => {}
                     }
                 }
-                Event::Mouse(mouse) => match mouse.kind {
-                    MouseEventKind::ScrollDown => {
-                        if state.changelist.scroll(1) {
+                if key.modifiers == KeyModifiers::empty() {
+                    match key.code {
+                        KeyCode::Char('q') => {
+                            *quit = true;
                             break;
                         }
-                    }
-                    MouseEventKind::ScrollUp => {
-                        if state.changelist.scroll(-1) {
-                            break;
-                        }
-                    }
-                    _ => {}
-                },
-                Event::Resize(cols, rows) => {
-                    if cols >= 3 && rows >= 3 {
-                        state.changelist.resize(cols, rows);
-                        break;
+                        _ => {}
                     }
                 }
             }
-        }
-        if quit {
-            break;
+            Event::Mouse(mouse) => match mouse.kind {
+                MouseEventKind::ScrollDown => {
+                    if state.changelist.scroll(1) {
+                        break;
+                    }
+                }
+                MouseEventKind::ScrollUp => {
+                    if state.changelist.scroll(-1) {
+                        break;
+                    }
+                }
+                _ => {}
+            },
+            Event::Resize(cols, rows) => {
+                if cols >= 3 && rows >= 3 {
+                    state.changelist.resize(cols, rows);
+                    break;
+                }
+            }
         }
     }
 }
