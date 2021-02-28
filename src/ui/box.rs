@@ -1,3 +1,5 @@
+use crate::ui::layout::HorizontalMargin;
+use crossterm::style::ContentStyle;
 use crossterm::{cursor, queue, style};
 
 /// ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -123,55 +125,53 @@ pub struct Box<'a> {
     pub borders: &'a BorderChars,
 }
 
-impl<'a> Box<'a> {
-    pub fn draw<W>(&self, stdout: &mut W)
-    where
-        W: std::io::Write,
-    {
-        // Only draw if we have inner area, (rect size is >= 3)
-        let inner_rect = self.rect.inner_checked();
-        if inner_rect.is_none() {
-            return;
-        }
-        let inner_rect = inner_rect.unwrap();
+pub fn draw_box<W>(stdout: &mut W, r#box: &Box)
+where
+    W: std::io::Write,
+{
+    // Only draw if we have inner area, (rect size is >= 3)
+    let inner_rect = r#box.rect.inner_checked();
+    if inner_rect.is_none() {
+        return;
+    }
+    let inner_rect = inner_rect.unwrap();
 
-        let horizontal = self
-            .borders
-            .horizontal
-            .to_string()
-            .repeat(inner_rect.width() as usize);
+    let horizontal = r#box
+        .borders
+        .horizontal
+        .to_string()
+        .repeat(inner_rect.width() as usize);
 
-        // Top border
+    // Top border
+    queue!(
+        stdout,
+        cursor::MoveTo(r#box.rect.x.0, r#box.rect.y.0),
+        style::Print(r#box.borders.upper_left),
+        style::Print(&horizontal),
+        style::Print(r#box.borders.upper_right),
+    )
+    .unwrap();
+
+    // Bottom border
+    queue!(
+        stdout,
+        cursor::MoveTo(r#box.rect.x.0, r#box.rect.y.1),
+        style::Print(r#box.borders.lower_left),
+        style::Print(&horizontal),
+        style::Print(r#box.borders.lower_right),
+    )
+    .unwrap();
+
+    // Left/Right borders
+    for y in inner_rect.y.0..=inner_rect.y.1 {
         queue!(
             stdout,
-            cursor::MoveTo(self.rect.x.0, self.rect.y.0),
-            style::Print(self.borders.upper_left),
-            style::Print(&horizontal),
-            style::Print(self.borders.upper_right),
+            cursor::MoveTo(r#box.rect.x.0, y),
+            style::Print(r#box.borders.vertical),
+            cursor::MoveRight(inner_rect.cols()),
+            style::Print(r#box.borders.vertical)
         )
         .unwrap();
-
-        // Bottom border
-        queue!(
-            stdout,
-            cursor::MoveTo(self.rect.x.0, self.rect.y.1),
-            style::Print(self.borders.lower_left),
-            style::Print(&horizontal),
-            style::Print(self.borders.lower_right),
-        )
-        .unwrap();
-
-        // Left/Right borders
-        for y in inner_rect.y.0..=inner_rect.y.1 {
-            queue!(
-                stdout,
-                cursor::MoveTo(self.rect.x.0, y),
-                style::Print(self.borders.vertical),
-                cursor::MoveRight(inner_rect.cols()),
-                style::Print(self.borders.vertical)
-            )
-            .unwrap();
-        }
     }
 }
 
@@ -253,4 +253,25 @@ impl BorderChars {
         };
         &SIMPLE_DASHED
     }
+}
+
+/// ////////////////////////////////////////////////////////////////////////////////////////////////
+/// BoxDetails
+/// ////////////////////////////////////////////////////////////////////////////////////////////////
+pub struct BoxDetails<'a> {
+    pub top_left: &'a [BoxInfo<'a>],
+    pub top_right: &'a [BoxInfo<'a>],
+    pub top_center: &'a [BoxInfo<'a>],
+    pub bottom_left: &'a [BoxInfo<'a>],
+    pub bottom_right: &'a [BoxInfo<'a>],
+    pub bottom_center: &'a [BoxInfo<'a>],
+}
+
+/// ////////////////////////////////////////////////////////////////////////////////////////////////
+/// BoxInfo
+/// ////////////////////////////////////////////////////////////////////////////////////////////////
+pub struct BoxInfo<'a> {
+    pub data: &'a str,
+    pub style: ContentStyle,
+    pub margin: HorizontalMargin,
 }

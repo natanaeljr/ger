@@ -4,6 +4,8 @@ use clap::{App, AppSettings, ArgMatches, SubCommand};
 mod r#box;
 mod browser;
 mod scroll;
+mod layout;
+mod list;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("ui")

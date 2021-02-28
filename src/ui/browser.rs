@@ -1,5 +1,6 @@
 use super::r#box::{BorderChars, Box, Rect};
-use crate::ui::scroll::{RangeTotal, ScrollBar, ScrollBarChars};
+use crate::ui::list::{Column, List};
+use crate::ui::scroll::{RangeTotal, Scroll, ScrollBar, ScrollBarChars, ScrollBarModern};
 use crossterm::event::{KeyModifiers, MouseEventKind};
 use crossterm::style::{Attribute, Color, ContentStyle, Styler};
 use crossterm::{
@@ -130,6 +131,36 @@ where
     if term_width < 3 || term_height < 3 {
         return;
     }
+
+    // EXPERIMENT
+    // {
+    //     // data
+    //     let mut data = Vec::new();
+    //     data.reserve(DATA.len());
+    //     for row in DATA.iter() {
+    //         data.push(&row[..]);
+    //     }
+    //     let columns: Vec<Column> = get_columns_modern();
+    //     // widgets
+    //     let r#box = Box {
+    //         rect: Rect::from_size((0, 0), (term_width, term_height)),
+    //         borders: BorderChars::simple(),
+    //     };
+    //     let list = List {
+    //         print_column_headers: true,
+    //         columns: &columns,
+    //         data: data.as_slice(),
+    //     };
+    //     let scroll = Scroll { top_row: 0 };
+    //     let scrollbar = ScrollBarModern {
+    //         symbols: &ScrollBarChars::modern(),
+    //     };
+    //     // draw
+    //     crate::ui::r#box::draw_box(stdout, &r#box);
+    //     crate::ui::list::draw_scrollable_list(stdout, &list, &scroll, &r#box.rect.inner());
+    //     crate::ui::scroll::draw_scrollbar(stdout, &scrollbar, &scroll, &list, &r#box.rect.inner());
+    // }
+
     let inner_area = state.changelist.r#box.rect.inner();
 
     // CHANGELIST
@@ -202,6 +233,26 @@ where
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+mod ecs {
+    use crate::ui::scroll::ScrollBarChars;
+
+    struct Scroll {
+        top_row: u16,
+    }
+
+    struct ScrollBar<'a> {
+        symbols: &'a ScrollBarChars,
+    }
+
+    struct Selection {
+        index: u16,
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 struct ChangeList<'a> {
     r#box: Box<'a>,
     scrolled_rows: usize,
@@ -258,7 +309,8 @@ impl<'a> ChangeList<'a> {
     where
         W: std::io::Write,
     {
-        self.r#box.draw(stdout);
+        // self.r#box.draw(stdout);
+        crate::ui::r#box::draw_box(stdout, &self.r#box);
 
         let inner = self.r#box.rect.inner();
 
@@ -366,6 +418,70 @@ fn get_columns() -> Vec<(&'static str, u16, ContentStyle)> {
         ),
     ];
     columns
+}
+
+pub fn get_columns_modern() -> Vec<Column<'static>> {
+    vec![
+        Column {
+            name: "commit",
+            width: 8,
+            style: ContentStyle::new().attribute(Attribute::Bold),
+        },
+        Column {
+            name: "number",
+            width: 8,
+            style: ContentStyle::new()
+                .foreground(Color::DarkYellow)
+                .attribute(Attribute::Bold),
+        },
+        Column {
+            name: "owner",
+            width: 17,
+            style: ContentStyle::new()
+                .foreground(Color::DarkGrey)
+                .attribute(Attribute::Bold),
+        },
+        Column {
+            name: "time",
+            width: 10,
+            style: ContentStyle::new()
+                .foreground(Color::Magenta)
+                .attribute(Attribute::Bold),
+        },
+        Column {
+            name: "project",
+            width: 30,
+            style: ContentStyle::new()
+                .foreground(Color::Cyan)
+                .attribute(Attribute::Bold),
+        },
+        Column {
+            name: "branch",
+            width: 20,
+            style: ContentStyle::new()
+                .foreground(Color::DarkCyan)
+                .attribute(Attribute::Bold),
+        },
+        Column {
+            name: "topic",
+            width: 20,
+            style: ContentStyle::new()
+                .foreground(Color::DarkCyan)
+                .attribute(Attribute::Bold),
+        },
+        Column {
+            name: "status",
+            width: 10,
+            style: ContentStyle::new()
+                .foreground(Color::Green)
+                .attribute(Attribute::Bold),
+        },
+        Column {
+            name: "subject",
+            width: 80,
+            style: ContentStyle::new().attribute(Attribute::Bold),
+        },
+    ]
 }
 
 static DATA: [[&str; 9]; 45] = [
