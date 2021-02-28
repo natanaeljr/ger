@@ -2,8 +2,8 @@ use crate::config::{CliConfig, Verbosity};
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 
 mod r#box;
-mod scroll;
 mod browser;
+mod scroll;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("ui")
