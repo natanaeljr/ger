@@ -15,7 +15,11 @@ pub struct BorderChars {
     pub lower_left: char,
     pub lower_right: char,
     pub horizontal: char,
+    pub horizontal_up: char,
+    pub horizontal_down: char,
     pub vertical: char,
+    pub vertical_left: char,
+    pub vertical_right: char,
 }
 
 impl BorderChars {
@@ -26,7 +30,11 @@ impl BorderChars {
             lower_left: '└',
             lower_right: '┘',
             horizontal: '─',
+            horizontal_up: '┴',
+            horizontal_down: '┬',
             vertical: '│',
+            vertical_left: '┤',
+            vertical_right: '├',
         };
         &SIMPLE
     }
@@ -37,7 +45,11 @@ impl BorderChars {
             lower_left: '╚',
             lower_right: '╝',
             horizontal: '═',
+            horizontal_up: '╩',
+            horizontal_down: '╦',
             vertical: '║',
+            vertical_left: '╣',
+            vertical_right: '╠',
         };
         &DOUBLE
     }
@@ -48,7 +60,11 @@ impl BorderChars {
             lower_left: '+',
             lower_right: '+',
             horizontal: '-',
+            horizontal_up: '+',
+            horizontal_down: '+',
             vertical: '|',
+            vertical_left: '<',
+            vertical_right: '>',
         };
         &DASHED
     }
@@ -59,7 +75,11 @@ impl BorderChars {
             lower_left: '└',
             lower_right: '┘',
             horizontal: '-',
+            horizontal_up: '┴',
+            horizontal_down: '┬',
             vertical: '|',
+            vertical_left: '┤',
+            vertical_right: '├',
         };
         &SIMPLE_DASHED
     }

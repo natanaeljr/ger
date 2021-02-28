@@ -1,8 +1,7 @@
 use super::r#box::{BorderChars, Box, Rect};
-use crate::util::format_long_datetime;
-use crossterm::event::KeyCode::Char;
+use crate::ui::scroll::{RangeTotal, ScrollBar, ScrollBarChars};
 use crossterm::event::{KeyModifiers, MouseEventKind};
-use crossterm::style::{Attribute, Color, ContentStyle, StyledContent};
+use crossterm::style::{Attribute, Color, ContentStyle, Styler};
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode},
@@ -136,13 +135,13 @@ where
     if term_width < 3 || term_height < 3 {
         return;
     }
+    let inner_area = state.changelist.box_.inner_area();
 
     // CHANGELIST
     let columns = get_columns();
     state.changelist.draw(stdout, &columns);
 
     // SCROLLBAR
-    let inner_area = state.changelist.box_.inner_area();
     let scrollbar = ScrollBar {
         x: inner_area.x + inner_area.width - 1,
         y: inner_area.y,
@@ -157,220 +156,54 @@ where
             total: DATA.len(),
         },
     );
-}
 
-struct CharStyle {
-    char: char,
-    style: ContentStyle,
-}
-
-struct ScrollBarChars {
-    up: CharStyle,
-    up_clicked: CharStyle,
-    up_disabled: CharStyle,
-    bar: CharStyle,
-    bar_clicked: CharStyle,
-    down: CharStyle,
-    down_clicked: CharStyle,
-    down_disabled: CharStyle,
-    space: CharStyle,
-    space_clicked: CharStyle,
-}
-
-impl ScrollBarChars {
-    pub fn modern() -> Self {
-        Self {
-            up: CharStyle {
-                char: '↑',
-                style: ContentStyle::new().attribute(Attribute::Bold),
-            },
-            up_clicked: CharStyle {
-                char: '↑',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
-            },
-            up_disabled: CharStyle {
-                char: '↑',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Dim)
-                    .attribute(Attribute::Bold),
-            },
-            bar: CharStyle {
-                char: '█',
-                style: ContentStyle::new(),
-            },
-            bar_clicked: CharStyle {
-                char: '█',
-                style: ContentStyle::new().attribute(Attribute::Bold),
-            },
-            down: CharStyle {
-                char: '↓',
-                style: ContentStyle::new().attribute(Attribute::Bold),
-            },
-            down_clicked: CharStyle {
-                char: '↓',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
-            },
-            down_disabled: CharStyle {
-                char: '↓',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Dim)
-                    .attribute(Attribute::Bold),
-            },
-            space: CharStyle {
-                char: ' ',
-                style: ContentStyle::new(),
-            },
-            space_clicked: CharStyle {
-                char: '·',
-                style: ContentStyle::new().attribute(Attribute::Dim),
-            },
-        }
-    }
-    pub fn simple() -> Self {
-        Self {
-            up: CharStyle {
-                char: '^',
-                style: ContentStyle::new().attribute(Attribute::Bold),
-            },
-            up_clicked: CharStyle {
-                char: '^',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
-            },
-            up_disabled: CharStyle {
-                char: '^',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Dim)
-                    .attribute(Attribute::Bold),
-            },
-            bar: CharStyle {
-                char: '*',
-                style: ContentStyle::new(),
-            },
-            bar_clicked: CharStyle {
-                char: '*',
-                style: ContentStyle::new().attribute(Attribute::Bold),
-            },
-            down: CharStyle {
-                char: 'v',
-                style: ContentStyle::new().attribute(Attribute::Bold),
-            },
-            down_clicked: CharStyle {
-                char: 'v',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
-            },
-            down_disabled: CharStyle {
-                char: 'v',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Dim)
-                    .attribute(Attribute::Bold),
-            },
-            space: CharStyle {
-                char: '|',
-                style: ContentStyle::new(),
-            },
-            space_clicked: CharStyle {
-                char: '|',
-                style: ContentStyle::new().attribute(Attribute::Dim),
-            },
-        }
-    }
-}
-
-struct ScrollBar<'a> {
-    x: u16,
-    y: u16,
-    height: u16,
-    symbols: &'a ScrollBarChars,
-}
-
-struct RangeTotal {
-    begin: usize,
-    end: usize,
-    total: usize,
-}
-
-impl<'a> ScrollBar<'a> {
-    pub fn draw<W>(&self, stdout: &mut W, range_shown: RangeTotal)
-    where
-        W: std::io::Write,
-    {
-        // verifications
-        if self.height < 1 {
-            return;
-        }
-        let visible_count = (range_shown.end - range_shown.begin);
-        if visible_count >= (range_shown.total) {
-            return;
-        }
-        let max_begin = range_shown.total - (visible_count);
-
-        struct Symbols<'a> {
-            up: &'a CharStyle,
-            down: &'a CharStyle,
-            bar: &'a CharStyle,
-            space: &'a CharStyle,
-        }
-        let symbols = Symbols {
-            up: if range_shown.begin == 0 {
-                &self.symbols.up_disabled
-            } else {
-                &self.symbols.up
-            },
-            down: if range_shown.begin == max_begin {
-                &self.symbols.down_disabled
-            } else {
-                &self.symbols.down
-            },
-            bar: &self.symbols.bar,
-            space: &self.symbols.space,
-        };
-
-        // SPACE
-        for y in (self.y + 1)..(self.y + self.height) {
-            queue!(
-                stdout,
-                cursor::MoveTo(self.x, y),
-                style::PrintStyledContent(StyledContent::new(
-                    symbols.space.style,
-                    symbols.space.char
-                )),
-            )
-            .unwrap();
-        }
-        // UP
+    // HEADERS/FOOTERS
+    let box_name = "change list";
+    if state.changelist.box_.area.width > (box_name.len() as u16 + /*padding*/4) {
         queue!(
             stdout,
-            cursor::MoveTo(self.x, self.y),
-            style::PrintStyledContent(StyledContent::new(symbols.up.style, symbols.up.char)),
+            cursor::MoveTo(
+                state.changelist.box_.area.x + 2,
+                state.changelist.box_.area.y
+            ),
+            style::Print(state.changelist.box_.borders.vertical_left),
+            style::PrintStyledContent(style::style(box_name).with(Color::White).bold()),
+            style::Print(state.changelist.box_.borders.vertical_right),
         )
         .unwrap();
-        // BAR
-        if self.height > 1 {
-            let bar_ypos_value = {
-                // ratio: 0 ~ 1.0
-                let ratio = range_shown.begin as f32 / max_begin as f32;
-                (ratio * (self.height - /*arrows*/2) as f32) + (self.y + /*up arrow*/1) as f32
-            };
-            queue!(
-                stdout,
-                cursor::MoveTo(self.x, bar_ypos_value as u16),
-                style::PrintStyledContent(StyledContent::new(symbols.bar.style, symbols.bar.char)),
-            )
-            .unwrap();
-        }
-        // DOWN
+    }
+
+    let scrolled_end =
+        state.changelist.scrolled_rows + (state.changelist.box_.inner_area().height - 1) as usize;
+    let scrolled_end = std::cmp::min(scrolled_end, DATA.len());
+    let visible_count = scrolled_end - state.changelist.scrolled_rows;
+    let list_counts = format!("{}/{}", visible_count, DATA.len(),);
+    if state.changelist.box_.area.width > (list_counts.len() as u16 + /*padding*/4) {
+        let begin_x = state.changelist.box_.area.width - list_counts.len() as u16 - /*padding*/4;
         queue!(
             stdout,
-            cursor::MoveTo(self.x, self.y + self.height),
-            style::PrintStyledContent(StyledContent::new(symbols.down.style, symbols.down.char)),
+            cursor::MoveTo(begin_x, state.changelist.box_.area.y,),
+            style::Print(state.changelist.box_.borders.vertical_left),
+            style::PrintStyledContent(style::style(list_counts).with(Color::White).bold()),
+            style::Print(state.changelist.box_.borders.vertical_right),
+        )
+        .unwrap();
+    }
+
+    let scroll_range = format!("{}~{}", state.changelist.scrolled_rows + 1, scrolled_end);
+    if state.changelist.box_.area.width > (scroll_range.len() as u16 + /*padding*/4)
+        && (state.changelist.box_.inner_area().height as usize - 1) < DATA.len()
+    {
+        let begin_x = state.changelist.box_.area.width - scroll_range.len() as u16 - /*padding*/4;
+        queue!(
+            stdout,
+            cursor::MoveTo(
+                begin_x,
+                state.changelist.box_.area.y + state.changelist.box_.area.height
+            ),
+            style::Print(state.changelist.box_.borders.vertical_left),
+            style::PrintStyledContent(style::style(scroll_range).with(Color::White).bold()),
+            style::Print(state.changelist.box_.borders.vertical_right),
         )
         .unwrap();
     }
