@@ -264,7 +264,11 @@ impl<'a> ChangeList<'a> {
     {
         self.r#box.draw(stdout);
 
-        let inner = self.r#box.rect.inner();
+        let mut inner = self.r#box.rect.inner();
+        if inner.height() as usize - 1 < DATA.len() && inner.width() > 1 {
+            // consider the scrollbar
+            inner = Rect::from_size((inner.x.0, inner.y.0), (inner.width() - 1, inner.height()));
+        }
 
         let mut walked_len = 0;
         for (column, (column_name, column_len, column_style)) in columns.iter().enumerate() {
@@ -292,13 +296,17 @@ impl<'a> ChangeList<'a> {
 
             // HEADER
             let column_len = std::cmp::min(column_len.clone(), remaining_len);
-            let column_name = column_name
-                .split_at(std::cmp::min(column_len as usize, column_name.len()))
-                .0;
+            let (column_name, rest) =
+                column_name.split_at(std::cmp::min(column_len as usize, column_name.len()));
+            let mut column_name = column_name.to_owned();
+            if !rest.is_empty() && column_name.len() >= 1 {
+                column_name = column_name.split_at(column_name.len() - 1).0.to_owned();
+                column_name.push('…');
+            }
             queue!(
                 stdout,
                 cursor::MoveTo(inner.x.0 + walked_len, inner.y.0),
-                style::PrintStyledContent(style::StyledContent::new(*column_style, column_name))
+                style::PrintStyledContent(style::StyledContent::new(*column_style, &column_name))
             )
             .unwrap();
 
@@ -323,12 +331,15 @@ impl<'a> ChangeList<'a> {
                         .unwrap();
                     }
                 }
-                let value = DATA[row + offset_row][column]
-                    .split_at(std::cmp::min(
-                        column_len as usize,
-                        DATA[row + offset_row][column].len(),
-                    ))
-                    .0;
+                let (value, rest) = DATA[row + offset_row][column].split_at(std::cmp::min(
+                    column_len as usize,
+                    DATA[row + offset_row][column].len(),
+                ));
+                let mut value = value.to_owned();
+                if !rest.is_empty() && value.len() >= 1 {
+                    value = value.split_at(value.len() - 1).0.to_owned();
+                    value.push('…');
+                }
                 queue!(
                     stdout,
                     cursor::MoveTo(inner.x.0 + walked_len, inner.y.0 + row as u16 + /*header*/1),
