@@ -208,6 +208,7 @@ struct ChangeList<'a> {
     r#box: Box<'a>,
     scrolled_rows: usize,
     // TODO: implement show_column_headers: bool,
+    show_line_numbers: bool, // TODO: (hide/normal/relative)
 }
 
 impl<'a> ChangeList<'a> {
@@ -215,6 +216,7 @@ impl<'a> ChangeList<'a> {
         Self {
             r#box: box_,
             scrolled_rows: 0,
+            show_line_numbers: true,
         }
     }
 
@@ -266,8 +268,21 @@ impl<'a> ChangeList<'a> {
 
         let mut walked_len = 0;
         for (column, (column_name, column_len, column_style)) in columns.iter().enumerate() {
+            let mut digits_count = 0;
+            if self.show_line_numbers && column == 0 {
+                digits_count = {
+                    let digits_count = DATA.len().to_string().len();
+                    if digits_count < 2 {
+                        2 // always at least 2 digits
+                    } else {
+                        digits_count
+                    }
+                };
+                walked_len += digits_count as u16 + 1;
+            }
+
             let remaining_len = {
-                let value = (inner.width() - walked_len) as i32;
+                let value = inner.width() as i32 - walked_len as i32;
                 if value.is_positive() {
                     value as u16
                 } else {
@@ -290,6 +305,24 @@ impl<'a> ChangeList<'a> {
             // DATA
             let offset_row = self.scrolled_rows;
             for row in 0..std::cmp::min(DATA.len() - offset_row, (inner.height() - 1) as usize) {
+                if self.show_line_numbers && column == 0 {
+                    if inner.width() > digits_count as u16 {
+                        queue!(
+                            stdout,
+                            cursor::MoveTo(inner.x.0, inner.y.0 + row as u16 + /*header*/1),
+                            style::PrintStyledContent(
+                                style::style(format!(
+                                    "{: >1$}",
+                                    row + offset_row + 1,
+                                    digits_count
+                                ))
+                                .with(Color::White)
+                                .bold()
+                            )
+                        )
+                        .unwrap();
+                    }
+                }
                 let value = DATA[row + offset_row][column]
                     .split_at(std::cmp::min(
                         column_len as usize,
@@ -298,7 +331,7 @@ impl<'a> ChangeList<'a> {
                     .0;
                 queue!(
                     stdout,
-                    cursor::MoveTo(inner.x.0 + walked_len, inner.y.0 + row as u16 + 1),
+                    cursor::MoveTo(inner.x.0 + walked_len, inner.y.0 + row as u16 + /*header*/1),
                     style::Print(value)
                 )
                 .unwrap();
