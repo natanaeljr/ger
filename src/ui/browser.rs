@@ -1,6 +1,6 @@
 use super::r#box::{BorderChars, Box, Rect};
 use crate::ui::scroll::{RangeTotal, ScrollBar, ScrollBarChars};
-use crossterm::event::{KeyModifiers, MouseEventKind};
+use crossterm::event::{KeyModifiers, MouseButton, MouseEventKind};
 use crossterm::style::{Attribute, Color, ContentStyle, Styler};
 use crossterm::{
     cursor,
@@ -94,15 +94,66 @@ fn event_loop(state: &mut State, quit: &mut bool) {
             }
             Event::Mouse(mouse) => match mouse.kind {
                 MouseEventKind::ScrollDown => {
-                    if state.changelist.scroll(1) {
+                    // TODO: fix scroll for odd number of lines
+                    let inner = state.changelist.r#box.rect.inner();
+                    let scroll = std::cmp::min(3, inner.height() as i32 - 1);
+                    if state.changelist.scroll(scroll) {
                         break;
                     }
                 }
                 MouseEventKind::ScrollUp => {
-                    if state.changelist.scroll(-1) {
+                    // TODO: fix scroll for odd number of lines
+                    let inner = state.changelist.r#box.rect.inner();
+                    let scroll = std::cmp::max(-3, -(inner.height() as i32 - 1));
+                    if state.changelist.scroll(scroll) {
                         break;
                     }
                 }
+                MouseEventKind::Down(button) => match button {
+                    MouseButton::Left => {
+                        let inner = state.changelist.r#box.rect.inner();
+                        // Scroll Arrows
+                        if mouse.row == inner.y.0 && mouse.column == inner.x.1 {
+                            state.changelist.up_arrow_click = true;
+                            if state.changelist.scroll(-1) {
+                                break;
+                            }
+                        } else if mouse.row == inner.y.1 && mouse.column == inner.x.1 {
+                            state.changelist.down_arrow_click = true;
+                            if state.changelist.scroll(1) {
+                                break;
+                            }
+                        }
+                        // Scroll Bar
+                        if inner.height() > 1 {
+                            if mouse.row > inner.y.0
+                                && mouse.row < inner.y.1
+                                && mouse.column == inner.x.1
+                            {
+                                state.changelist.bar_clicking = true;
+                                break;
+                            }
+                        }
+                    }
+                    _ => {}
+                },
+                MouseEventKind::Up(button) => match button {
+                    MouseButton::Left => {
+                        if state.changelist.bar_clicking {
+                            state.changelist.bar_clicking = false;
+                            break;
+                        }
+                        if state.changelist.up_arrow_click {
+                            state.changelist.up_arrow_click = false;
+                            break;
+                        }
+                        if state.changelist.down_arrow_click {
+                            state.changelist.down_arrow_click = false;
+                            break;
+                        }
+                    }
+                    _ => {}
+                },
                 _ => {}
             },
             Event::Resize(cols, rows) => {
@@ -143,7 +194,7 @@ where
         x: inner_area.x.0 + inner_area.width() - 1,
         y: inner_area.y.0,
         height: inner_area.height() - 1,
-        symbols: &ScrollBarChars::modern(),
+        symbols: ScrollBarChars::modern(),
     };
     scrollbar.draw(
         stdout,
@@ -152,6 +203,9 @@ where
             end: state.changelist.scrolled_rows + (inner_area.height() - 1) as usize,
             total: DATA.len(),
         },
+        state.changelist.bar_clicking,
+        state.changelist.up_arrow_click,
+        state.changelist.down_arrow_click,
     );
 
     // HEADERS/FOOTERS
@@ -206,6 +260,9 @@ where
 
 struct ChangeList<'a> {
     r#box: Box<'a>,
+    up_arrow_click: bool,
+    down_arrow_click: bool,
+    bar_clicking: bool,
     scrolled_rows: usize,
     // TODO: implement show_column_headers: bool,
     show_line_numbers: bool, // TODO: (hide/normal/relative)
@@ -215,6 +272,9 @@ impl<'a> ChangeList<'a> {
     pub fn new(box_: Box<'a>) -> Self {
         Self {
             r#box: box_,
+            up_arrow_click: false,
+            down_arrow_click: false,
+            bar_clicking: false,
             scrolled_rows: 0,
             show_line_numbers: true,
         }
@@ -225,14 +285,10 @@ impl<'a> ChangeList<'a> {
         let max_scroll = {
             // Bad math:
             let max_height = (inner.height() - /*header*/1) as i32;
-            let max_data_scroll = (DATA.len() - 1/*cause scroll starts on zero*/) as i32;
+            let max_data_scroll = DATA.len() as i32;
             let rows_after_scroll = (DATA.len() - self.scrolled_rows) as i32;
-            let visible_rows = std::cmp::min(max_height, rows_after_scroll);
-            if visible_rows == rows_after_scroll {
-                self.scrolled_rows as i32
-            } else {
-                max_data_scroll
-            }
+            let visible_scrolled_rows = std::cmp::min(max_height, rows_after_scroll);
+            max_data_scroll - visible_scrolled_rows
         };
         let new_scroll = {
             let new_scroll = self.scrolled_rows as i32 + scroll_rows;

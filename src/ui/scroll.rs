@@ -28,9 +28,7 @@ impl ScrollBarChars {
             },
             up_clicked: CharStyle {
                 char: '↑',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
+                style: ContentStyle::new(),
             },
             up_disabled: CharStyle {
                 char: '↑',
@@ -52,9 +50,7 @@ impl ScrollBarChars {
             },
             down_clicked: CharStyle {
                 char: '↓',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
+                style: ContentStyle::new(),
             },
             down_disabled: CharStyle {
                 char: '↓',
@@ -80,9 +76,7 @@ impl ScrollBarChars {
             },
             up_clicked: CharStyle {
                 char: '^',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
+                style: ContentStyle::new(),
             },
             up_disabled: CharStyle {
                 char: '^',
@@ -104,9 +98,7 @@ impl ScrollBarChars {
             },
             down_clicked: CharStyle {
                 char: 'v',
-                style: ContentStyle::new()
-                    .attribute(Attribute::Bold)
-                    .attribute(Attribute::Reverse),
+                style: ContentStyle::new(),
             },
             down_disabled: CharStyle {
                 char: 'v',
@@ -126,11 +118,11 @@ impl ScrollBarChars {
     }
 }
 
-pub struct ScrollBar<'a> {
+pub struct ScrollBar {
     pub x: u16,
     pub y: u16,
     pub height: u16,
-    pub symbols: &'a ScrollBarChars,
+    pub symbols: ScrollBarChars,
 }
 
 pub struct RangeTotal {
@@ -139,9 +131,11 @@ pub struct RangeTotal {
     pub total: usize,
 }
 
-impl<'a> ScrollBar<'a> {
-    pub fn draw<W>(&self, stdout: &mut W, range_shown: RangeTotal)
-    where
+impl ScrollBar {
+    pub fn draw<W>(
+        &self, stdout: &mut W, range_shown: RangeTotal, bar_clicking: bool, up_arrow_click: bool,
+        down_arrow_click: bool,
+    ) where
         W: std::io::Write,
     {
         // verifications
@@ -163,16 +157,28 @@ impl<'a> ScrollBar<'a> {
         let symbols = Symbols {
             up: if range_shown.begin == 0 {
                 &self.symbols.up_disabled
+            } else if up_arrow_click {
+                &self.symbols.up_clicked
             } else {
                 &self.symbols.up
             },
             down: if range_shown.begin == max_begin {
                 &self.symbols.down_disabled
+            } else if down_arrow_click {
+                &self.symbols.down_clicked
             } else {
                 &self.symbols.down
             },
-            bar: &self.symbols.bar,
-            space: &self.symbols.space,
+            bar: if bar_clicking {
+                &self.symbols.bar_clicked
+            } else {
+                &self.symbols.bar
+            },
+            space: if bar_clicking {
+                &self.symbols.space_clicked
+            } else {
+                &self.symbols.space
+            },
         };
 
         // SPACE
