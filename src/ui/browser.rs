@@ -1,7 +1,7 @@
 use super::r#box::{BorderChars, Box, Rect};
 use crate::ui::scroll::{RangeTotal, ScrollBar, ScrollBarChars};
 use crossterm::event::{KeyModifiers, MouseButton, MouseEventKind};
-use crossterm::style::{Attribute, Color, ContentStyle, Styler};
+use crossterm::style::{Attribute, Color, ContentStyle, StyledContent, Styler};
 use crossterm::{
     cursor,
     event::{self, Event, KeyCode},
@@ -131,6 +131,19 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                                 && mouse.column == inner.x.1
                             {
                                 state.changelist.bar_clicking = true;
+                                break;
+                            }
+                        }
+                        // List Entries
+                        if mouse.row > inner.y.0
+                            && mouse.row <= inner.y.1
+                            && mouse.column >= inner.x.0
+                            && mouse.column <= inner.x.1
+                        {
+                            if state
+                                .changelist
+                                .select(mouse.row as usize - inner.y.0 as usize)
+                            {
                                 break;
                             }
                         }
@@ -264,8 +277,9 @@ struct ChangeList<'a> {
     down_arrow_click: bool,
     bar_clicking: bool,
     scrolled_rows: usize,
-    // TODO: implement show_column_headers: bool,
+    selected_row: Option<usize>,
     show_line_numbers: bool, // TODO: (hide/normal/relative)
+                             // TODO: implement show_column_headers: bool,
 }
 
 impl<'a> ChangeList<'a> {
@@ -276,8 +290,14 @@ impl<'a> ChangeList<'a> {
             down_arrow_click: false,
             bar_clicking: false,
             scrolled_rows: 0,
+            selected_row: None,
             show_line_numbers: true,
         }
+    }
+
+    pub fn select(&mut self, offset: usize) -> bool {
+        self.selected_row = Some(self.scrolled_rows + offset - /*header*/1);
+        true
     }
 
     pub fn scroll(&mut self, scroll_rows: i32) -> bool {
@@ -396,10 +416,15 @@ impl<'a> ChangeList<'a> {
                     value = value.split_at(value.len() - 1).0.to_owned();
                     value.push('…');
                 }
+                let style = if self.selected_row.is_some() && (row + offset_row) == self.selected_row.unwrap() {
+                    ContentStyle::new().attribute(Attribute::Reverse)
+                } else {
+                    ContentStyle::new()
+                };
                 queue!(
                     stdout,
                     cursor::MoveTo(inner.x.0 + walked_len, inner.y.0 + row as u16 + /*header*/1),
-                    style::Print(value)
+                    style::Print(StyledContent::new(style, value))
                 )
                 .unwrap();
             }
