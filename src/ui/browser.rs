@@ -8,13 +8,14 @@ use crossterm::{
     execute, queue, style,
     terminal::{self, ClearType},
 };
+use std::io::BufWriter;
 
 struct State<'a> {
     changelist: ChangeList<'a>,
 }
 
 pub fn main() {
-    let mut stdout = std::io::stdout();
+    let mut stdout = BufWriter::new(std::io::stdout()); // BufWriter decreases flickering
 
     terminal::enable_raw_mode().unwrap();
     execute!(
@@ -47,7 +48,6 @@ where
     W: std::io::Write,
 {
     let mut state = init_state();
-
     loop {
         // Rendering
         queue!(stdout, style::ResetColor, terminal::Clear(ClearType::All)).unwrap();
@@ -124,7 +124,9 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                         let inner = state.changelist.r#box.rect.inner();
                         // Scroll Bar
                         if inner.height() > 1 {
-                            if state.changelist.bar_clicking && mouse.row > inner.y.0 && mouse.row < inner.y.1
+                            if state.changelist.bar_clicking
+                                && mouse.row > inner.y.0
+                                && mouse.row < inner.y.1
                             {
                                 state.changelist.barscroll(mouse.row);
                                 break;
@@ -132,7 +134,7 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                         }
                     }
                     _ => {}
-                }
+                },
                 MouseEventKind::Down(button) => match button {
                     MouseButton::Left => {
                         let inner = state.changelist.r#box.rect.inner();
@@ -479,8 +481,7 @@ impl<'a> ChangeList<'a> {
                     value = value.split_at(value.len() - 1).0.to_owned();
                     value.push('…');
                 }
-                let style = if (row + offset_row) == self.selected_row
-                {
+                let style = if (row + offset_row) == self.selected_row {
                     ContentStyle::new().attribute(Attribute::Reverse)
                 } else {
                     ContentStyle::new()
