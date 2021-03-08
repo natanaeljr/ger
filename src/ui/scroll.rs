@@ -1,5 +1,6 @@
 use crossterm::style::{Attribute, ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
+use std::collections::HashSet;
 
 pub struct CharStyle {
     pub char: char,
@@ -63,7 +64,7 @@ impl ScrollBarChars {
                 style: ContentStyle::new(),
             },
             space_clicked: CharStyle {
-                char: '·',
+                char: ' ',
                 style: ContentStyle::new().attribute(Attribute::Dim),
             },
         }
@@ -152,7 +153,6 @@ impl ScrollBar {
             up: &'a CharStyle,
             down: &'a CharStyle,
             bar: &'a CharStyle,
-            space: &'a CharStyle,
         }
         let symbols = Symbols {
             up: if range_shown.begin == 0 {
@@ -174,11 +174,6 @@ impl ScrollBar {
             } else {
                 &self.symbols.bar
             },
-            space: if bar_clicking {
-                &self.symbols.space_clicked
-            } else {
-                &self.symbols.space
-            },
         };
 
         // SPACE
@@ -187,11 +182,24 @@ impl ScrollBar {
                 stdout,
                 cursor::MoveTo(self.x, y),
                 style::PrintStyledContent(StyledContent::new(
-                    symbols.space.style,
-                    symbols.space.char
+                    self.symbols.space.style,
+                    self.symbols.space.char
                 )),
             )
             .unwrap();
+        }
+        if bar_clicking {
+            for y in Self::positions(self.height, self.y, &range_shown).iter() {
+                queue!(
+                    stdout,
+                    cursor::MoveTo(self.x, *y),
+                    style::PrintStyledContent(StyledContent::new(
+                        self.symbols.space_clicked.style,
+                        self.symbols.space_clicked.char
+                    )),
+                )
+                .unwrap();
+            }
         }
         // UP
         queue!(
@@ -221,5 +229,49 @@ impl ScrollBar {
             style::PrintStyledContent(StyledContent::new(symbols.down.style, symbols.down.char)),
         )
         .unwrap();
+    }
+
+    pub fn bar_ypos(height: u16, y: u16, range_shown: &RangeTotal) -> u16 {
+        let visible_count = range_shown.end - range_shown.begin;
+        if visible_count >= (range_shown.total) {
+            return 0;
+        }
+        let max_begin = range_shown.total - (visible_count);
+        let bar_ypos_value = {
+            // ratio: 0 ~ 1.0
+            let ratio = range_shown.begin as f32 / max_begin as f32;
+            (ratio * (height - /*arrows*/2) as f32) + (y + /*up arrow*/1) as f32
+        };
+        bar_ypos_value as u16
+    }
+
+    pub fn scroll(height: u16, y: u16, range_shown: &RangeTotal, bar_ypos: u16) -> u16 {
+        let visible_count = range_shown.end - range_shown.begin;
+        if visible_count >= (range_shown.total) {
+            return 0;
+        }
+        let max_begin = range_shown.total - (visible_count);
+        let ratio = (bar_ypos as f32 - (y + /*up arrow*/1) as f32) / (height - /*arrows*/2) as f32;
+        let row = (ratio * max_begin as f32).round();
+        row as u16
+    }
+
+    pub fn positions(height: u16, y: u16, range_shown: &RangeTotal) -> HashSet<u16> {
+        let visible_count = range_shown.end - range_shown.begin;
+        if visible_count >= (range_shown.total) {
+            return HashSet::new();
+        };
+        let max_begin = range_shown.total - (visible_count);
+        let mut set = HashSet::new();
+        // Note: probably there is better math for this
+        for row in 0..=max_begin {
+            let ypos = {
+                // ratio: 0 ~ 1.0
+                let ratio = row as f32 / max_begin as f32;
+                (ratio * (height - /*arrows*/2) as f32) + (y + /*up arrow*/1) as f32
+            };
+            set.insert(ypos as u16);
+        }
+        set
     }
 }

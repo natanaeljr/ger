@@ -109,6 +109,20 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                         break;
                     }
                 }
+                MouseEventKind::Drag(button) => match button {
+                    MouseButton::Left => {
+                        let inner = state.changelist.r#box.rect.inner();
+                        // Scroll Bar
+                        if inner.height() > 1 {
+                            if state.changelist.bar_clicking && mouse.row > inner.y.0 && mouse.row < inner.y.1
+                            {
+                                state.changelist.barscroll(mouse.row);
+                                break;
+                            }
+                        }
+                    }
+                    _ => {}
+                }
                 MouseEventKind::Down(button) => match button {
                     MouseButton::Left => {
                         let inner = state.changelist.r#box.rect.inner();
@@ -131,6 +145,7 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                                 && mouse.column == inner.x.1
                             {
                                 state.changelist.bar_clicking = true;
+                                state.changelist.barscroll(mouse.row);
                                 break;
                             }
                         }
@@ -325,6 +340,32 @@ impl<'a> ChangeList<'a> {
         return updated;
     }
 
+    pub fn barscroll(&mut self, row: u16) -> bool {
+        let inner_area = self.r#box.rect.inner();
+        let y = inner_area.y.0;
+        let height = inner_area.height() - 1;
+        let range_shown = RangeTotal {
+            begin: self.scrolled_rows,
+            end: self.scrolled_rows + (inner_area.height() - 1) as usize,
+            total: DATA.len(),
+        };
+        let bar_ypos = ScrollBar::bar_ypos(height, y, &range_shown);
+        let positions = ScrollBar::positions(height, y, &range_shown);
+        let mut final_pos = 0;
+        for pos in positions.iter() {
+            let old_diff = (final_pos as i32 - *pos as i32).abs();
+            let new_diff = (row as i32 - *pos as i32).abs();
+            if new_diff < old_diff {
+                final_pos = row;
+            }
+        }
+        if bar_ypos == final_pos {
+            return false;
+        }
+        self.scrolled_rows = ScrollBar::scroll(height, y, &range_shown, final_pos) as usize;
+        true
+    }
+
     pub fn resize(&mut self, cols: u16, rows: u16) {
         let scroll_diff = (self.r#box.rect.height() as i32) - (rows as i32);
         let rows_after_scroll = (DATA.len() - self.scrolled_rows) as i32;
@@ -416,7 +457,9 @@ impl<'a> ChangeList<'a> {
                     value = value.split_at(value.len() - 1).0.to_owned();
                     value.push('…');
                 }
-                let style = if self.selected_row.is_some() && (row + offset_row) == self.selected_row.unwrap() {
+                let style = if self.selected_row.is_some()
+                    && (row + offset_row) == self.selected_row.unwrap()
+                {
                     ContentStyle::new().attribute(Attribute::Reverse)
                 } else {
                     ContentStyle::new()
