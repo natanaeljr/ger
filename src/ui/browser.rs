@@ -88,6 +88,16 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                             *quit = true;
                             break;
                         }
+                        KeyCode::Char('j') => {
+                            if state.changelist.select_offset(1) {
+                                break;
+                            }
+                        }
+                        KeyCode::Char('k') => {
+                            if state.changelist.select_offset(-1) {
+                                break;
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -157,7 +167,7 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                         {
                             if state
                                 .changelist
-                                .select(mouse.row as usize - inner.y.0 as usize)
+                                .select_row(mouse.row as i32 - inner.y.0 as i32)
                             {
                                 break;
                             }
@@ -292,7 +302,7 @@ struct ChangeList<'a> {
     down_arrow_click: bool,
     bar_clicking: bool,
     scrolled_rows: usize,
-    selected_row: Option<usize>,
+    selected_row: usize,
     show_line_numbers: bool, // TODO: (hide/normal/relative)
                              // TODO: implement show_column_headers: bool,
 }
@@ -305,13 +315,25 @@ impl<'a> ChangeList<'a> {
             down_arrow_click: false,
             bar_clicking: false,
             scrolled_rows: 0,
-            selected_row: None,
+            selected_row: 0,
             show_line_numbers: true,
         }
     }
 
-    pub fn select(&mut self, offset: usize) -> bool {
-        self.selected_row = Some(self.scrolled_rows + offset - /*header*/1);
+    pub fn select_offset(&mut self, offset: i32) -> bool {
+        let target = self.selected_row as i32 + offset;
+        if target < 0 || target > (DATA.len() - 1) as i32 {
+            return false;
+        }
+        self.selected_row = target as usize;
+        true
+    }
+
+    pub fn select_row(&mut self, row: i32) -> bool {
+        if row < 0 || row > (DATA.len() - 1) as i32 {
+            return false;
+        }
+        self.selected_row = self.scrolled_rows + row as usize - /*header*/1;
         true
     }
 
@@ -457,8 +479,7 @@ impl<'a> ChangeList<'a> {
                     value = value.split_at(value.len() - 1).0.to_owned();
                     value.push('…');
                 }
-                let style = if self.selected_row.is_some()
-                    && (row + offset_row) == self.selected_row.unwrap()
+                let style = if (row + offset_row) == self.selected_row
                 {
                     ContentStyle::new().attribute(Attribute::Reverse)
                 } else {
