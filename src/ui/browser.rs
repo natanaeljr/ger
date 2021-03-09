@@ -79,6 +79,22 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                                 break;
                             }
                         }
+                        KeyCode::Char('d') => {
+                            let inner = state.changelist.r#box.rect.inner();
+                            let middle = ((inner.height() as f32 - 1.0) / 2.0).ceil() as i32;
+                            // TODO: Fix this, it's not quite the same VI behaviour
+                            if state.changelist.select_offset(middle) {
+                                break;
+                            }
+                        }
+                        KeyCode::Char('u') => {
+                            let inner = state.changelist.r#box.rect.inner();
+                            let middle = ((inner.height() as f32 - 1.0) / 2.0).ceil() as i32;
+                            // TODO: Fix this, it's not quite the same VI behaviour
+                            if state.changelist.select_offset(-middle) {
+                                break;
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -86,6 +102,13 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                     match key.code {
                         KeyCode::Char('G') => {
                             if state.changelist.select_line(DATA.len() as i32 - 1) {
+                                break;
+                            }
+                        }
+                        KeyCode::Char('M') => {
+                            let inner = state.changelist.r#box.rect.inner();
+                            let middle = (inner.height() as i32 - 1) / 2;
+                            if state.changelist.select_row(middle) {
                                 break;
                             }
                         }
@@ -119,18 +142,12 @@ fn event_loop(state: &mut State, quit: &mut bool) {
             }
             Event::Mouse(mouse) => match mouse.kind {
                 MouseEventKind::ScrollDown => {
-                    // TODO: fix scroll for odd number of lines
-                    let inner = state.changelist.r#box.rect.inner();
-                    let scroll = std::cmp::min(3, inner.height() as i32 - 1);
-                    if state.changelist.scroll(scroll) {
+                    if state.changelist.scroll(3) {
                         break;
                     }
                 }
                 MouseEventKind::ScrollUp => {
-                    // TODO: fix scroll for odd number of lines
-                    let inner = state.changelist.r#box.rect.inner();
-                    let scroll = std::cmp::max(-3, -(inner.height() as i32 - 1));
-                    if state.changelist.scroll(scroll) {
+                    if state.changelist.scroll(-3) {
                         break;
                     }
                 }
@@ -339,27 +356,37 @@ impl<'a> ChangeList<'a> {
 
     pub fn select_offset(&mut self, offset: i32) -> bool {
         let target = self.selected_row as i32 + offset;
-        if target < 0 || target > (DATA.len() - 1) as i32 {
-            return false;
+        let target = std::cmp::max(target, 0);
+        let target = std::cmp::min(target, DATA.len() as i32 - 1);
+        let updated = target != self.selected_row as i32;
+        if updated {
+            self.selected_row = target as usize;
+            self.scroll_on_select_update();
         }
-        self.selected_row = target as usize;
-        self.scroll_on_select_update();
-        true
+        updated
     }
 
     pub fn select_line(&mut self, line: i32) -> bool {
-        if line < 0 || line > (DATA.len() - 1) as i32 {
-            return false;
+        let line = std::cmp::max(line, 0);
+        let line = std::cmp::min(line, DATA.len() as i32 - 1);
+        let updated = line != self.selected_row as i32;
+        if updated {
+            self.selected_row = line as usize;
+            self.scroll_on_select_update();
         }
-        self.selected_row = line as usize;
-        self.scroll_on_select_update();
-        true
+        updated
     }
 
     pub fn select_row(&mut self, row: i32) -> bool {
-        self.selected_row = self.scrolled_rows + row as usize - /*header*/1;
-        self.scroll_on_select_update();
-        true
+        let row = self.scrolled_rows as i32 + row - /*header*/1;
+        let row = std::cmp::max(row, 0);
+        let row = std::cmp::min(row, DATA.len() as i32 - 1);
+        let updated = row != self.selected_row as i32;
+        if updated {
+            self.selected_row = row as usize;
+            self.scroll_on_select_update();
+        }
+        updated
     }
 
     fn scroll_on_select_update(&mut self) {
@@ -385,6 +412,8 @@ impl<'a> ChangeList<'a> {
 
     pub fn scroll(&mut self, scroll_rows: i32) -> bool {
         let inner = self.r#box.rect.inner();
+        let scroll_rows = std::cmp::max(scroll_rows, -(inner.height() as i32 - 1));
+        let scroll_rows = std::cmp::min(scroll_rows, inner.height() as i32 - 1);
         let max_scroll = {
             // Bad math:
             let max_height = (inner.height() - /*header*/1) as i32;
