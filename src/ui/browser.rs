@@ -82,11 +82,26 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                         _ => {}
                     }
                 }
+                if key.modifiers == KeyModifiers::SHIFT {
+                    match key.code {
+                        KeyCode::Char('G') => {
+                            if state.changelist.select_line(DATA.len() as i32 - 1) {
+                                break;
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 if key.modifiers == KeyModifiers::empty() {
                     match key.code {
                         KeyCode::Char('q') => {
                             *quit = true;
                             break;
+                        }
+                        KeyCode::Char('g') => {
+                            if state.changelist.select_line(0) {
+                                break;
+                            }
                         }
                         KeyCode::Char('j') => {
                             if state.changelist.select_offset(1) {
@@ -328,15 +343,33 @@ impl<'a> ChangeList<'a> {
             return false;
         }
         self.selected_row = target as usize;
+        self.scroll_on_select_update();
+        true
+    }
+
+    pub fn select_line(&mut self, line: i32) -> bool {
+        if line < 0 || line > (DATA.len() - 1) as i32 {
+            return false;
+        }
+        self.selected_row = line as usize;
+        self.scroll_on_select_update();
         true
     }
 
     pub fn select_row(&mut self, row: i32) -> bool {
-        if row < 0 || row > (DATA.len() - 1) as i32 {
-            return false;
-        }
         self.selected_row = self.scrolled_rows + row as usize - /*header*/1;
+        self.scroll_on_select_update();
         true
+    }
+
+    fn scroll_on_select_update(&mut self) {
+        let inner = self.r#box.rect.inner();
+        let scrolled_visible_end = self.scrolled_rows as i32 + (inner.height() as i32 - 2);
+        if self.selected_row < self.scrolled_rows {
+            self.scroll(self.selected_row as i32 - self.scrolled_rows as i32);
+        } else if self.selected_row as i32 > scrolled_visible_end {
+            self.scroll(self.selected_row as i32 - scrolled_visible_end);
+        }
     }
 
     pub fn scroll(&mut self, scroll_rows: i32) -> bool {
