@@ -103,12 +103,12 @@ fn event_loop(state: &mut State, quit: &mut bool) {
                                 break;
                             }
                         }
-                        KeyCode::Char('j') => {
+                        KeyCode::Char('j') | KeyCode::Down => {
                             if state.changelist.select_offset(1) {
                                 break;
                             }
                         }
-                        KeyCode::Char('k') => {
+                        KeyCode::Char('k') | KeyCode::Up => {
                             if state.changelist.select_offset(-1) {
                                 break;
                             }
@@ -372,6 +372,17 @@ impl<'a> ChangeList<'a> {
         }
     }
 
+    fn select_on_scroll_or_resize_update(&mut self) {
+        if self.selected_row < self.scrolled_rows {
+            self.select_line(self.scrolled_rows as i32);
+        }
+        let inner = self.r#box.rect.inner();
+        let scrolled_visible_end = self.scrolled_rows as i32 + (inner.height() as i32 - 2);
+        if self.selected_row as i32 > scrolled_visible_end {
+            self.select_line(scrolled_visible_end);
+        }
+    }
+
     pub fn scroll(&mut self, scroll_rows: i32) -> bool {
         let inner = self.r#box.rect.inner();
         let max_scroll = {
@@ -394,7 +405,8 @@ impl<'a> ChangeList<'a> {
         };
         let updated = self.scrolled_rows != new_scroll as usize;
         self.scrolled_rows = new_scroll as usize;
-        return updated;
+        self.select_on_scroll_or_resize_update();
+        updated
     }
 
     pub fn barscroll(&mut self, row: u16) -> bool {
@@ -420,6 +432,7 @@ impl<'a> ChangeList<'a> {
             return false;
         }
         self.scrolled_rows = ScrollBar::scroll(height, y, &range_shown, final_pos) as usize;
+        self.select_on_scroll_or_resize_update();
         true
     }
 
@@ -430,6 +443,7 @@ impl<'a> ChangeList<'a> {
             self.scroll(scroll_diff);
         }
         self.r#box.rect = Rect::from_size((self.r#box.rect.x.0, self.r#box.rect.y.0), (cols, rows));
+        self.select_on_scroll_or_resize_update();
     }
 
     pub fn draw<W>(&self, stdout: &mut W, columns: &Vec<(&str, u16, ContentStyle)>)
