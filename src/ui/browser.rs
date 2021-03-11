@@ -393,9 +393,9 @@ impl<'a> ChangeList<'a> {
         let inner = self.r#box.rect.inner();
         let scrolled_visible_end = self.scrolled_rows as i32 + (inner.height() as i32 - 2);
         if self.selected_row < self.scrolled_rows {
-            self.scroll(self.selected_row as i32 - self.scrolled_rows as i32);
+            self.scroll_internal(self.selected_row as i32 - self.scrolled_rows as i32);
         } else if self.selected_row as i32 > scrolled_visible_end {
-            self.scroll(self.selected_row as i32 - scrolled_visible_end);
+            self.scroll_internal(self.selected_row as i32 - scrolled_visible_end);
         }
     }
 
@@ -411,6 +411,12 @@ impl<'a> ChangeList<'a> {
     }
 
     pub fn scroll(&mut self, scroll_rows: i32) -> bool {
+        let updated = self.scroll_internal(scroll_rows);
+        self.select_on_scroll_or_resize_update();
+        updated
+    }
+
+    pub fn scroll_internal(&mut self, scroll_rows: i32) -> bool {
         let inner = self.r#box.rect.inner();
         let scroll_rows = std::cmp::max(scroll_rows, -(inner.height() as i32 - 1));
         let scroll_rows = std::cmp::min(scroll_rows, inner.height() as i32 - 1);
@@ -434,7 +440,6 @@ impl<'a> ChangeList<'a> {
         };
         let updated = self.scrolled_rows != new_scroll as usize;
         self.scrolled_rows = new_scroll as usize;
-        self.select_on_scroll_or_resize_update();
         updated
     }
 
@@ -479,7 +484,9 @@ impl<'a> ChangeList<'a> {
     where
         W: std::io::Write,
     {
+        // This whole function is really bad :( I'm sorry.
         self.r#box.draw(stdout);
+        let (term_width, _term_height) = terminal::size().unwrap();
 
         let mut inner = self.r#box.rect.inner();
         if inner.height() as usize - 1 < DATA.len() && inner.width() > 1 {
@@ -489,9 +496,8 @@ impl<'a> ChangeList<'a> {
 
         let mut walked_len = 0;
         for (column, (column_name, column_len, column_style)) in columns.iter().enumerate() {
-            let mut digits_count = 0;
             if self.show_line_numbers && column == 0 {
-                digits_count = {
+                let digits_count = {
                     let digits_count = DATA.len().to_string().len();
                     if digits_count < 2 {
                         2 // always at least 2 digits
@@ -527,27 +533,55 @@ impl<'a> ChangeList<'a> {
             )
             .unwrap();
 
-            // DATA
-            let offset_row = self.scrolled_rows;
-            for row in 0..std::cmp::min(DATA.len() - offset_row, (inner.height() - 1) as usize) {
+            walked_len += column_len;
+        }
+
+        // DATA
+        let offset_row = self.scrolled_rows;
+        for row in 0..std::cmp::min(DATA.len() - offset_row, (inner.height() - 1) as usize) {
+            let mut line = Vec::new();
+            let mut walked_len = 0;
+            queue!(
+                line,
+                cursor::MoveTo(inner.x.0, inner.y.0 + row as u16 + /*header*/1),
+            )
+            .unwrap();
+            let style = if (row + offset_row) == self.selected_row {
+                ContentStyle::new().attribute(Attribute::Underlined)
+            } else {
+                ContentStyle::new()
+            };
+            for (column, (_column_name, column_len, _column_style)) in columns.iter().enumerate() {
                 if self.show_line_numbers && column == 0 {
+                    let digits_count = {
+                        let digits_count = DATA.len().to_string().len();
+                        if digits_count < 2 {
+                            2 // always at least 2 digits
+                        } else {
+                            digits_count
+                        }
+                    };
+                    walked_len += digits_count as u16 + 1;
                     if inner.width() > digits_count as u16 {
                         queue!(
-                            stdout,
-                            cursor::MoveTo(inner.x.0, inner.y.0 + row as u16 + /*header*/1),
-                            style::PrintStyledContent(
-                                style::style(format!(
-                                    "{: >1$}",
-                                    row + offset_row + 1,
-                                    digits_count
-                                ))
-                                .with(Color::White)
-                                .bold()
-                            )
+                            line,
+                            style::Print(StyledContent::new(
+                                style.foreground(Color::White).attribute(Attribute::Bold),
+                                format!("{: >1$} ", row + offset_row + 1, digits_count)
+                            )),
                         )
                         .unwrap();
                     }
                 }
+                let remaining_len = {
+                    let value = inner.width() as i32 - walked_len as i32;
+                    if value.is_positive() {
+                        value as u16
+                    } else {
+                        0 as u16
+                    }
+                };
+                let column_len = std::cmp::min(column_len.clone(), remaining_len);
                 let (value, rest) = DATA[row + offset_row][column].split_at(std::cmp::min(
                     column_len as usize,
                     DATA[row + offset_row][column].len(),
@@ -557,20 +591,19 @@ impl<'a> ChangeList<'a> {
                     value = value.split_at(value.len() - 1).0.to_owned();
                     value.push('…');
                 }
-                let style = if (row + offset_row) == self.selected_row {
-                    ContentStyle::new().attribute(Attribute::Reverse)
+                let full_width = if column == (columns.len() - 1) {
+                    let remaining_term_width =
+                        term_width as i32 - walked_len as i32 - /*borders*/ 2;
+                    std::cmp::max(column_len as i32, remaining_term_width) as u16
                 } else {
-                    ContentStyle::new()
+                    column_len
                 };
-                queue!(
-                    stdout,
-                    cursor::MoveTo(inner.x.0 + walked_len, inner.y.0 + row as u16 + /*header*/1),
-                    style::Print(StyledContent::new(style, value))
-                )
-                .unwrap();
-            }
+                let value = format!("{: <1$}", value, full_width as usize);
+                queue!(line, style::Print(StyledContent::new(style, value))).unwrap();
 
-            walked_len += column_len;
+                walked_len += column_len;
+            }
+            stdout.write_all(line.as_slice()).unwrap();
         }
     }
 }
