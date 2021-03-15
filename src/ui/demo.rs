@@ -30,7 +30,9 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 index: ChangeColumn::Commit as ColumnIndex,
                 name: "commit".to_string(),
                 len: 8,
-                style: ContentStyle::new().attribute(Attribute::Bold),
+                style: ContentStyle::new()
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -39,7 +41,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 8,
                 style: ContentStyle::new()
                     .foreground(Color::Yellow)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -48,7 +51,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 17,
                 style: ContentStyle::new()
                     .foreground(Color::DarkGrey)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -57,7 +61,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 10,
                 style: ContentStyle::new()
                     .foreground(Color::Magenta)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -66,7 +71,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 30,
                 style: ContentStyle::new()
                     .foreground(Color::Cyan)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -75,7 +81,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 20,
                 style: ContentStyle::new()
                     .foreground(Color::DarkCyan)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -84,7 +91,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 20,
                 style: ContentStyle::new()
                     .foreground(Color::DarkCyan)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -93,7 +101,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 10,
                 style: ContentStyle::new()
                     .foreground(Color::Green)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
             Column {
@@ -102,7 +111,8 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 len: 50,
                 style: ContentStyle::new()
                     .attribute(Attribute::Dim)
-                    .attribute(Attribute::Bold),
+                    .attribute(Attribute::Bold)
+                    .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
             },
         ],

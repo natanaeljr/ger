@@ -1,12 +1,12 @@
 use crate::ui::r#box::Rect;
 use crate::ui::table::{Columns, Table};
-use crossterm::style::StyledContent;
+use crossterm::style::{ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
 /// Draw a Table widget within the Rect space.
 ///
 /// Includes drawing the Column headers, and line numbers.
-pub fn draw_table<W>(stdout: &mut W, (rect, table, columns): (&Rect, &Table, &Columns))
+pub fn draw_table<W>(stdout: &mut W, (rect, _table, columns): (&Rect, &Table, &Columns))
 where
     W: std::io::Write,
 {
@@ -17,29 +17,37 @@ where
     }
 }
 
-/// Draw the Table Column headers at the first line.
+/// Draw the Table Column headers in the first table row.
 fn draw_table_header<W>(stdout: &mut W, (rect, columns): (&Rect, &Columns))
 where
     W: std::io::Write,
 {
+    let mut column_separator = StyledContent::new(ContentStyle::default(), "");
     let mut walked_column_len = 0;
-    for column in columns.visible.iter() {
+    for (col, column) in columns.visible.iter().enumerate() {
         let available_width = rect.width() as usize - walked_column_len;
         if available_width == 0 {
             break;
         }
-        // TODO: need to filled maximum available space for the last column to end at the Rect border
-        let available_column_len = std::cmp::min(column.len as usize, available_width);
+        let available_width = available_width - column_separator.content().len();
+        let available_column_len = if col < columns.visible.len() - 1 {
+            std::cmp::min(column.len as usize, available_width)
+        } else {
+            // extend the last column to the remainder of screen space
+            available_width
+        };
         let actual_column_name = formatted_column_content(&column.name, available_column_len);
         queue!(
             stdout,
+            style::PrintStyledContent(column_separator.clone()),
             style::PrintStyledContent(StyledContent::new(
                 column.style.clone(),
                 &actual_column_name,
             ))
         )
         .unwrap();
-        walked_column_len += available_column_len;
+        walked_column_len += available_column_len + column_separator.content().len();
+        column_separator = StyledContent::new(column.style.clone(), "|"); // must be one character!
     }
 }
 
@@ -67,4 +75,17 @@ fn formatted_column_content(content: &String, available_column_len: usize) -> St
         // Exact size string
         content.to_owned()
     }
+}
+
+/// ////////////////////////////////////////////////////////////////////////////////////////////////
+/// TESTS
+/// ////////////////////////////////////////////////////////////////////////////////////////////////
+mod test {
+    // TODO:
+    // - no visible columns
+    // - different column sizes
+    // - empty column name
+    // - column name larger than column size
+    // - 1x1 rect space
+    // - no printable column headers
 }
