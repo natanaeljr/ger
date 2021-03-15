@@ -1,4 +1,5 @@
 use super::r#box::{BorderChars, Box, Rect};
+use crate::ui::ecs_tui::EcsTui;
 use crate::ui::scroll::{RangeTotal, ScrollBar, ScrollBarChars};
 use crossterm::event::{KeyModifiers, MouseButton, MouseEventKind};
 use crossterm::style::{Attribute, Color, ContentStyle, StyledContent, Styler};
@@ -20,15 +21,16 @@ pub fn main() {
     terminal::enable_raw_mode().unwrap();
     execute!(
         stdout,
-        terminal::SetTitle("Ger UI"),
         terminal::EnterAlternateScreen,
+        terminal::SetTitle("Ger UI"),
         terminal::Clear(ClearType::All),
         event::EnableMouseCapture,
         cursor::Hide
     )
     .unwrap();
 
-    main_loop(&mut stdout);
+    // main_loop(&mut stdout);
+    EcsTui::new().main_loop(&mut stdout);
 
     execute!(
         stdout,
@@ -36,8 +38,8 @@ pub fn main() {
         style::ResetColor,
         cursor::Show,
         event::DisableMouseCapture,
-        terminal::LeaveAlternateScreen,
         terminal::SetTitle(""),
+        terminal::LeaveAlternateScreen,
     )
     .unwrap();
     terminal::disable_raw_mode().unwrap();
@@ -669,7 +671,7 @@ fn get_columns() -> Vec<(&'static str, u16, ContentStyle)> {
     columns
 }
 
-static DATA: [[&str; 9]; 45] = [
+pub static DATA: [[&str; 9]; 45] = [
     [
         "8f524ac",
         "104508",

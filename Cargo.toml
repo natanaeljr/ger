@@ -37,6 +37,9 @@ signal-hook = "0.1.16"
 libc = "0.2.74"
 git2 = "0.13.10"
 pager = "0.15.0"
+legion = "0.4.0"
+array2d = "0.2.1"
+specs = "0.16.1"
 
 [dev-dependencies]
 tempfile = "3.1.0"
