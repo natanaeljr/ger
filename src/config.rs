@@ -160,63 +160,63 @@ impl Into<gerlib::HttpAuthMethod> for HttpAuthMethod {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-/// TESTS
-#[cfg(test)]
-mod tests {
-    use failure::_core::iter::FromFn;
-    use std::collections::{BTreeMap, HashMap};
-    use std::io::Write;
-
-    #[test]
-    fn config_file_two_remotes() {
-        let expected = super::UserConfig {
-            remotes: {
-                let mut remotes = BTreeMap::new();
-                remotes.insert(
-                    "alpha".to_owned(),
-                    super::RemoteOpts {
-                        url: "https://gerrit-review.googlesource.com".to_owned(),
-                        port: None,
-                        username: Some("stickman".to_owned()),
-                        http_password: Some("somelongstring4685+&%".to_owned()),
-                    },
-                );
-                remotes.insert(
-                    "beta".to_owned(),
-                    super::RemoteOpts {
-                        url: "http://gerrit-review.example.com".to_owned(),
-                        port: Some(8080),
-                        username: Some("wonderwoman".to_owned()),
-                        http_password: Some("+&%anotherlongstring4685".to_owned()),
-                    },
-                );
-                remotes
-            },
-            default_remote: Some("beta".to_owned()),
-        };
-
-        let mut tmp_file = tempfile::NamedTempFile::new().unwrap();
-        tmp_file
-            .write_all(
-                b"\
-default_remote = \"beta\"
-
-[remotes.alpha]
-url = \"https://gerrit-review.googlesource.com\"
-username = \"stickman\"
-http_password = \"somelongstring4685+&%\"
-
-[remotes.beta]
-url = \"http://gerrit-review.example.com\"
-port = 8080
-http_password = \"+&%anotherlongstring4685\"
-username = \"wonderwoman\"
-        ",
-            )
-            .unwrap();
-        let tmp_filename = tmp_file.path().to_str().unwrap();
-        let actual = super::UserConfig::from_file(Some(tmp_filename)).unwrap();
-
-        assert_eq!(expected, actual);
-    }
-}
+// /// TESTS
+// #[cfg(test)]
+// mod tests {
+//     use failure::_core::iter::FromFn;
+//     use std::collections::{BTreeMap, HashMap};
+//     use std::io::Write;
+//
+//     #[test]
+//     fn config_file_two_remotes() {
+//         let expected = super::UserConfig {
+//             remotes: {
+//                 let mut remotes = BTreeMap::new();
+//                 remotes.insert(
+//                     "alpha".to_owned(),
+//                     super::RemoteOpts {
+//                         url: "https://gerrit-review.googlesource.com".to_owned(),
+//                         port: None,
+//                         username: Some("stickman".to_owned()),
+//                         http_password: Some("somelongstring4685+&%".to_owned()),
+//                     },
+//                 );
+//                 remotes.insert(
+//                     "beta".to_owned(),
+//                     super::RemoteOpts {
+//                         url: "http://gerrit-review.example.com".to_owned(),
+//                         port: Some(8080),
+//                         username: Some("wonderwoman".to_owned()),
+//                         http_password: Some("+&%anotherlongstring4685".to_owned()),
+//                     },
+//                 );
+//                 remotes
+//             },
+//             default_remote: Some("beta".to_owned()),
+//         };
+//
+//         let mut tmp_file = tempfile::NamedTempFile::new().unwrap();
+//         tmp_file
+//             .write_all(
+//                 b"\
+// default_remote = \"beta\"
+//
+// [remotes.alpha]
+// url = \"https://gerrit-review.googlesource.com\"
+// username = \"stickman\"
+// http_password = \"somelongstring4685+&%\"
+//
+// [remotes.beta]
+// url = \"http://gerrit-review.example.com\"
+// port = 8080
+// http_password = \"+&%anotherlongstring4685\"
+// username = \"wonderwoman\"
+//         ",
+//             )
+//             .unwrap();
+//         let tmp_filename = tmp_file.path().to_str().unwrap();
+//         let actual = super::UserConfig::from_file(Some(tmp_filename)).unwrap();
+//
+//         assert_eq!(expected, actual);
+//     }
+// }

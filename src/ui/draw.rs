@@ -80,12 +80,80 @@ fn formatted_column_content(content: &String, available_column_len: usize) -> St
 /// ////////////////////////////////////////////////////////////////////////////////////////////////
 /// TESTS
 /// ////////////////////////////////////////////////////////////////////////////////////////////////
+#[cfg(test)]
 mod test {
+    use super::*;
+    use crate::ui::change::ChangeColumn;
+    use crate::ui::layout::HorizontalAlignment;
+    use crate::ui::table::{Column, ColumnIndex, Row};
+
     // TODO:
     // - no visible columns
     // - different column sizes
     // - empty column name
     // - column name larger than column size
-    // - 1x1 rect space
+    // - 1x1 rect space (test w/ all other combinations)
     // - no printable column headers
+
+    fn table_components() -> (Table, Columns) {
+        let mut row = Row::new();
+        row.insert(ChangeColumn::Commit as ColumnIndex, String::from("8f524ac"));
+        row.insert(ChangeColumn::Number as ColumnIndex, String::from("104508"));
+        row.insert(ChangeColumn::Owner as ColumnIndex, String::from("Auto QA"));
+        let table = Table { data: vec![row] };
+        let columns = Columns {
+            print_header: true,
+            visible: vec![
+                Column {
+                    index: ChangeColumn::Commit as ColumnIndex,
+                    name: "commit".to_string(),
+                    len: 8,
+                    style: ContentStyle::new(),
+                    alignment: HorizontalAlignment::Left,
+                },
+                Column {
+                    index: ChangeColumn::Number as ColumnIndex,
+                    name: "number".to_string(),
+                    len: 8,
+                    style: ContentStyle::new(),
+                    alignment: HorizontalAlignment::Left,
+                },
+            ],
+            hidden: vec![],
+        };
+        (table, columns)
+    }
+
+    #[test]
+    fn first_test() {
+        let rect = Rect::from_size((0, 0), (20, 1));
+        let (table, columns) = table_components();
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  |number     ";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    fn second_test() {
+        let rect = Rect::from_size((0, 0), (8, 1));
+        let (table, columns) = table_components();
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  ";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    fn third_test() {
+        let rect = Rect::from_size((0, 0), (10, 1));
+        let (table, columns) = table_components();
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  |…";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
 }
