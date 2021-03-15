@@ -87,14 +87,6 @@ mod test {
     use crate::ui::layout::HorizontalAlignment;
     use crate::ui::table::{Column, ColumnIndex, Row};
 
-    // TODO:
-    // - no visible columns
-    // - different column sizes
-    // - empty column name
-    // - column name larger than column size
-    // - 1x1 rect space (test w/ all other combinations)
-    // - no printable column headers
-
     fn table_components() -> (Table, Columns) {
         let mut row = Row::new();
         row.insert(ChangeColumn::Commit as ColumnIndex, String::from("8f524ac"));
@@ -125,7 +117,8 @@ mod test {
     }
 
     #[test]
-    fn first_test() {
+    /// Expect all columns are visible and last one has extended space to the screen end
+    fn multiple_columns_high_width() {
         let rect = Rect::from_size((0, 0), (20, 1));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
@@ -136,7 +129,20 @@ mod test {
     }
 
     #[test]
-    fn second_test() {
+    /// Expect the all columns are shown in a exact match space for column names
+    fn multiple_columns_exact_name_space() {
+        let rect = Rect::from_size((0, 0), (15, 1));
+        let (table, columns) = table_components();
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  |number";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect a column is shown in a exact column space, other columns are not shown
+    fn multiple_columns_exact_one_column_space() {
         let rect = Rect::from_size((0, 0), (8, 1));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
@@ -147,13 +153,130 @@ mod test {
     }
 
     #[test]
-    fn third_test() {
+    /// Expect the first column only show the etc. character, for 1 width only space
+    fn one_column_one_space() {
+        let rect = Rect::from_size((0, 0), (1, 1));
+        let (table, columns) = table_components();
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "…";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect the second columns only show the etc. character, for 1 width only space
+    fn second_column_one_space() {
         let rect = Rect::from_size((0, 0), (10, 1));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns));
         let output = strip_ansi_escapes::strip(&output).unwrap();
         let expected = "commit  |…";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect the second column show the etc. character for space missed by 1 char
+    fn second_column_almost_full_name_space() {
+        let rect = Rect::from_size((0, 0), (14, 1));
+        let (table, columns) = table_components();
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  |numb…";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect columns are not printed when this flag is disabled
+    fn print_headers_disabled() {
+        let rect = Rect::from_size((0, 0), (14, 1));
+        let (table, mut columns) = table_components();
+        columns.print_header = false;
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect no breakage when there are no columns to print
+    fn no_visible_columns() {
+        let rect = Rect::from_size((0, 0), (14, 1));
+        let (table, _) = table_components();
+        let columns = Columns::default();
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect column with no name to have its length still filled up with spaces
+    fn column_no_name_fill_space() {
+        let rect = Rect::from_size((0, 0), (25, 1));
+        let (table, mut columns) = table_components();
+        columns.visible.insert(
+            1,
+            Column {
+                index: ChangeColumn::Time as ColumnIndex,
+                name: "".to_string(),
+                len: 5,
+                style: ContentStyle::new(),
+                alignment: HorizontalAlignment::Left,
+            },
+        );
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  |     |number    ";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect column with smaller length then its name to have the columns and its name constrained
+    fn column_smaller_length_than_name() {
+        let rect = Rect::from_size((0, 0), (25, 1));
+        let (table, mut columns) = table_components();
+        columns.visible.insert(
+            1,
+            Column {
+                index: ChangeColumn::Subject as ColumnIndex,
+                name: "subject".to_string(),
+                len: 4,
+                style: ContentStyle::new(),
+                alignment: HorizontalAlignment::Left,
+            },
+        );
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  |sub…|number     ";
+        assert_eq!(expected, String::from_utf8(output).unwrap())
+    }
+
+    #[test]
+    /// Expect full name when column length and name length match
+    fn column_name_exact_length() {
+        let rect = Rect::from_size((0, 0), (25, 1));
+        let (table, mut columns) = table_components();
+        columns.visible.insert(
+            1,
+            Column {
+                index: ChangeColumn::Branch as ColumnIndex,
+                name: "branch".to_string(),
+                len: 6,
+                style: ContentStyle::new(),
+                alignment: HorizontalAlignment::Left,
+            },
+        );
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes::strip(&output).unwrap();
+        let expected = "commit  |branch|number   ";
         assert_eq!(expected, String::from_utf8(output).unwrap())
     }
 }

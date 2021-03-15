@@ -21,7 +21,7 @@ pub struct Table {
 
 /// Columns is a component related to the Table component.
 /// Defines which columns are available to be displayed in the Table.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Columns {
     pub print_header: bool,
     pub visible: Vec<Column>,
