@@ -1,5 +1,5 @@
 use crate::ui::r#box::Rect;
-use crate::ui::table::{Columns, Table};
+use crate::ui::table::{Column, Columns, Table};
 use crossterm::style::{ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
@@ -13,23 +13,54 @@ where
     queue!(stdout, cursor::MoveTo(rect.x.0, rect.y.0)).unwrap();
 
     if columns.print_header {
-        draw_table_header(stdout, (rect, columns));
+        draw_table_headers(stdout, (rect, columns));
     }
 }
 
 /// Draw the Table Column headers at the table top row.
-fn draw_table_header<W>(stdout: &mut W, (rect, columns): (&Rect, &Columns))
+fn draw_table_headers<W>(stdout: &mut W, (rect, columns): (&Rect, &Columns))
 where
     W: std::io::Write,
 {
+    let mut column_separator_style = ContentStyle::default();
+    let draw_column_header =
+        move |column: &Column, column_separator: &str, available_column_width: usize| {
+            let actual_column_name = formatted_column_content(&column.name, available_column_width);
+            queue!(
+                stdout,
+                style::PrintStyledContent(StyledContent::new(
+                    column_separator_style.clone(),
+                    &column_separator,
+                )),
+                style::PrintStyledContent(StyledContent::new(
+                    column.style.clone(),
+                    &actual_column_name,
+                ))
+            )
+            .unwrap();
+            column_separator_style = column.style.clone();
+        };
+
+    foreach_column_compute_width_and_draw((rect, columns), draw_column_header);
+}
+
+/// Traverse the table columns and compute some information for the drawing function.
+///
+/// For each column the available column width is calculated and passed to the drawing function.
+/// When there is not more room in the screen, break the drawing loop.
+fn foreach_column_compute_width_and_draw<F>(
+    (rect, columns): (&Rect, &Columns), mut draw_callback: F,
+) where
+    F: FnMut(&Column, &str, usize),
+{
+    let mut column_separator = "";
     let mut walked_column_width = 0;
-    let mut column_separator = StyledContent::new(ContentStyle::default(), "");
     for (col, column) in columns.visible.iter().enumerate() {
         let available_width = rect.width() as usize - walked_column_width;
         if available_width == 0 {
             break;
         }
-        let available_width = available_width - column_separator.content().len();
+        let available_width = available_width - column_separator.len();
         let available_column_width = if col == columns.visible.len() - 1 {
             // extend the last column to the remainder of screen space
             available_width
@@ -37,18 +68,9 @@ where
             // otherwise use the smaller value between required and available space
             std::cmp::min(column.width as usize, available_width)
         };
-        let actual_column_name = formatted_column_content(&column.name, available_column_width);
-        queue!(
-            stdout,
-            style::PrintStyledContent(column_separator.clone()),
-            style::PrintStyledContent(StyledContent::new(
-                column.style.clone(),
-                &actual_column_name,
-            ))
-        )
-        .unwrap();
-        walked_column_width += available_column_width + column_separator.content().len();
-        column_separator = StyledContent::new(column.style.clone(), "|"); // must be one character!
+        draw_callback(column, &column_separator, available_column_width);
+        walked_column_width += available_column_width + column_separator.len();
+        column_separator = "|"; // must be one character!
     }
 }
 
