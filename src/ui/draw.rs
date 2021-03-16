@@ -1,3 +1,4 @@
+use crate::ui::layout::HorizontalAlignment;
 use crate::ui::r#box::Rect;
 use crate::ui::table::{Column, Columns, Table};
 use crossterm::style::{Attribute, ContentStyle, StyledContent};
@@ -33,7 +34,8 @@ where
     let mut column_separator_style = ContentStyle::default();
     let draw_column_header =
         &mut |column: &Column, column_separator: &str, available_column_width: usize| {
-            let actual_column_name = formatted_column_content(&column.name, available_column_width);
+            let actual_column_name =
+                formatted_column_content(&column.name, &column.alignment, available_column_width);
             queue!(
                 stdout,
                 style::PrintStyledContent(StyledContent::new(
@@ -65,15 +67,16 @@ where
             &mut |column: &Column, column_separator: &str, available_column_width: usize| {
                 let empty = "".to_string();
                 let content = row.get(&column.index).unwrap_or(&empty);
-                let actual_content = formatted_column_content(content, available_column_width);
+                let actual_content =
+                    formatted_column_content(content, &column.alignment, available_column_width);
                 queue!(
                     stdout,
                     style::PrintStyledContent(StyledContent::new(
-                        ContentStyle::new().attribute(Attribute::Underlined),
+                        ContentStyle::new(),
                         &column_separator,
                     )),
                     style::PrintStyledContent(StyledContent::new(
-                        ContentStyle::new().attribute(Attribute::Underlined),
+                        ContentStyle::new(),
                         &actual_content,
                     ))
                 )
@@ -120,23 +123,28 @@ fn foreach_column_compute_width_and_draw<F>(
 /// content: "abc", available_column_width: 5, output: "abc  "
 /// content: "abc", available_column_width: 3, output: "abc"
 /// content: "abcde", available_column_width: 3, output: "ab…"
-fn formatted_column_content(content: &String, available_column_width: usize) -> String {
+fn formatted_column_content(
+    content: &String, alignment: &HorizontalAlignment, available_column_width: usize,
+) -> String {
     if available_column_width == 0 {
-        String::default()
+        Default::default()
     } else if content.len() > available_column_width {
         // Cut the string and append a etc. symbol to the end
-        let mut new = content.split_at(available_column_width - 1).0.to_owned();
-        new.push('…');
-        new
-    } else if content.len() < available_column_width {
-        // Fill blank with space character
-        let fill = " ".repeat(available_column_width - content.len());
-        let mut new = content.to_owned();
-        new.push_str(&fill);
-        new
+        let (content_split, _) = content.split_at(available_column_width - 1);
+        let content = format!("{}…", content_split);
+        format_aligned(&content, alignment, available_column_width - 1)
     } else {
-        // Exact size string
-        content.to_owned()
+        // Fill blank with space character
+        format_aligned(content, alignment, available_column_width)
+    }
+}
+
+/// Format content with desired horizontal alignment.
+fn format_aligned(content: &String, alignment: &HorizontalAlignment, width: usize) -> String {
+    match alignment {
+        HorizontalAlignment::Left => format!("{: <1$}", content, width),
+        HorizontalAlignment::Center => format!("{: ^1$}", content, width),
+        HorizontalAlignment::Right => format!("{: >1$}", content, width),
     }
 }
 

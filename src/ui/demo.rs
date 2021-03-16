@@ -78,12 +78,12 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Number as ColumnIndex,
                 name: "number".to_string(),
-                width: 8,
+                width: 6,
                 style: ContentStyle::new()
                     .foreground(Color::Yellow)
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
-                alignment: HorizontalAlignment::Left,
+                alignment: HorizontalAlignment::Right,
             },
             Column {
                 index: ChangeColumn::Owner as ColumnIndex,
@@ -143,7 +143,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .foreground(Color::Green)
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
-                alignment: HorizontalAlignment::Left,
+                alignment: HorizontalAlignment::Center,
             },
             Column {
                 index: ChangeColumn::Subject as ColumnIndex,
