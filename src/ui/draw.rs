@@ -10,17 +10,18 @@ pub fn draw_table<W>(stdout: &mut W, (rect, table, columns): (&Rect, &Table, &Co
 where
     W: std::io::Write,
 {
+    let mut rect = rect.clone();
+
     queue!(stdout, cursor::MoveTo(rect.x.0, rect.y.0)).unwrap();
 
     if columns.print_header {
-        draw_table_headers(stdout, (rect, columns));
+        draw_table_headers(stdout, (&rect, columns));
+        queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
+        rect.y.0 += 1;
     }
 
-    if rect.height() > 1 {
-        queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
-        let mut rows_rect = rect.clone();
-        rows_rect.y.0 += 1;
-        draw_table_rows(stdout, (&rows_rect, table, columns));
+    if rect.valid() {
+        draw_table_rows(stdout, (&rect, table, columns));
     }
 }
 

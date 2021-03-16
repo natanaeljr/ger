@@ -109,7 +109,7 @@ impl Rect {
 
     /// Check if Self is a valid Rect.
     pub fn valid(&self) -> bool {
-        self.x.0 < self.x.1 && self.y.0 < self.y.1
+        self.x.0 <= self.x.1 && self.y.0 <= self.y.1
     }
 }
 

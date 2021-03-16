@@ -41,8 +41,27 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
         ChangeColumn::Subject as ColumnIndex,
         String::from("Add diagnostics feature to some platforms"),
     );
+    let mut row3 = Row::new();
+    row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("18d3290"));
+    row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104525"));
+    row3.insert(
+        ChangeColumn::Owner as ColumnIndex,
+        String::from("Joao Begin"),
+    );
+    row3.insert(ChangeColumn::Time as ColumnIndex, String::from("07:16 PM"));
+    row3.insert(
+        ChangeColumn::Project as ColumnIndex,
+        String::from("feature-center"),
+    );
+    row3.insert(ChangeColumn::Branch as ColumnIndex, String::from("future"));
+    row3.insert(ChangeColumn::Topic as ColumnIndex, String::from("dial"));
+    row3.insert(ChangeColumn::Status as ColumnIndex, String::from("NEW"));
+    row3.insert(
+        ChangeColumn::Subject as ColumnIndex,
+        String::from("Add diagnostics feature to some platforms"),
+    );
     let table = Table {
-        rows: vec![row, row2],
+        rows: vec![row, row2, row3],
     };
     let columns = Columns {
         print_header: true,
