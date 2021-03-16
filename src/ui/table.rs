@@ -16,7 +16,7 @@ pub type Row = HashMap<ColumnIndex, String>;
 /// A Table is a widget component for displaying data as a spreadsheet.
 #[derive(Debug, Clone)]
 pub struct Table {
-    pub data: Vec<Row>,
+    pub rows: Vec<Row>,
 }
 
 /// Columns is a component related to the Table component.
@@ -26,6 +26,7 @@ pub struct Columns {
     pub print_header: bool,
     pub visible: Vec<Column>,
     pub hidden: Vec<Column>,
+    pub separator: char,
 }
 
 /// A Column's information.

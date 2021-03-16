@@ -1,12 +1,12 @@
 use crate::ui::r#box::Rect;
 use crate::ui::table::{Column, Columns, Table};
-use crossterm::style::{ContentStyle, StyledContent};
+use crossterm::style::{Attribute, ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
 /// Draw a Table widget within the Rect space.
 ///
 /// Includes drawing the Column headers, and line numbers.
-pub fn draw_table<W>(stdout: &mut W, (rect, _table, columns): (&Rect, &Table, &Columns))
+pub fn draw_table<W>(stdout: &mut W, (rect, table, columns): (&Rect, &Table, &Columns))
 where
     W: std::io::Write,
 {
@@ -14,6 +14,13 @@ where
 
     if columns.print_header {
         draw_table_headers(stdout, (rect, columns));
+    }
+
+    if rect.height() > 1 {
+        queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
+        let mut rows_rect = rect.clone();
+        rows_rect.y.0 += 1;
+        draw_table_rows(stdout, (&rows_rect, table, columns));
     }
 }
 
@@ -24,7 +31,7 @@ where
 {
     let mut column_separator_style = ContentStyle::default();
     let draw_column_header =
-        move |column: &Column, column_separator: &str, available_column_width: usize| {
+        &mut |column: &Column, column_separator: &str, available_column_width: usize| {
             let actual_column_name = formatted_column_content(&column.name, available_column_width);
             queue!(
                 stdout,
@@ -44,6 +51,37 @@ where
     foreach_column_compute_width_and_draw((rect, columns), draw_column_header);
 }
 
+/// Draw the Table rows while there is vertical space in Rect.
+fn draw_table_rows<W>(stdout: &mut W, (rect, table, columns): (&Rect, &Table, &Columns))
+where
+    W: std::io::Write,
+{
+    for (idx, row) in table.rows.iter().enumerate() {
+        if idx == rect.height() as usize {
+            break;
+        }
+        let draw_cell_content =
+            &mut |column: &Column, column_separator: &str, available_column_width: usize| {
+                let empty = "".to_string();
+                let content = row.get(&column.index).unwrap_or(&empty);
+                let actual_content = formatted_column_content(content, available_column_width);
+                queue!(
+                    stdout,
+                    style::PrintStyledContent(StyledContent::new(
+                        ContentStyle::new().attribute(Attribute::Underlined),
+                        &column_separator,
+                    )),
+                    style::PrintStyledContent(StyledContent::new(
+                        ContentStyle::new().attribute(Attribute::Underlined),
+                        &actual_content,
+                    ))
+                )
+                .unwrap()
+            };
+        foreach_column_compute_width_and_draw((rect, columns), draw_cell_content);
+    }
+}
+
 /// Traverse the table columns and compute some information for the drawing function.
 ///
 /// For each column the available column width is calculated and passed to the drawing function.
@@ -53,7 +91,7 @@ fn foreach_column_compute_width_and_draw<F>(
 ) where
     F: FnMut(&Column, &str, usize),
 {
-    let mut column_separator = "";
+    let mut column_separator = "".to_string();
     let mut walked_column_width = 0;
     for (col, column) in columns.visible.iter().enumerate() {
         let available_width = rect.width() as usize - walked_column_width;
@@ -70,7 +108,7 @@ fn foreach_column_compute_width_and_draw<F>(
         };
         draw_callback(column, &column_separator, available_column_width);
         walked_column_width += available_column_width + column_separator.len();
-        column_separator = "|"; // must be one character!
+        column_separator = columns.separator.to_string();
     }
 }
 
@@ -116,7 +154,7 @@ mod test {
         row.insert(ChangeColumn::Commit as ColumnIndex, String::from("8f524ac"));
         row.insert(ChangeColumn::Number as ColumnIndex, String::from("104508"));
         row.insert(ChangeColumn::Owner as ColumnIndex, String::from("Auto QA"));
-        let table = Table { data: vec![row] };
+        let table = Table { rows: vec![row] };
         let columns = Columns {
             print_header: true,
             visible: vec![
@@ -136,6 +174,7 @@ mod test {
                 },
             ],
             hidden: vec![],
+            separator: '|',
         };
         (table, columns)
     }

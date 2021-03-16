@@ -22,7 +22,28 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
         ChangeColumn::Subject as ColumnIndex,
         String::from("Remove Conditional verification info"),
     );
-    let table = Table { data: vec![row] };
+    let mut row2 = Row::new();
+    row2.insert(ChangeColumn::Commit as ColumnIndex, String::from("18d3290"));
+    row2.insert(ChangeColumn::Number as ColumnIndex, String::from("104525"));
+    row2.insert(
+        ChangeColumn::Owner as ColumnIndex,
+        String::from("Joao Begin"),
+    );
+    row2.insert(ChangeColumn::Time as ColumnIndex, String::from("07:16 PM"));
+    row2.insert(
+        ChangeColumn::Project as ColumnIndex,
+        String::from("feature-center"),
+    );
+    row2.insert(ChangeColumn::Branch as ColumnIndex, String::from("future"));
+    row2.insert(ChangeColumn::Topic as ColumnIndex, String::from("dial"));
+    row2.insert(ChangeColumn::Status as ColumnIndex, String::from("NEW"));
+    row2.insert(
+        ChangeColumn::Subject as ColumnIndex,
+        String::from("Add diagnostics feature to some platforms"),
+    );
+    let table = Table {
+        rows: vec![row, row2],
+    };
     let columns = Columns {
         print_header: true,
         visible: vec![
@@ -117,6 +138,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             },
         ],
         hidden: vec![],
+        separator: ' ',
     };
     let show_numbers = ShowNumbers::Normal;
     let rect = Rect::from_size((0, 0), (width, height));
