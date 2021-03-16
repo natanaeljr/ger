@@ -33,7 +33,7 @@ pub struct Columns {
 pub struct Column {
     pub index: ColumnIndex,
     pub name: String,
-    pub len: TermUSize,
+    pub width: TermUSize,
     pub style: ContentStyle,
     pub alignment: HorizontalAlignment,
 }

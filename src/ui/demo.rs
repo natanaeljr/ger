@@ -29,7 +29,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Commit as ColumnIndex,
                 name: "commit".to_string(),
-                len: 8,
+                width: 8,
                 style: ContentStyle::new()
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
@@ -38,7 +38,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Number as ColumnIndex,
                 name: "number".to_string(),
-                len: 8,
+                width: 8,
                 style: ContentStyle::new()
                     .foreground(Color::Yellow)
                     .attribute(Attribute::Bold)
@@ -48,7 +48,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Owner as ColumnIndex,
                 name: "owner".to_string(),
-                len: 17,
+                width: 17,
                 style: ContentStyle::new()
                     .foreground(Color::DarkGrey)
                     .attribute(Attribute::Bold)
@@ -58,7 +58,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Time as ColumnIndex,
                 name: "time".to_string(),
-                len: 10,
+                width: 10,
                 style: ContentStyle::new()
                     .foreground(Color::Magenta)
                     .attribute(Attribute::Bold)
@@ -68,7 +68,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Project as ColumnIndex,
                 name: "project".to_string(),
-                len: 30,
+                width: 30,
                 style: ContentStyle::new()
                     .foreground(Color::Cyan)
                     .attribute(Attribute::Bold)
@@ -78,7 +78,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Branch as ColumnIndex,
                 name: "branch".to_string(),
-                len: 20,
+                width: 20,
                 style: ContentStyle::new()
                     .foreground(Color::DarkCyan)
                     .attribute(Attribute::Bold)
@@ -88,7 +88,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Topic as ColumnIndex,
                 name: "topic".to_string(),
-                len: 20,
+                width: 20,
                 style: ContentStyle::new()
                     .foreground(Color::DarkCyan)
                     .attribute(Attribute::Bold)
@@ -98,7 +98,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Status as ColumnIndex,
                 name: "status".to_string(),
-                len: 10,
+                width: 10,
                 style: ContentStyle::new()
                     .foreground(Color::Green)
                     .attribute(Attribute::Bold)
@@ -108,7 +108,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Subject as ColumnIndex,
                 name: "subject".to_string(),
-                len: 50,
+                width: 50,
                 style: ContentStyle::new()
                     .attribute(Attribute::Dim)
                     .attribute(Attribute::Bold)
