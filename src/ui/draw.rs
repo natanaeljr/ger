@@ -500,4 +500,94 @@ mod test {
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
+
+    #[test]
+    /// Expect the last column is right aligned to the end of the screen space
+    fn right_alignment_last_column() {
+        let expected = vec![
+            "commit  |     number",
+            "8f524ac |     104508",
+            "18d3290 |     104525",
+            "",
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[1].alignment = HorizontalAlignment::Right;
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect the last column is center aligned considering the remaining screen space
+    fn center_alignment_last_column() {
+        let expected = vec![
+            "commit  |  number   ",
+            "8f524ac |  104508   ",
+            "18d3290 |  104525   ",
+            "",
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[1].alignment = HorizontalAlignment::Center;
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect the table entries are right-aligned and large entries are cut out with etc. symbol
+    fn right_alignment_mixed_width_entries() {
+        let expected = vec![
+            "commit  |    owner|number",
+            "8f524ac |  Auto QA|104508",
+            "18d3290 |Joao Beg…|104525",
+            "",
+        ];
+        let rect = Rect::from_size((0, 0), (25, 3));
+        let (table, mut columns) = table_components();
+        columns.visible.insert(
+            1,
+            Column {
+                index: ChangeColumn::Owner as ColumnIndex,
+                name: "owner".to_string(),
+                width: 9,
+                style: ContentStyle::new(),
+                alignment: HorizontalAlignment::Right,
+            },
+        );
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect the table entries are center-aligned and large entries are cut out with etc. symbol
+    fn center_alignment_mixed_width_entries() {
+        let expected = vec![
+            "commit  |  owner  |number",
+            "8f524ac | Auto QA |104508",
+            "18d3290 |Joao Beg…|104525",
+            "",
+        ];
+        let rect = Rect::from_size((0, 0), (25, 3));
+        let (table, mut columns) = table_components();
+        columns.visible.insert(
+            1,
+            Column {
+                index: ChangeColumn::Owner as ColumnIndex,
+                name: "owner".to_string(),
+                width: 9,
+                style: ContentStyle::new(),
+                alignment: HorizontalAlignment::Center,
+            },
+        );
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
 }
