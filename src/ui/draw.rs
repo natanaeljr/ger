@@ -1,7 +1,7 @@
 use crate::ui::layout::HorizontalAlignment;
 use crate::ui::r#box::Rect;
 use crate::ui::table::{Column, Columns, Table};
-use crossterm::style::{Attribute, ContentStyle, StyledContent};
+use crossterm::style::{ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
 /// Draw a Table widget within the Rect space.
@@ -31,7 +31,6 @@ fn draw_table_headers<W>(stdout: &mut W, (rect, columns): (&Rect, &Columns))
 where
     W: std::io::Write,
 {
-    let mut column_separator_style = ContentStyle::default();
     let draw_column_header =
         &mut |column: &Column, column_separator: &str, available_column_width: usize| {
             let actual_column_name =
@@ -39,7 +38,7 @@ where
             queue!(
                 stdout,
                 style::PrintStyledContent(StyledContent::new(
-                    column_separator_style.clone(),
+                    ContentStyle::default(),
                     &column_separator,
                 )),
                 style::PrintStyledContent(StyledContent::new(
@@ -48,7 +47,6 @@ where
                 ))
             )
             .unwrap();
-            column_separator_style = column.style.clone();
         };
 
     foreach_column_compute_width_and_draw((rect, columns), draw_column_header);

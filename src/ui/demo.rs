@@ -69,7 +69,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             Column {
                 index: ChangeColumn::Commit as ColumnIndex,
                 name: "commit".to_string(),
-                width: 8,
+                width: 7,
                 style: ContentStyle::new()
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
@@ -157,7 +157,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             },
         ],
         hidden: vec![],
-        separator: ' ',
+        separator: '|',
     };
     let show_numbers = ShowNumbers::Normal;
     let rect = Rect::from_size((0, 0), (width, height));
