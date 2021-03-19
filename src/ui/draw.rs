@@ -1,14 +1,22 @@
 use crate::ui::layout::HorizontalAlignment;
 use crate::ui::r#box::Rect;
-use crate::ui::table::{Column, Columns, Table};
-use crossterm::style::{ContentStyle, StyledContent};
+use crate::ui::table::{Column, Columns, Selection, Table, VerticalScroll};
+use crossterm::style::{Attribute, ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
 /// Draw a Table widget within the Rect space.
 ///
 /// Includes drawing the Column headers, and line numbers.
-pub fn draw_table<W>(stdout: &mut W, (rect, table, columns): (&Rect, &Table, &Columns))
-where
+pub fn draw_table<W>(
+    stdout: &mut W,
+    (rect, table, columns, vscroll, selection): (
+        &Rect,
+        &Table,
+        &Columns,
+        Option<&VerticalScroll>,
+        Option<&Selection>,
+    ),
+) where
     W: std::io::Write,
 {
     let mut rect = rect.clone();
@@ -22,7 +30,7 @@ where
     }
 
     if rect.valid() {
-        draw_table_rows(stdout, (&rect, table, columns));
+        draw_table_rows(stdout, (&rect, table, columns, vscroll, selection));
     }
 }
 
@@ -53,32 +61,47 @@ where
 }
 
 /// Draw the Table rows while there is vertical space in Rect.
-fn draw_table_rows<W>(stdout: &mut W, (rect, table, columns): (&Rect, &Table, &Columns))
-where
+fn draw_table_rows<W>(
+    stdout: &mut W,
+    (rect, table, columns, vscroll, selection): (
+        &Rect,
+        &Table,
+        &Columns,
+        Option<&VerticalScroll>,
+        Option<&Selection>,
+    ),
+) where
     W: std::io::Write,
 {
-    for (idx, row) in table.rows.iter().enumerate() {
-        if idx == rect.height() as usize {
-            break;
-        }
+    let begin_idx = vscroll.and_then(|v| Some(v.top_row)).unwrap_or(0);
+    let end_idx = std::cmp::min(table.rows.len(), rect.height() as usize);
+    for (idx, row) in table.rows[begin_idx..end_idx].iter().enumerate() {
         let draw_cell_content =
             &mut |column: &Column, column_separator: &str, available_column_width: usize| {
                 let empty = "".to_string();
                 let content = row.get(&column.index).unwrap_or(&empty);
                 let actual_content =
                     formatted_column_content(content, &column.alignment, available_column_width);
+                let row_style = selection
+                    .and_then(|selected| {
+                        if selected.row_index == idx {
+                            return Some(ContentStyle::new().attribute(Attribute::Reverse));
+                        }
+                        None
+                    })
+                    .unwrap_or(ContentStyle::default());
                 queue!(
                     stdout,
                     style::PrintStyledContent(StyledContent::new(
-                        ContentStyle::new(),
+                        row_style.clone(),
                         &column_separator,
                     )),
                     style::PrintStyledContent(StyledContent::new(
-                        ContentStyle::new(),
+                        row_style.clone(),
                         &actual_content,
                     ))
                 )
-                .unwrap()
+                .unwrap();
             };
         foreach_column_compute_width_and_draw((rect, columns), draw_cell_content);
         queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
@@ -227,7 +250,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (20, 3));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -242,7 +265,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (15, 1));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -258,7 +281,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (8, 2));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -275,7 +298,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (1, 3));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -292,7 +315,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (10, 3));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -307,7 +330,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (14, 1));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -324,7 +347,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.print_header = false;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -337,7 +360,7 @@ mod test {
         let (table, _) = table_components();
         let columns = Columns::default();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -364,7 +387,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -391,7 +414,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -416,7 +439,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -434,7 +457,7 @@ mod test {
             rows: Vec::default(),
         };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -450,7 +473,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (20, 2));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -467,7 +490,7 @@ mod test {
         let rect = Rect::from_size((0, 0), (20, 5)); // note the height 5 !
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -494,7 +517,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -512,7 +535,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible[1].alignment = HorizontalAlignment::Right;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -530,7 +553,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible[1].alignment = HorizontalAlignment::Center;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -557,7 +580,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -584,7 +607,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns));
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }

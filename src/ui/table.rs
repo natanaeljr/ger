@@ -14,7 +14,7 @@ pub type ColumnIndex = u8;
 pub type Row = HashMap<ColumnIndex, String>;
 
 /// A Table is a widget component for displaying data as a spreadsheet.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Table {
     pub rows: Vec<Row>,
 }
@@ -30,11 +30,24 @@ pub struct Columns {
 }
 
 /// A Column's information.
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Column {
     pub index: ColumnIndex,
     pub name: String,
     pub width: TermUSize,
     pub style: ContentStyle,
     pub alignment: HorizontalAlignment,
+}
+
+/// VerticalScroll is a component that controls the visible rows of lists and tables.
+/// The top_row indicates which row index is the first printed on the screen.
+#[derive(Default, Debug, Clone)]
+pub struct VerticalScroll {
+    pub top_row: usize,
+}
+
+/// Selection is a component that indicates which row in a list/table is selected.
+#[derive(Default, Debug, Clone)]
+pub struct Selection {
+    pub row_index: usize,
 }

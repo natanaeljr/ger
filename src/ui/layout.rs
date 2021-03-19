@@ -12,6 +12,12 @@ pub enum HorizontalAlignment {
     Right,
 }
 
+impl Default for HorizontalAlignment {
+    fn default() -> Self {
+        Self::Left
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Margin {
     top: u16,

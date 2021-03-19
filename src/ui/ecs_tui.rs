@@ -1,5 +1,5 @@
 use crate::ui::r#box::Rect;
-use crate::ui::table::{Columns, Table};
+use crate::ui::table::{Columns, Selection, Table, VerticalScroll};
 use crate::ui::term::{TermProps, TermUSize};
 use crossterm::event::KeyModifiers;
 use crossterm::{
@@ -90,9 +90,15 @@ impl EcsTui {
             return;
         }
         // Draw Tables
-        let mut query = <(&Rect, &Table, &Columns)>::query();
-        for (rect, table, columns) in query.iter(&self.registry) {
-            super::draw::draw_table(stdout, (rect, table, columns));
+        let mut query = <(
+            &Rect,
+            &Table,
+            &Columns,
+            Option<&VerticalScroll>,
+            Option<&Selection>,
+        )>::query();
+        for (rect, table, columns, vscroll, selected) in query.iter(&self.registry) {
+            super::draw::draw_table(stdout, (rect, table, columns, vscroll, selected));
         }
     }
 

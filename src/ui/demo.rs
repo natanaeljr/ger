@@ -1,7 +1,7 @@
 use crate::ui::change::ChangeColumn;
 use crate::ui::layout::{HorizontalAlignment, ShowNumbers};
 use crate::ui::r#box::Rect;
-use crate::ui::table::{Column, ColumnIndex, Columns, Row, Table};
+use crate::ui::table::{Column, ColumnIndex, Columns, Row, Selection, Table, VerticalScroll};
 use crate::ui::term::TermUSize;
 use crossterm::style::{Attribute, Color, ContentStyle};
 use legion::World;
@@ -159,8 +159,10 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
         hidden: vec![],
         separator: '|',
     };
+    let scroll = VerticalScroll { top_row: 0 };
+    let selection = Selection { row_index: 1 };
     let show_numbers = ShowNumbers::Normal;
     let rect = Rect::from_size((0, 0), (width, height));
-    let components = (rect, table, columns, show_numbers);
+    let components = (rect, table, columns, scroll, selection, show_numbers);
     let _entity = registry.push(components);
 }
