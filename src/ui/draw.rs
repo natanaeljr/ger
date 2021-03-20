@@ -1,6 +1,6 @@
 use crate::ui::layout::HorizontalAlignment;
 use crate::ui::r#box::Rect;
-use crate::ui::table::{Column, Columns, Selection, Table, VerticalScroll};
+use crate::ui::table::{Column, Columns, Row, Selection, Table, VerticalScroll};
 use crossterm::style::{Attribute, ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
@@ -73,38 +73,60 @@ fn draw_table_rows<W>(
 ) where
     W: std::io::Write,
 {
-    let begin_idx = vscroll.and_then(|v| Some(v.top_row)).unwrap_or(0);
-    let end_idx = std::cmp::min(table.rows.len(), rect.height() as usize);
-    for (idx, row) in table.rows[begin_idx..end_idx].iter().enumerate() {
-        let draw_cell_content =
-            &mut |column: &Column, column_separator: &str, available_column_width: usize| {
-                let empty = "".to_string();
-                let content = row.get(&column.index).unwrap_or(&empty);
-                let actual_content =
-                    formatted_column_content(content, &column.alignment, available_column_width);
-                let row_style = selection
-                    .and_then(|selected| {
-                        if selected.row_index == idx {
-                            return Some(ContentStyle::new().attribute(Attribute::Reverse));
-                        }
-                        None
-                    })
-                    .unwrap_or(ContentStyle::default());
-                queue!(
-                    stdout,
-                    style::PrintStyledContent(StyledContent::new(
-                        row_style.clone(),
-                        &column_separator,
-                    )),
-                    style::PrintStyledContent(StyledContent::new(
-                        row_style.clone(),
-                        &actual_content,
-                    ))
-                )
-                .unwrap();
-            };
+    let draw_row = |_iter_idx: usize, row_idx: usize, row: &Row| {
+        let draw_cell_content = |column: &Column,
+                                 column_separator: &str,
+                                 available_column_width: usize| {
+            let empty = "".to_string();
+            let content = row.get(&column.index).unwrap_or(&empty);
+            let actual_content =
+                formatted_column_content(content, &column.alignment, available_column_width);
+            let row_style = selection
+                .and_then(|selected| {
+                    if selected.row_index == row_idx {
+                        return Some(ContentStyle::new().attribute(Attribute::Reverse));
+                    }
+                    None
+                })
+                .unwrap_or(ContentStyle::default());
+            queue!(
+                stdout,
+                style::PrintStyledContent(
+                    StyledContent::new(row_style.clone(), &column_separator,)
+                ),
+                style::PrintStyledContent(StyledContent::new(row_style.clone(), &actual_content,))
+            )
+            .unwrap();
+        };
         foreach_column_compute_width_and_draw((rect, columns), draw_cell_content);
         queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
+    };
+
+    foreach_visible_row_compute_and_draw((rect, table, vscroll), draw_row);
+}
+
+/// Traverse the table rows that are visible to the drawing space and callback the drawing function.
+///
+/// This range considers the number of rows, the vertical scroll and the screen height.
+/// Which one is the lowest determines the last row to be drawn.
+///
+/// draw_callback: FnMut(iter_idx, row_idx, row)
+///     iter_idx: iteration index start on zero for the first callback call and increments progressively.
+///     row_idx: row index in the table row vector, starts from the vertical scroll index value.
+///     row: row object
+fn foreach_visible_row_compute_and_draw<F>(
+    (rect, table, vscroll): (&Rect, &Table, Option<&VerticalScroll>), mut draw_callback: F,
+) where
+    F: FnMut(usize, usize, &Row),
+{
+    let begin_idx = vscroll.and_then(|v| Some(v.top_row)).unwrap_or(0);
+    let after_vscroll_rows_count = table.rows.len() - begin_idx;
+    let visible_rows_count = std::cmp::min(after_vscroll_rows_count, rect.height() as usize);
+    let end_idx = begin_idx + visible_rows_count; // index non inclusive
+
+    for (iter_idx, row) in table.rows[begin_idx..end_idx].iter().enumerate() {
+        let row_idx = begin_idx + iter_idx;
+        draw_callback(iter_idx, row_idx, row);
     }
 }
 
@@ -112,6 +134,8 @@ fn draw_table_rows<W>(
 ///
 /// For each column the available column width is calculated and passed to the drawing function.
 /// When there is not more room in the screen, break the drawing loop.
+///
+/// draw_callback: FnMut(column, column_separator, available_column_width)
 fn foreach_column_compute_width_and_draw<F>(
     (rect, columns): (&Rect, &Columns), mut draw_callback: F,
 ) where
@@ -229,13 +253,42 @@ mod test {
     fn strip_ansi_escapes(output: Vec<u8>) -> Vec<String> {
         let output = String::from_utf8(output).unwrap();
         let output = output
-            .split("\u{1b}[1E") // ansi new-line
+            .split("\u{1b}[1E" /* ansi new-line */)
             .map(|row| {
                 let bytes = strip_ansi_escapes::strip(row.as_bytes()).unwrap();
                 String::from_utf8(bytes).unwrap()
             })
             .collect_vec();
         output
+    }
+
+    fn get_reversed_rows(output: Vec<u8>) -> Vec<String> {
+        let mut selections = Vec::new();
+        let output = String::from_utf8(output).unwrap();
+        let output = output.split("\u{1b}[1E" /* ansi new-line */);
+        for row in output {
+            let mut selection = String::new();
+            let mut row = row.to_owned();
+            while !row.is_empty() {
+                let selected = row.find("\u{1b}[7m" /* ansi reverse */).and_then(|begin| {
+                    row.find("\u{1b}[0m" /* ansi normal */).and_then(|end| {
+                        let (_, remainder) = row.split_at(end + 4);
+                        let some = Some(row[begin + 4..end].to_string());
+                        row = remainder.to_string();
+                        some
+                    })
+                });
+                if let Some(selected) = selected {
+                    selection += &selected;
+                } else {
+                    row = "".to_string();
+                }
+            }
+            if !selection.is_empty() {
+                selections.push(selection)
+            }
+        }
+        selections
     }
 
     #[test]
@@ -610,5 +663,354 @@ mod test {
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect the table is drawn with the first row selected
+    fn select_first_row() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "8f524ac |104508     ", //
+            "18d3290 |104525     ", //
+            "",                     //
+        ];
+        let expected_selection = vec![
+            "8f524ac |104508     ", //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (table, columns) = table_components();
+        let selection = Selection { row_index: 0 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, None, Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect the table is drawn with the second row selected
+    fn select_second_row() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "8f524ac |104508     ", //
+            "18d3290 |104525     ", //
+            "46a003e |104455     ", //
+            "",                     //
+        ];
+        let expected_selection = vec![
+            "18d3290 |104525     ", //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let selection = Selection { row_index: 1 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, None, Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect the table is drawn with the last row selected
+    fn select_last_row() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "8f524ac |104508     ", //
+            "18d3290 |104525     ", //
+            "46a003e |104455     ", //
+            "",                     //
+        ];
+        let expected_selection = vec![
+            "46a003e |104455     ", //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let selection = Selection { row_index: 2 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, None, Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect the scroll with 0 units cause the table to be drawn starting from the first row
+    fn scroll_zero() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "8f524ac |104508     ", //
+            "18d3290 |104525     ", //
+            "46a003e |104455     ", //
+            "",                     //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 0 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect the scroll with one units cause the table to be drawn starting from row 1
+    fn scroll_one_row() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "18d3290 |104525     ", //
+            "46a003e |104455     ", //
+            "",                     //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 1 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect the scroll with two units cause the table to be drawn starting from row 2
+    fn scroll_two_row() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "46a003e |104455     ", //
+            "",                     //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 2 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect the scroll with all rows cause the table to not be drawn
+    fn scroll_all_rows() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "",                     //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 4));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 3 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect the table is drawn with the second row selected
+    fn selection_plus_scroll() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "18d3290 |104525     ", //
+            "46a003e |104455     ", //
+            "",                     //
+        ];
+        let expected_selection = vec![
+            "18d3290 |104525     ", //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 3));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 1 };
+        let selection = Selection { row_index: 1 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect the table is drawn with the second row selected, columns headers are not printed
+    fn selection_plus_scroll_minus_print_headers() {
+        let expected_output = vec![
+            "18d3290 |104525     ", //
+            "46a003e |104455     ", //
+            "",                     //
+        ];
+        let expected_selection = vec![
+            "18d3290 |104525     ", //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 3));
+        let (mut table, mut columns) = table_components();
+        columns.print_header = false;
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 1 };
+        let selection = Selection { row_index: 1 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect the table is drawn respecting scroll index and screen height and selection
+    fn scroll_plus_small_height() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "18d3290 |104525     ", // second row
+            "",                     //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 2));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 1 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect the table is drawn respecting scroll index and screen height and selection and do not print column headers
+    fn scroll_plus_small_height_minus_print_columns() {
+        let expected_output = vec![
+            "18d3290 |104525     ", // second row
+            "",                     //
+        ];
+        let rect = Rect::from_size((0, 0), (20, 1));
+        let (mut table, mut columns) = table_components();
+        columns.print_header = false;
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let vscroll = VerticalScroll { top_row: 1 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect the table is drawn with the second row selected
+    fn selection_outside_screen_space() {
+        let expected_output = vec![
+            "commit  |number     ", //
+            "8f524ac |104508     ", //
+            "",                     //
+        ];
+        let expected_selection: Vec<&str> = vec![]; //empty cause there is no visible selection
+        let rect = Rect::from_size((0, 0), (20, 2));
+        let (mut table, columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        let selection = Selection { row_index: 2 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, None, Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
     }
 }
