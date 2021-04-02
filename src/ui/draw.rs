@@ -256,8 +256,11 @@ mod test {
     use super::*;
     use crate::ui::change::ChangeColumn;
     use crate::ui::layout::HorizontalAlignment;
-    use crate::ui::table::{Column, ColumnIndex, ColumnValue, Row};
+    use crate::ui::table::{
+        resolve_line_number_column_width, Column, ColumnIndex, ColumnValue, Row,
+    };
     use itertools::Itertools;
+    use crossterm::style::Attribute;
 
     /// Get common set of table components used in the Tests
     fn table_components() -> (Table, Columns) {
@@ -279,6 +282,18 @@ mod test {
         let columns = Columns {
             print_header: true,
             visible: vec![
+                Column {
+                    name: "".to_string(),
+                    width: resolve_line_number_column_width(table.rows.len()),
+                    style: ContentStyle::new(),
+                    alignment: HorizontalAlignment::Right,
+                    value: ColumnValue::BuiltIn {
+                        builtin: ColumnBuiltIn::LineNumber {
+                            mode: LineNumberMode::Normal,
+                            style: ContentStyle::new(),
+                        },
+                    },
+                },
                 Column {
                     name: "commit".to_string(),
                     width: 8,
@@ -349,12 +364,12 @@ mod test {
     /// Expect all columns are visible and last one has extended space to the screen end
     fn multiple_columns_high_width() {
         let expected = vec![
-            "commit  |number     ",
-            "8f524ac |104508     ",
-            "18d3290 |104525     ",
+            "  |commit  |number     ",
+            " 1|8f524ac |104508     ",
+            " 2|18d3290 |104525     ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (20, 3));
+        let rect = Rect::from_size((0, 0), (23, 3));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
@@ -366,10 +381,10 @@ mod test {
     /// Expect the all columns are shown in a exact match space for column names
     fn multiple_columns_exact_name_space() {
         let expected = vec![
-            "commit  |number", //
-            "",                //
+            "  |commit  |number", //
+            "",                   //
         ];
-        let rect = Rect::from_size((0, 0), (15, 1));
+        let rect = Rect::from_size((0, 0), (18, 1));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
@@ -386,7 +401,8 @@ mod test {
             "",         //
         ];
         let rect = Rect::from_size((0, 0), (8, 2));
-        let (table, columns) = table_components();
+        let (table, mut columns) = table_components();
+        columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
@@ -403,7 +419,8 @@ mod test {
             "",    //
         ];
         let rect = Rect::from_size((0, 0), (1, 3));
-        let (table, columns) = table_components();
+        let (table, mut columns) = table_components();
+        columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
@@ -420,7 +437,8 @@ mod test {
             "",             //
         ];
         let rect = Rect::from_size((0, 0), (10, 3));
-        let (table, columns) = table_components();
+        let (table, mut columns) = table_components();
+        columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
@@ -435,7 +453,8 @@ mod test {
             "",                 //
         ];
         let rect = Rect::from_size((0, 0), (14, 1));
-        let (table, columns) = table_components();
+        let (table, mut columns) = table_components();
+        columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
@@ -446,11 +465,11 @@ mod test {
     /// Expect columns are not printed when this flag is disabled
     fn print_headers_disabled() {
         let expected = vec![
-            "8f524ac |1045…",
-            "18d3290 |1045…",
+            " 1|8f524ac |1045…",
+            " 2|18d3290 |1045…",
             "", //
         ];
-        let rect = Rect::from_size((0, 0), (14, 2));
+        let rect = Rect::from_size((0, 0), (17, 2));
         let (table, mut columns) = table_components();
         columns.print_header = false;
         let mut output: Vec<u8> = Vec::new();
@@ -476,15 +495,15 @@ mod test {
     /// Expect column with no name to have its length still filled up with spaces
     fn column_no_name_fill_space() {
         let expected = vec![
-            "commit  |     |number    ",
-            "8f524ac |     |104508    ",
-            "18d3290 |     |104525    ",
+            "  |commit  |     |number    ",
+            " 1|8f524ac |     |104508    ",
+            " 2|18d3290 |     |104525    ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (25, 3));
+        let rect = Rect::from_size((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
-            1,
+            2,
             Column {
                 name: "".to_string(),
                 width: 5,
@@ -505,15 +524,15 @@ mod test {
     /// Expect column with smaller length then its name to have the columns and its name constrained
     fn column_smaller_length_than_name() {
         let expected = vec![
-            "commit  |ow…|number      ",
-            "8f524ac |Au…|104508      ",
-            "18d3290 |Jo…|104525      ",
+            "  |commit  |ow…|number      ",
+            " 1|8f524ac |Au…|104508      ",
+            " 2|18d3290 |Jo…|104525      ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (25, 3));
+        let rect = Rect::from_size((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
-            1,
+            2,
             Column {
                 name: "owner".to_string(),
                 width: 3,
@@ -534,13 +553,13 @@ mod test {
     /// Expect full name when column length and name length match
     fn column_name_exact_length() {
         let expected = vec![
-            "commit  |branch|number   ", //
-            "",                          //
+            "  |commit  |branch|number   ", //
+            "",                             //
         ];
-        let rect = Rect::from_size((0, 0), (25, 1));
+        let rect = Rect::from_size((0, 0), (28, 1));
         let (table, mut columns) = table_components();
         columns.visible.insert(
-            1,
+            2,
             Column {
                 name: "branch".to_string(),
                 width: 6,
@@ -561,10 +580,10 @@ mod test {
     /// Expect no breakage when there is no table entries to print, despite visible columns
     fn no_table_entries_to_print() {
         let expected = vec![
-            "commit  |number     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 3));
+        let rect = Rect::from_size((0, 0), (23, 3));
         let (_, columns) = table_components();
         let table = Table {
             rows: Vec::default(),
@@ -579,11 +598,11 @@ mod test {
     /// Expect to print less table entries when space is smaller than table size
     fn more_table_entries_than_space() {
         let expected = vec![
-            "commit  |number     ", //
-            "8f524ac |104508     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 1|8f524ac |104508     ", //
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 2));
+        let rect = Rect::from_size((0, 0), (23, 2));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
@@ -595,12 +614,12 @@ mod test {
     /// Expect to print all table entries when space more space than table entries
     fn more_space_than_table_entries() {
         let expected = vec![
-            "commit  |number     ",
-            "8f524ac |104508     ",
-            "18d3290 |104525     ",
+            "  |commit  |number     ",
+            " 1|8f524ac |104508     ",
+            " 2|18d3290 |104525     ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (20, 5)); // note the height 5 !
+        let rect = Rect::from_size((0, 0), (23, 5)); // note the height 5 !
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
@@ -612,15 +631,15 @@ mod test {
     /// Expect space is printed for table entries that does not have a given column
     fn space_for_optional_column_in_table_entries() {
         let expected = vec![
-            "commit  |topic     |numb…",
-            "8f524ac |          |1045…",
-            "18d3290 |galaxy    |1045…",
+            "  |commit  |topic     |numb…",
+            " 1|8f524ac |          |1045…",
+            " 2|18d3290 |galaxy    |1045…",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (25, 3));
+        let rect = Rect::from_size((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
-            1,
+            2,
             Column {
                 name: "topic".to_string(),
                 width: 10,
@@ -641,14 +660,15 @@ mod test {
     /// Expect the last column is right aligned to the end of the screen space
     fn right_alignment_last_column() {
         let expected = vec![
-            "commit  |     number",
-            "8f524ac |     104508",
-            "18d3290 |     104525",
+            "  |commit  |     number",
+            " 1|8f524ac |     104508",
+            " 2|18d3290 |     104525",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (table, mut columns) = table_components();
-        columns.visible[1].alignment = HorizontalAlignment::Right;
+        let last_idx = columns.visible.len() - 1;
+        columns.visible[last_idx].alignment = HorizontalAlignment::Right;
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
@@ -659,14 +679,15 @@ mod test {
     /// Expect the last column is center aligned considering the remaining screen space
     fn center_alignment_last_column() {
         let expected = vec![
-            "commit  |  number   ",
-            "8f524ac |  104508   ",
-            "18d3290 |  104525   ",
+            "  |commit  |  number   ",
+            " 1|8f524ac |  104508   ",
+            " 2|18d3290 |  104525   ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (table, mut columns) = table_components();
-        columns.visible[1].alignment = HorizontalAlignment::Center;
+        let last_idx = columns.visible.len() - 1;
+        columns.visible[last_idx].alignment = HorizontalAlignment::Center;
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
@@ -677,15 +698,15 @@ mod test {
     /// Expect the table entries are right-aligned and large entries are cut out with etc. symbol
     fn right_alignment_mixed_width_entries() {
         let expected = vec![
-            "commit  |    owner|number",
-            "8f524ac |  Auto QA|104508",
-            "18d3290 |Joao Beg…|104525",
+            "  |commit  |    owner|number",
+            " 1|8f524ac |  Auto QA|104508",
+            " 2|18d3290 |Joao Beg…|104525",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (25, 3));
+        let rect = Rect::from_size((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
-            1,
+            2,
             Column {
                 name: "owner".to_string(),
                 width: 9,
@@ -706,15 +727,15 @@ mod test {
     /// Expect the table entries are center-aligned and large entries are cut out with etc. symbol
     fn center_alignment_mixed_width_entries() {
         let expected = vec![
-            "commit  |  owner  |number",
-            "8f524ac | Auto QA |104508",
-            "18d3290 |Joao Beg…|104525",
+            "  |commit  |  owner  |number",
+            " 1|8f524ac | Auto QA |104508",
+            " 2|18d3290 |Joao Beg…|104525",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (25, 3));
+        let rect = Rect::from_size((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
-            1,
+            2,
             Column {
                 name: "owner".to_string(),
                 width: 9,
@@ -735,17 +756,20 @@ mod test {
     /// Expect the table is drawn with the first row selected
     fn select_first_row() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "8f524ac |104508     ", //
-            "18d3290 |104525     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 1|8f524ac |104508     ", //
+            " 2|18d3290 |104525     ", //
+            "",                        //
         ];
         let expected_selection = vec![
-            "8f524ac |104508     ", //
+            " 1|8f524ac |104508     ", //
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (table, columns) = table_components();
-        let selection = Selection { row_index: 0 };
+        let selection = Selection {
+            row_index: 0,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
@@ -761,16 +785,16 @@ mod test {
     /// Expect the table is drawn with the second row selected
     fn select_second_row() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "8f524ac |104508     ", //
-            "18d3290 |104525     ", //
-            "46a003e |104455     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 1|8f524ac |104508     ", //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
         ];
         let expected_selection = vec![
-            "18d3290 |104525     ", //
+            " 2|18d3290 |104525     ", //
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -780,7 +804,10 @@ mod test {
             String::from("Thomas Edison"),
         );
         table.rows.push(row3);
-        let selection = Selection { row_index: 1 };
+        let selection = Selection {
+            row_index: 1,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
@@ -796,16 +823,16 @@ mod test {
     /// Expect the table is drawn with the last row selected
     fn select_last_row() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "8f524ac |104508     ", //
-            "18d3290 |104525     ", //
-            "46a003e |104455     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 1|8f524ac |104508     ", //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
         ];
         let expected_selection = vec![
-            "46a003e |104455     ", //
+            " 3|46a003e |104455     ", //
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -815,7 +842,10 @@ mod test {
             String::from("Thomas Edison"),
         );
         table.rows.push(row3);
-        let selection = Selection { row_index: 2 };
+        let selection = Selection {
+            row_index: 2,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
@@ -828,16 +858,16 @@ mod test {
     }
 
     #[test]
-    /// Expect the scroll with 0 units cause the table to be drawn starting from the first row
+    /// Expect the scroll with 0 units causes the table to be drawn starting from the first row
     fn scroll_zero() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "8f524ac |104508     ", //
-            "18d3290 |104525     ", //
-            "46a003e |104455     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 1|8f524ac |104508     ", //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -855,15 +885,15 @@ mod test {
     }
 
     #[test]
-    /// Expect the scroll with one units cause the table to be drawn starting from row 1
+    /// Expect the scroll with one units cause the table to be drawn starting from second row
     fn scroll_one_row() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "18d3290 |104525     ", //
-            "46a003e |104455     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -881,14 +911,14 @@ mod test {
     }
 
     #[test]
-    /// Expect the scroll with two units cause the table to be drawn starting from row 2
+    /// Expect the scroll with two units causes the table to be drawn starting from third row
     fn scroll_two_row() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "46a003e |104455     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -909,10 +939,10 @@ mod test {
     /// Expect the scroll with all rows cause the table to not be drawn
     fn scroll_all_rows() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 4));
+        let rect = Rect::from_size((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -930,18 +960,18 @@ mod test {
     }
 
     #[test]
-    /// Expect the table is drawn with the second row selected
+    /// Expect the table is drawn with the second row selected when table is scrolled down
     fn selection_plus_scroll() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "18d3290 |104525     ", //
-            "46a003e |104455     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
         ];
         let expected_selection = vec![
-            "18d3290 |104525     ", //
+            " 2|18d3290 |104525     ", //
         ];
-        let rect = Rect::from_size((0, 0), (20, 3));
+        let rect = Rect::from_size((0, 0), (23, 3));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -952,7 +982,10 @@ mod test {
         );
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 1 };
-        let selection = Selection { row_index: 1 };
+        let selection = Selection {
+            row_index: 1,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
@@ -968,14 +1001,14 @@ mod test {
     /// Expect the table is drawn with the second row selected, columns headers are not printed
     fn selection_plus_scroll_minus_print_headers() {
         let expected_output = vec![
-            "18d3290 |104525     ", //
-            "46a003e |104455     ", //
-            "",                     //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
         ];
         let expected_selection = vec![
-            "18d3290 |104525     ", //
+            " 2|18d3290 |104525     ", //
         ];
-        let rect = Rect::from_size((0, 0), (20, 3));
+        let rect = Rect::from_size((0, 0), (23, 3));
         let (mut table, mut columns) = table_components();
         columns.print_header = false;
         let mut row3 = Row::new();
@@ -987,7 +1020,10 @@ mod test {
         );
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 1 };
-        let selection = Selection { row_index: 1 };
+        let selection = Selection {
+            row_index: 1,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
@@ -1003,11 +1039,11 @@ mod test {
     /// Expect the table is drawn respecting scroll index and screen height and selection
     fn scroll_plus_small_height() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "18d3290 |104525     ", // second row
-            "",                     //
+            "  |commit  |number     ", //
+            " 2|18d3290 |104525     ", // second row
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 2));
+        let rect = Rect::from_size((0, 0), (23, 2));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -1028,10 +1064,10 @@ mod test {
     /// Expect the table is drawn respecting scroll index and screen height and selection and do not print column headers
     fn scroll_plus_small_height_minus_print_columns() {
         let expected_output = vec![
-            "18d3290 |104525     ", // second row
-            "",                     //
+            " 2|18d3290 |104525     ", // second row
+            "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (20, 1));
+        let rect = Rect::from_size((0, 0), (23, 1));
         let (mut table, mut columns) = table_components();
         columns.print_header = false;
         let mut row3 = Row::new();
@@ -1053,12 +1089,12 @@ mod test {
     /// Expect the table is drawn with the second row selected
     fn selection_outside_screen_space() {
         let expected_output = vec![
-            "commit  |number     ", //
-            "8f524ac |104508     ", //
-            "",                     //
+            "  |commit  |number     ", //
+            " 1|8f524ac |104508     ", //
+            "",                        //
         ];
         let expected_selection: Vec<&str> = vec![]; //empty cause there is no visible selection
-        let rect = Rect::from_size((0, 0), (20, 2));
+        let rect = Rect::from_size((0, 0), (23, 2));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -1068,7 +1104,10 @@ mod test {
             String::from("Thomas Edison"),
         );
         table.rows.push(row3);
-        let selection = Selection { row_index: 2 };
+        let selection = Selection {
+            row_index: 2,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
