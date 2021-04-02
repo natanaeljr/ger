@@ -259,8 +259,8 @@ mod test {
     use crate::ui::table::{
         resolve_line_number_column_width, Column, ColumnIndex, ColumnValue, Row,
     };
-    use itertools::Itertools;
     use crossterm::style::Attribute;
+    use itertools::Itertools;
 
     /// Get common set of table components used in the Tests
     fn table_components() -> (Table, Columns) {
@@ -381,11 +381,12 @@ mod test {
     /// Expect the all columns are shown in a exact match space for column names
     fn multiple_columns_exact_name_space() {
         let expected = vec![
-            "  |commit  |number", //
-            "",                   //
+            "commit  |number", //
+            "",                //
         ];
-        let rect = Rect::from_size((0, 0), (18, 1));
-        let (table, columns) = table_components();
+        let rect = Rect::from_size((0, 0), (15, 1));
+        let (table, mut columns) = table_components();
+        columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
         let output = strip_ansi_escapes(output);
@@ -410,8 +411,26 @@ mod test {
     }
 
     #[test]
-    /// Expect the first column only show the etc. character, for 1 width only space
+    /// Expect the first data column only show the etc. character, for 1 width only space
     fn one_column_one_space() {
+        let expected = vec![
+            "…", // header
+            "…", // row 1
+            "…", // row 2
+            "",    //
+        ];
+        let rect = Rect::from_size((0, 0), (1, 3));
+        let (table, mut columns) = table_components();
+        columns.visible.remove(0); // remove line-number column for this test
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect the first column of linenumbers only show the etc. character, for 1 width only space
+    fn one_column_one_space_line_numbers() {
         let expected = vec![
             "…", // header
             "…", // row 1
@@ -462,7 +481,7 @@ mod test {
     }
 
     #[test]
-    /// Expect columns are not printed when this flag is disabled
+    /// Expect column headers are not printed when this flag is disabled
     fn print_headers_disabled() {
         let expected = vec![
             " 1|8f524ac |1045…",
@@ -1086,7 +1105,7 @@ mod test {
     }
 
     #[test]
-    /// Expect the table is drawn with the second row selected
+    /// Expect the table is drawn with the second row selected while still not visible
     fn selection_outside_screen_space() {
         let expected_output = vec![
             "  |commit  |number     ", //
@@ -1112,6 +1131,360 @@ mod test {
         draw_table(
             &mut output,
             (&rect, &table, &columns, None, Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect drawing only the built-in line numbers column on exact space screen
+    fn only_line_numbers_column_exact_space() {
+        let expected = vec![
+            "ln", //
+            " 1", //
+            " 2", //
+            "",   //
+        ];
+        let rect = Rect::from_size((0, 0), (2, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[0].name = "ln".to_string();
+        // remove other columns
+        while columns.visible.len() > 2 {
+            columns.visible.remove(2);
+        }
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect drawing only the built-in line numbers column, the column is extended to the screen end
+    fn only_line_numbers_column_extends_width() {
+        let expected = vec![
+            "  ln", //
+            "   1", //
+            "   2", //
+            "",     //
+        ];
+        let rect = Rect::from_size((0, 0), (4, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[0].name = "ln".to_string();
+        // remove other columns
+        while columns.visible.len() > 1 {
+            columns.visible.remove(1);
+        }
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect drawing only the built-in line numbers column, but the width is shrunk
+    fn only_line_numbers_column_small_space() {
+        let expected = vec![
+            "…", //
+            "1",   //
+            "2",   //
+            "",    //
+        ];
+        let rect = Rect::from_size((0, 0), (1, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[0].name = "ln".to_string();
+        // remove other columns
+        while columns.visible.len() > 1 {
+            columns.visible.remove(1);
+        }
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect line-number columns are abbreviated with etc. symbol when width is small
+    fn scrolled_line_numbers_two_digits_small_space() {
+        let expected_output = vec![
+            " ",   //
+            "9",   //
+            "…", //
+            "…", //
+            "",    //
+        ];
+        let rect = Rect::from_size((0, 0), (1, 4));
+        let (mut table, columns) = table_components();
+        for _ in table.rows.len()..=12 {
+            let mut row3 = Row::new();
+            row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+            row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+            row3.insert(
+                ChangeColumn::Owner as ColumnIndex,
+                String::from("Thomas Edison"),
+            );
+            table.rows.push(row3);
+        }
+        let vscroll = VerticalScroll { top_row: 8 };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect drawing built-in line numbers column with left alignment
+    fn line_numbers_column_left_aligned() {
+        let expected = vec![
+            "ln|commit ", //
+            "1 |8f524ac", //
+            "2 |18d3290", //
+            "",           //
+        ];
+        let rect = Rect::from_size((0, 0), (10, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[0].name = "ln".to_string();
+        columns.visible[0].alignment = HorizontalAlignment::Left;
+        // remove other columns
+        while columns.visible.len() > 2 {
+            columns.visible.remove(2);
+        }
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect built-in line numbers column is not drawn when configured column width is zero
+    fn line_numbers_column_width_zero() {
+        let expected = vec![
+            "|commit  |number       ", //
+            "|8f524ac |104508       ", //
+            "|18d3290 |104525       ", //
+            "",                        //
+        ];
+        let rect = Rect::from_size((0, 0), (23, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[0].width = 0;
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect built-in line numbers column with column width 1 (one)
+    fn line_numbers_column_width_one() {
+        let expected = vec![
+            " |commit  |number      ", //
+            "1|8f524ac |104508      ", //
+            "2|18d3290 |104525      ", //
+            "",                        //
+        ];
+        let rect = Rect::from_size((0, 0), (23, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[0].width = 1;
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect built-in line numbers column with column width much larger then needed
+    fn line_numbers_column_width_large() {
+        let expected = vec![
+            "     |commit  |number  ", //
+            "    1|8f524ac |104508  ", //
+            "    2|18d3290 |104525  ", //
+            "",                        //
+        ];
+        let rect = Rect::from_size((0, 0), (23, 4));
+        let (table, mut columns) = table_components();
+        columns.visible[0].width = 5;
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let output = strip_ansi_escapes(output);
+        assert_eq!(expected, output);
+    }
+
+    #[test]
+    /// Expect the table is drawn with relative numbers to the selected third row
+    fn relative_line_numbers_selected_third_row() {
+        let expected_output = vec![
+            "  |commit  |number     ", //
+            " 2|8f524ac |104508     ", //
+            " 1|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", // selected
+            " 1|8f524ac |104508     ", //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            "",                        //
+        ];
+        let expected_selection = vec![
+            " 3|46a003e |104455     ", //
+        ];
+        let rect = Rect::from_size((0, 0), (23, 8));
+        let (mut table, mut columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        table.rows.extend(table.rows.clone());
+        match &mut columns.visible[0].value {
+            ColumnValue::BuiltIn { builtin } => match builtin {
+                ColumnBuiltIn::LineNumber { mode, .. } => {
+                    *mode = LineNumberMode::Relative;
+                } // _ => {}
+            },
+            _ => {}
+        }
+        let selection = Selection {
+            row_index: 2,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, None, Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect the table is drawn with normal numbers when it is relative but there is no selection
+    fn relative_line_numbers_no_selection() {
+        let expected_output = vec![
+            "  |commit  |number     ", //
+            " 1|8f524ac |104508     ", //
+            " 2|18d3290 |104525     ", //
+            " 3|46a003e |104455     ", //
+            " 4|8f524ac |104508     ", //
+            " 5|18d3290 |104525     ", //
+            " 6|46a003e |104455     ", //
+            "",                        //
+        ];
+        let rect = Rect::from_size((0, 0), (23, 8));
+        let (mut table, mut columns) = table_components();
+        let mut row3 = Row::new();
+        row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
+        row3.insert(ChangeColumn::Number as ColumnIndex, String::from("104455"));
+        row3.insert(
+            ChangeColumn::Owner as ColumnIndex,
+            String::from("Thomas Edison"),
+        );
+        table.rows.push(row3);
+        table.rows.extend(table.rows.clone());
+        match &mut columns.visible[0].value {
+            ColumnValue::BuiltIn { builtin } => match builtin {
+                ColumnBuiltIn::LineNumber { mode, .. } => {
+                    *mode = LineNumberMode::Relative;
+                } // _ => {}
+            },
+            _ => {}
+        }
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        let actual_output = strip_ansi_escapes(output.clone());
+        assert_eq!(expected_output, actual_output);
+    }
+
+    #[test]
+    /// Expect the table is drawn with normal numbers column with 3 digits
+    fn normal_line_numbers_3_digit_table_row() {
+        let expected_output = vec![
+            "   |commit  |number    ", //
+            " 98|46a0100 |104552    ", //
+            " 99|46a0102 |104553    ", //
+            "100|46a0104 |104554    ", // selected
+            "101|46a0106 |104555    ", //
+            "102|46a0108 |104556    ", //
+            "103|46a010a |104557    ", //
+            "",                        //
+        ];
+        let expected_selection = vec![
+            "100|46a0104 |104554    ", //
+        ];
+        let rect = Rect::from_size((0, 0), (23, 7));
+        let (mut table, mut columns) = table_components();
+        for idx in table.rows.len()..=102 {
+            let mut row = Row::new();
+            let commit = 74055742 + (idx * 2);
+            let number = 104455 + idx;
+            row.insert(ChangeColumn::Commit as ColumnIndex, format!("{:x}", commit));
+            row.insert(ChangeColumn::Number as ColumnIndex, format!("{}", number));
+            table.rows.push(row);
+        }
+        columns.visible[0].width = resolve_line_number_column_width(table.rows.len());
+        let vscroll = VerticalScroll { top_row: 97 };
+        let selection = Selection {
+            row_index: 99,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
+        );
+        let actual_output = strip_ansi_escapes(output.clone());
+        let actual_selection = get_reversed_rows(output.clone());
+        assert_eq!(expected_output, actual_output);
+        assert_eq!(expected_selection, actual_selection);
+    }
+
+    #[test]
+    /// Expect the table is drawn with relative numbers column with 3 digits
+    fn relative_line_numbers_3_digit_table_row() {
+        let expected_output = vec![
+            "   |commit  |number    ", //
+            "  2|46a0100 |104552    ", //
+            "  1|46a0102 |104553    ", //
+            "100|46a0104 |104554    ", // selected
+            "  1|46a0106 |104555    ", //
+            "  2|46a0108 |104556    ", //
+            "  3|46a010a |104557    ", //
+            "",                        //
+        ];
+        let expected_selection = vec![
+            "100|46a0104 |104554    ", //
+        ];
+        let rect = Rect::from_size((0, 0), (23, 7));
+        let (mut table, mut columns) = table_components();
+        for idx in table.rows.len()..=102 {
+            let mut row = Row::new();
+            let commit = 74055742 + (idx * 2);
+            let number = 104455 + idx;
+            row.insert(ChangeColumn::Commit as ColumnIndex, format!("{:x}", commit));
+            row.insert(ChangeColumn::Number as ColumnIndex, format!("{}", number));
+            table.rows.push(row);
+        }
+        columns.visible[0].width = resolve_line_number_column_width(table.rows.len());
+        match &mut columns.visible[0].value {
+            ColumnValue::BuiltIn { builtin } => match builtin {
+                ColumnBuiltIn::LineNumber { mode, .. } => {
+                    *mode = LineNumberMode::Relative;
+                } // _ => {}
+            },
+            _ => {}
+        }
+        let vscroll = VerticalScroll { top_row: 97 };
+        let selection = Selection {
+            row_index: 99,
+            style: ContentStyle::new().attribute(Attribute::Reverse),
+        };
+        let mut output: Vec<u8> = Vec::new();
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
