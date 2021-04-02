@@ -1,4 +1,4 @@
-use crate::ui::layout::HorizontalAlignment;
+use crate::ui::layout::{HorizontalAlignment, LineNumberMode};
 use crate::ui::term::TermUSize;
 use crossterm::style::ContentStyle;
 use std::collections::HashMap;
@@ -29,14 +29,31 @@ pub struct Columns {
     pub separator: char,
 }
 
-/// A Column's information.
-#[derive(Default, Debug, Clone)]
+/// Column's information.
+#[derive(Debug, Clone)]
 pub struct Column {
-    pub index: ColumnIndex,
     pub name: String,
     pub width: TermUSize,
     pub style: ContentStyle,
     pub alignment: HorizontalAlignment,
+    pub value: ColumnValue,
+}
+
+#[derive(Debug, Clone)]
+pub enum ColumnValue {
+    /// Built-in columns are generated when drawing.
+    BuiltIn { builtin: ColumnBuiltIn },
+    /// Data columns references the data in the Table's row array.
+    Data { index: ColumnIndex },
+}
+
+/// List of available built-in columns for tables.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum ColumnBuiltIn {
+    LineNumber {
+        mode: LineNumberMode,
+        style: ContentStyle,
+    },
 }
 
 /// VerticalScroll is a component that controls the visible rows of lists and tables.
@@ -50,4 +67,19 @@ pub struct VerticalScroll {
 #[derive(Default, Debug, Clone)]
 pub struct Selection {
     pub row_index: usize,
+    pub style: ContentStyle,
+}
+
+/// Resolve what the width for the line number column should be.
+///
+/// That is resolved based on the total number of rows that this table can have.
+/// The resulting width is the number of digits for the maximum row.
+/// Otherwise the default width is always 2.
+pub fn resolve_line_number_column_width(rows_len: usize) -> TermUSize {
+    // default line number width is two digits wide
+    if rows_len > 99 {
+        rows_len.to_string().len() as TermUSize
+    } else {
+        2
+    }
 }

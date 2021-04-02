@@ -9,7 +9,7 @@ use crossterm::{
     execute, queue, style,
     terminal::{self, ClearType},
 };
-use std::io::BufWriter;
+use std::io::{BufWriter, Write};
 
 struct State<'a> {
     changelist: ChangeList<'a>,
@@ -42,6 +42,7 @@ pub fn main() {
         terminal::LeaveAlternateScreen,
     )
     .unwrap();
+    stdout.flush().unwrap();
     terminal::disable_raw_mode().unwrap();
 }
 

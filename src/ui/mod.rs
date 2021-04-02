@@ -3,14 +3,14 @@ use clap::{App, AppSettings, ArgMatches, SubCommand};
 
 mod r#box;
 mod browser;
+mod change;
+mod demo;
+mod draw;
+mod ecs_tui;
+mod layout;
 mod scroll;
 mod table;
 mod term;
-mod layout;
-mod ecs_tui;
-mod change;
-mod draw;
-mod demo;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("ui")

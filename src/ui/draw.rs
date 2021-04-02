@@ -1,11 +1,14 @@
-use crate::ui::layout::HorizontalAlignment;
+use crate::ui::layout::{HorizontalAlignment, LineNumberMode};
 use crate::ui::r#box::Rect;
-use crate::ui::table::{Column, Columns, Row, Selection, Table, VerticalScroll};
-use crossterm::style::{Attribute, ContentStyle, StyledContent};
+use crate::ui::table::{
+    Column, ColumnBuiltIn, ColumnValue, Columns, Row, Selection, Table, VerticalScroll,
+};
+use crossterm::style::{ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
 /// Draw a Table widget within the Rect space.
 ///
+/// This is the entrypoint function of this module.
 /// Includes drawing the Column headers, and line numbers.
 pub fn draw_table<W>(
     stdout: &mut W,
@@ -19,22 +22,25 @@ pub fn draw_table<W>(
 ) where
     W: std::io::Write,
 {
+    // Clone the rect because we need to shrink it later to draw sub-parts of the table
     let mut rect = rect.clone();
-
+    // Reposition the cursor to the top of our widget space
     queue!(stdout, cursor::MoveTo(rect.x.0, rect.y.0)).unwrap();
-
+    // Print the column headers
     if columns.print_header {
         draw_table_headers(stdout, (&rect, columns));
         queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
         rect.y.0 += 1;
     }
-
+    // Check if, after the rect has been modified, it still has a valid space to continue drawing
     if rect.valid() {
         draw_table_rows(stdout, (&rect, table, columns, vscroll, selection));
     }
 }
 
-/// Draw the Table Column headers at the table top row.
+/// Draw the Table Column headers at the table top row with style.
+///
+/// The function expects the cursor is at the right position already.
 fn draw_table_headers<W>(stdout: &mut W, (rect, columns): (&Rect, &Columns))
 where
     W: std::io::Write,
@@ -57,10 +63,12 @@ where
             .unwrap();
         };
 
-    foreach_column_compute_width_and_draw((rect, columns), draw_column_header);
+    foreach_column_compute_width_and_draw((&rect, columns), draw_column_header);
 }
 
 /// Draw the Table rows while there is vertical space in Rect.
+///
+/// The function expects that the cursor is at the right position already.
 fn draw_table_rows<W>(
     stdout: &mut W,
     (rect, table, columns, vscroll, selection): (
@@ -74,31 +82,31 @@ fn draw_table_rows<W>(
     W: std::io::Write,
 {
     let draw_row = |_iter_idx: usize, row_idx: usize, row: &Row| {
-        let draw_cell_content = |column: &Column,
-                                 column_separator: &str,
-                                 available_column_width: usize| {
-            let empty = "".to_string();
-            let content = row.get(&column.index).unwrap_or(&empty);
+        let row_style = selection.and_then(|selected| {
+            if selected.row_index == row_idx {
+                return Some(selected.style);
+            }
+            None
+        });
+        let draw_cell = |column: &Column, column_separator: &str, available_column_width: usize| {
+            let (content, style) = resolve_column_content(row_idx, row, &column.value, selection);
             let actual_content =
-                formatted_column_content(content, &column.alignment, available_column_width);
-            let row_style = selection
-                .and_then(|selected| {
-                    if selected.row_index == row_idx {
-                        return Some(ContentStyle::new().attribute(Attribute::Reverse));
-                    }
-                    None
-                })
-                .unwrap_or(ContentStyle::default());
+                formatted_column_content(&content, &column.alignment, available_column_width);
+            let actual_style = row_style.or(style).unwrap_or_default();
             queue!(
                 stdout,
-                style::PrintStyledContent(
-                    StyledContent::new(row_style.clone(), &column_separator,)
-                ),
-                style::PrintStyledContent(StyledContent::new(row_style.clone(), &actual_content,))
+                style::PrintStyledContent(StyledContent::new(
+                    actual_style.clone(),
+                    &column_separator,
+                )),
+                style::PrintStyledContent(StyledContent::new(
+                    actual_style.clone(),
+                    &actual_content,
+                ))
             )
             .unwrap();
         };
-        foreach_column_compute_width_and_draw((rect, columns), draw_cell_content);
+        foreach_column_compute_width_and_draw((&rect, columns), draw_cell);
         queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
     };
 
@@ -133,7 +141,7 @@ fn foreach_visible_row_compute_and_draw<F>(
 /// Traverse the table columns and compute some information for the drawing function.
 ///
 /// For each column the available column width is calculated and passed to the drawing function.
-/// When there is not more room in the screen, break the drawing loop.
+/// When there is no more room in the screen, break the drawing loop.
 ///
 /// draw_callback: FnMut(column, column_separator, available_column_width)
 fn foreach_column_compute_width_and_draw<F>(
@@ -185,11 +193,53 @@ fn formatted_column_content(
 }
 
 /// Format content with desired horizontal alignment.
+///
+/// Additional space (the character) is added to fill up the width.
 fn format_aligned(content: &String, alignment: &HorizontalAlignment, width: usize) -> String {
     match alignment {
         HorizontalAlignment::Left => format!("{: <1$}", content, width),
         HorizontalAlignment::Center => format!("{: ^1$}", content, width),
         HorizontalAlignment::Right => format!("{: >1$}", content, width),
+    }
+}
+
+/// Resolve the Column content base on the Column Value enum.
+///
+/// The value will be retrieved from the row data or generated on-the-fly based on other parameters.
+fn resolve_column_content(
+    row_idx: usize, row: &Row, column_value: &ColumnValue, selection: Option<&Selection>,
+) -> (String, Option<ContentStyle>) {
+    match column_value {
+        ColumnValue::BuiltIn { builtin } => match builtin {
+            ColumnBuiltIn::LineNumber { mode, style } => {
+                let number =
+                    resolve_column_builtin_line_number(mode, row_idx, selection).to_string();
+                (number.to_string(), Some(style.clone()))
+            }
+        },
+        ColumnValue::Data { index } => {
+            let empty = "".to_string();
+            let data = row.get(&index).unwrap_or(&empty).to_owned();
+            (data, None)
+        }
+    }
+}
+
+/// Resolve the Line Number value based on the mode.
+///
+/// The output value begins on 1 (one).
+/// The `row_idx` is expected to begin on 0 (zero).
+fn resolve_column_builtin_line_number(
+    mode: &LineNumberMode, row_idx: usize, selection: Option<&Selection>,
+) -> usize {
+    match mode {
+        LineNumberMode::Normal => row_idx + 1,
+        LineNumberMode::Relative => selection
+            .and_then(|selected| {
+                let row = (selected.row_index as i32 - row_idx as i32).abs() as usize;
+                Some(if row == 0 { row_idx + 1 } else { row })
+            })
+            .unwrap_or(row_idx + 1),
     }
 }
 
@@ -206,7 +256,7 @@ mod test {
     use super::*;
     use crate::ui::change::ChangeColumn;
     use crate::ui::layout::HorizontalAlignment;
-    use crate::ui::table::{Column, ColumnIndex, Row};
+    use crate::ui::table::{Column, ColumnIndex, ColumnValue, Row};
     use itertools::Itertools;
 
     /// Get common set of table components used in the Tests
@@ -230,18 +280,22 @@ mod test {
             print_header: true,
             visible: vec![
                 Column {
-                    index: ChangeColumn::Commit as ColumnIndex,
                     name: "commit".to_string(),
                     width: 8,
                     style: ContentStyle::new(),
                     alignment: HorizontalAlignment::Left,
+                    value: ColumnValue::Data {
+                        index: ChangeColumn::Commit as ColumnIndex,
+                    },
                 },
                 Column {
-                    index: ChangeColumn::Number as ColumnIndex,
                     name: "number".to_string(),
                     width: 8,
                     style: ContentStyle::new(),
                     alignment: HorizontalAlignment::Left,
+                    value: ColumnValue::Data {
+                        index: ChangeColumn::Number as ColumnIndex,
+                    },
                 },
             ],
             hidden: vec![],
@@ -432,11 +486,13 @@ mod test {
         columns.visible.insert(
             1,
             Column {
-                index: ChangeColumn::Time as ColumnIndex,
                 name: "".to_string(),
                 width: 5,
                 style: ContentStyle::new(),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Time as ColumnIndex,
+                },
             },
         );
         let mut output: Vec<u8> = Vec::new();
@@ -459,11 +515,13 @@ mod test {
         columns.visible.insert(
             1,
             Column {
-                index: ChangeColumn::Owner as ColumnIndex,
                 name: "owner".to_string(),
                 width: 3,
                 style: ContentStyle::new(),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Owner as ColumnIndex,
+                },
             },
         );
         let mut output: Vec<u8> = Vec::new();
@@ -484,11 +542,13 @@ mod test {
         columns.visible.insert(
             1,
             Column {
-                index: ChangeColumn::Branch as ColumnIndex,
                 name: "branch".to_string(),
                 width: 6,
                 style: ContentStyle::new(),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Branch as ColumnIndex,
+                },
             },
         );
         let mut output: Vec<u8> = Vec::new();
@@ -562,11 +622,13 @@ mod test {
         columns.visible.insert(
             1,
             Column {
-                index: ChangeColumn::Topic as ColumnIndex,
                 name: "topic".to_string(),
                 width: 10,
                 style: ContentStyle::new(),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Topic as ColumnIndex,
+                },
             },
         );
         let mut output: Vec<u8> = Vec::new();
@@ -625,11 +687,13 @@ mod test {
         columns.visible.insert(
             1,
             Column {
-                index: ChangeColumn::Owner as ColumnIndex,
                 name: "owner".to_string(),
                 width: 9,
                 style: ContentStyle::new(),
                 alignment: HorizontalAlignment::Right,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Owner as ColumnIndex,
+                },
             },
         );
         let mut output: Vec<u8> = Vec::new();
@@ -652,11 +716,13 @@ mod test {
         columns.visible.insert(
             1,
             Column {
-                index: ChangeColumn::Owner as ColumnIndex,
                 name: "owner".to_string(),
                 width: 9,
                 style: ContentStyle::new(),
                 alignment: HorizontalAlignment::Center,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Owner as ColumnIndex,
+                },
             },
         );
         let mut output: Vec<u8> = Vec::new();

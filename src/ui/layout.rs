@@ -1,8 +1,7 @@
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum ShowNumbers {
-    Hide,
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum LineNumberMode {
     Normal,
-    Relative,
+    Relative, // to the cursor
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

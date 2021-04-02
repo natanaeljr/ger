@@ -1,7 +1,10 @@
 use crate::ui::change::ChangeColumn;
-use crate::ui::layout::{HorizontalAlignment, ShowNumbers};
+use crate::ui::layout::{HorizontalAlignment, LineNumberMode};
 use crate::ui::r#box::Rect;
-use crate::ui::table::{Column, ColumnIndex, Columns, Row, Selection, Table, VerticalScroll};
+use crate::ui::table::{
+    resolve_line_number_column_width, Column, ColumnBuiltIn, ColumnIndex, ColumnValue, Columns,
+    Row, Selection, Table, VerticalScroll,
+};
 use crate::ui::term::TermUSize;
 use crossterm::style::{Attribute, Color, ContentStyle};
 use legion::World;
@@ -60,23 +63,40 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
         ChangeColumn::Subject as ColumnIndex,
         String::from("Add diagnostics feature to some platforms"),
     );
-    let table = Table {
+    let mut table = Table {
         rows: vec![row, row2, row3],
     };
+    table.rows.extend(table.rows.clone());
     let columns = Columns {
         print_header: true,
         visible: vec![
             Column {
-                index: ChangeColumn::Commit as ColumnIndex,
+                name: "".to_string(),
+                width: resolve_line_number_column_width(table.rows.len()),
+                style: ContentStyle::new()
+                    .foreground(Color::Green)
+                    .attribute(Attribute::Dim)
+                    .attribute(Attribute::Underlined),
+                alignment: HorizontalAlignment::Right,
+                value: ColumnValue::BuiltIn {
+                    builtin: ColumnBuiltIn::LineNumber {
+                        mode: LineNumberMode::Normal,
+                        style: ContentStyle::new().foreground(Color::Green),
+                    },
+                },
+            },
+            Column {
                 name: "commit".to_string(),
                 width: 7,
                 style: ContentStyle::new()
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Commit as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Number as ColumnIndex,
                 name: "number".to_string(),
                 width: 6,
                 style: ContentStyle::new()
@@ -84,9 +104,11 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Right,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Number as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Owner as ColumnIndex,
                 name: "owner".to_string(),
                 width: 17,
                 style: ContentStyle::new()
@@ -94,9 +116,11 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Owner as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Time as ColumnIndex,
                 name: "time".to_string(),
                 width: 10,
                 style: ContentStyle::new()
@@ -104,9 +128,11 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Time as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Project as ColumnIndex,
                 name: "project".to_string(),
                 width: 30,
                 style: ContentStyle::new()
@@ -114,9 +140,11 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Project as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Branch as ColumnIndex,
                 name: "branch".to_string(),
                 width: 20,
                 style: ContentStyle::new()
@@ -124,9 +152,11 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Branch as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Topic as ColumnIndex,
                 name: "topic".to_string(),
                 width: 20,
                 style: ContentStyle::new()
@@ -134,9 +164,11 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Topic as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Status as ColumnIndex,
                 name: "status".to_string(),
                 width: 10,
                 style: ContentStyle::new()
@@ -144,9 +176,11 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Center,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Status as ColumnIndex,
+                },
             },
             Column {
-                index: ChangeColumn::Subject as ColumnIndex,
                 name: "subject".to_string(),
                 width: 50,
                 style: ContentStyle::new()
@@ -154,15 +188,20 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                     .attribute(Attribute::Bold)
                     .attribute(Attribute::Underlined),
                 alignment: HorizontalAlignment::Left,
+                value: ColumnValue::Data {
+                    index: ChangeColumn::Subject as ColumnIndex,
+                },
             },
         ],
         hidden: vec![],
         separator: '|',
     };
     let scroll = VerticalScroll { top_row: 0 };
-    let selection = Selection { row_index: 1 };
-    let show_numbers = ShowNumbers::Normal;
+    let selection = Selection {
+        row_index: 3,
+        style: ContentStyle::new().attribute(Attribute::Reverse),
+    };
     let rect = Rect::from_size((0, 0), (width, height));
-    let components = (rect, table, columns, scroll, selection, show_numbers);
+    let components = (rect, table, columns, scroll, selection);
     let _entity = registry.push(components);
 }
