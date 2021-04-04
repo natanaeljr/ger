@@ -39,7 +39,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
     );
     row2.insert(ChangeColumn::Branch as ColumnIndex, String::from("future"));
     row2.insert(ChangeColumn::Topic as ColumnIndex, String::from("dial"));
-    row2.insert(ChangeColumn::Status as ColumnIndex, String::from("NEW"));
+    row2.insert(ChangeColumn::Status as ColumnIndex, String::from("MERGED"));
     row2.insert(
         ChangeColumn::Subject as ColumnIndex,
         String::from("Add diagnostics feature to some platforms"),
@@ -58,7 +58,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
     );
     row3.insert(ChangeColumn::Branch as ColumnIndex, String::from("future"));
     row3.insert(ChangeColumn::Topic as ColumnIndex, String::from("dial"));
-    row3.insert(ChangeColumn::Status as ColumnIndex, String::from("NEW"));
+    row3.insert(ChangeColumn::Status as ColumnIndex, String::from("ABANDONED"));
     row3.insert(
         ChangeColumn::Subject as ColumnIndex,
         String::from("Add diagnostics feature to some platforms"),
@@ -76,12 +76,13 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 style: ContentStyle::new()
                     .foreground(Color::Green)
                     .attribute(Attribute::Dim)
-                    .attribute(Attribute::Underlined),
+                    .attribute(Attribute::Underlined)
+                    .attribute(Attribute::Bold),
                 alignment: HorizontalAlignment::Right,
                 value: ColumnValue::BuiltIn {
                     builtin: ColumnBuiltIn::LineNumber {
                         mode: LineNumberMode::Normal,
-                        style: ContentStyle::new().foreground(Color::Green),
+                        style: ContentStyle::new().foreground(Color::Green).attribute(Attribute::Bold),
                     },
                 },
             },
