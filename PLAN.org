@@ -1,0 +1,9 @@
+#+TITLE: Ger Dev Planning
+
+* Features
+** v0.1.0
+*** UI
+**** WIP Table widget component drawing
+**** TODO Box widget component drawing
+**** TODO Scrollbar widget component drawing
+**** TODO Plan a generic Event Handling System
