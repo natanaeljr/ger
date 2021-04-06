@@ -1,11 +1,12 @@
 use crate::ui::change::ChangeColumn;
 use crate::ui::layout::{HorizontalAlignment, LineNumberMode};
-use crate::ui::r#box::Rect;
+use crate::ui::rect::Rect;
 use crate::ui::table::{
     resolve_line_number_column_width, Column, ColumnBuiltIn, ColumnIndex, ColumnValue, Columns,
     Row, Selection, Table, VerticalScroll,
 };
 use crate::ui::term::TermUSize;
+use crate::ui::winbox::{BorderChars, WinBox};
 use crossterm::style::{Attribute, Color, ContentStyle};
 use legion::World;
 
@@ -58,7 +59,10 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
     );
     row3.insert(ChangeColumn::Branch as ColumnIndex, String::from("future"));
     row3.insert(ChangeColumn::Topic as ColumnIndex, String::from("dial"));
-    row3.insert(ChangeColumn::Status as ColumnIndex, String::from("ABANDONED"));
+    row3.insert(
+        ChangeColumn::Status as ColumnIndex,
+        String::from("ABANDONED"),
+    );
     row3.insert(
         ChangeColumn::Subject as ColumnIndex,
         String::from("Add diagnostics feature to some platforms"),
@@ -82,7 +86,9 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 value: ColumnValue::BuiltIn {
                     builtin: ColumnBuiltIn::LineNumber {
                         mode: LineNumberMode::Normal,
-                        style: ContentStyle::new().foreground(Color::Green).attribute(Attribute::Bold),
+                        style: ContentStyle::new()
+                            .foreground(Color::Green)
+                            .attribute(Attribute::Bold),
                     },
                 },
             },
@@ -197,12 +203,16 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
         hidden: vec![],
         separator: '|',
     };
-    let scroll = VerticalScroll { top_row: 0 };
+    let vscroll = VerticalScroll { top_row: 0 };
     let selection = Selection {
         row_index: 3,
         style: ContentStyle::new().attribute(Attribute::Reverse),
     };
-    let rect = Rect::from_size((0, 0), (width, height));
-    let components = (rect, table, columns, scroll, selection);
+    let winbox = WinBox {
+        style: ContentStyle::new().foreground(Color::Green),
+        borders: BorderChars::simple().clone(),
+    };
+    let rect = Rect::from_size_unchecked((0, 0), (width, height));
+    let components = (rect, winbox, table, columns, vscroll, selection);
     let _entity = registry.push(components);
 }

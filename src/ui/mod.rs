@@ -1,7 +1,7 @@
 use crate::config::{CliConfig, Verbosity};
 use clap::{App, AppSettings, ArgMatches, SubCommand};
 
-mod r#box;
+mod winbox;
 mod browser;
 mod change;
 mod demo;
@@ -11,6 +11,7 @@ mod layout;
 mod scroll;
 mod table;
 mod term;
+mod rect;
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("ui")

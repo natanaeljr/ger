@@ -1,6 +1,7 @@
-use crate::ui::r#box::Rect;
+use crate::ui::rect::Rect;
 use crate::ui::table::{Columns, Selection, Table, VerticalScroll};
 use crate::ui::term::{TermProps, TermUSize};
+use crate::ui::winbox::WinBox;
 use crossterm::event::KeyModifiers;
 use crossterm::{
     event::{self, Event, KeyCode},
@@ -78,7 +79,7 @@ impl EcsTui {
         for rect in query.iter_mut(&mut self.registry) {
             // We are dealing with only ONE entity for now
             // So resize it to fill up the entire screen
-            *rect = Rect::from_size((0, 0), (cols, rows));
+            *rect = Rect::from_size_unchecked((0, 0), (cols, rows));
         }
     }
 
@@ -96,9 +97,10 @@ impl EcsTui {
             &Columns,
             Option<&VerticalScroll>,
             Option<&Selection>,
+            Option<&WinBox>,
         )>::query();
-        for (rect, table, columns, vscroll, selected) in query.iter(&self.registry) {
-            super::draw::draw_table(stdout, (rect, table, columns, vscroll, selected));
+        for (rect, table, columns, vscroll, selected, winbox) in query.iter(&self.registry) {
+            super::draw::draw_table(stdout, (rect, table, columns, vscroll, selected, winbox));
         }
     }
 

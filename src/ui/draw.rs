@@ -1,41 +1,109 @@
 use crate::ui::layout::{HorizontalAlignment, LineNumberMode};
-use crate::ui::r#box::Rect;
+use crate::ui::rect::Rect;
 use crate::ui::table::{
     Column, ColumnBuiltIn, ColumnValue, Columns, Row, Selection, Table, VerticalScroll,
 };
+use crate::ui::winbox::WinBox;
 use crossterm::style::{ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
+/// Draw the Window Box widget.
+///
+/// Basically, it just draws window borders.
+pub fn draw_winbox<W>(stdout: &mut W, (rect, uibox): (&Rect, &WinBox)) -> Option<()>
+where
+    W: std::io::Write,
+{
+    // Only draw if we have inner area, that is (rect size is >= 3)
+    let inner = rect.inner()?;
+
+    // Horizontal character string
+    let horizontal = uibox
+        .borders
+        .horizontal
+        .to_string()
+        .repeat(inner.width() as usize);
+
+    // Top border
+    queue!(
+        stdout,
+        cursor::MoveTo(rect.x.0, rect.y.0),
+        style::PrintStyledContent(uibox.style.apply(uibox.borders.upper_left)),
+        style::PrintStyledContent(uibox.style.apply(&horizontal)),
+        style::PrintStyledContent(uibox.style.apply(uibox.borders.upper_right)),
+    )
+    .unwrap();
+
+    // Bottom border
+    queue!(
+        stdout,
+        cursor::MoveTo(rect.x.0, rect.y.1),
+        style::PrintStyledContent(uibox.style.apply(uibox.borders.lower_left)),
+        style::PrintStyledContent(uibox.style.apply(&horizontal)),
+        style::PrintStyledContent(uibox.style.apply(uibox.borders.lower_right)),
+    )
+    .unwrap();
+
+    // Left/Right borders
+    for y in inner.y.0..=inner.y.1 {
+        queue!(
+            stdout,
+            cursor::MoveTo(rect.x.0, y),
+            style::Print(uibox.style.apply(uibox.borders.vertical)),
+            cursor::MoveRight(inner.cols()),
+            style::Print(uibox.style.apply(uibox.borders.vertical))
+        )
+        .unwrap();
+    }
+
+    // Successful return
+    Some(())
+}
+
 /// Draw a Table widget within the Rect space.
 ///
-/// This is the entrypoint function of this module.
-/// Includes drawing the Column headers, and line numbers.
+/// Includes drawing the box, column headers, table rows and line numbers.
 pub fn draw_table<W>(
     stdout: &mut W,
-    (rect, table, columns, vscroll, selection): (
+    (rect, table, columns, vscroll, selection, winbox): (
         &Rect,
         &Table,
         &Columns,
         Option<&VerticalScroll>,
         Option<&Selection>,
+        Option<&WinBox>,
     ),
-) where
+) -> Option<()>
+where
     W: std::io::Write,
 {
-    // Clone the rect because we need to shrink it later to draw sub-parts of the table
+    // Clone the rect as mut because we need to shrink it later to draw sub-parts of the table
     let mut rect = rect.clone();
-    // Reposition the cursor to the top of our widget space
-    queue!(stdout, cursor::MoveTo(rect.x.0, rect.y.0)).unwrap();
+
+    // Draw the Window Box borders
+    if let Some(winbox) = winbox {
+        draw_winbox(stdout, (&rect, &winbox));
+        rect = rect.inner()?;
+    }
+
     // Print the column headers
+    queue!(stdout, cursor::MoveTo(rect.x.0, rect.y.0)).unwrap();
     if columns.print_header {
         draw_table_headers(stdout, (&rect, columns));
-        queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
-        rect.y.0 += 1;
+        queue!(
+            stdout,
+            cursor::MoveDown(1),
+            cursor::MoveToColumn(rect.x.0 + 1 /*begins on one*/)
+        )
+        .unwrap();
+        rect = rect.offset_y0(1)?;
     }
-    // Check if, after the rect has been modified, it still has a valid space to continue drawing
-    if rect.valid() {
-        draw_table_rows(stdout, (&rect, table, columns, vscroll, selection));
-    }
+
+    // Print table data rows
+    draw_table_rows(stdout, (&rect, table, columns, vscroll, selection));
+
+    // Successful Draw
+    Some(())
 }
 
 /// Draw the Table Column headers at the table top row with style.
@@ -107,7 +175,12 @@ fn draw_table_rows<W>(
             .unwrap();
         };
         foreach_column_compute_width_and_draw((&rect, columns), draw_cell);
-        queue!(stdout, cursor::MoveToNextLine(1)).unwrap();
+        queue!(
+            stdout,
+            cursor::MoveDown(1),
+            cursor::MoveToColumn(rect.x.0 + 1 /*begins on one*/)
+        )
+        .unwrap();
     };
 
     foreach_visible_row_compute_and_draw((rect, table, vscroll), draw_row);
@@ -369,7 +442,7 @@ mod test {
             " 2|18d3290 |104525     ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (23, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 3));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
@@ -384,7 +457,7 @@ mod test {
             "commit  |number", //
             "",                //
         ];
-        let rect = Rect::from_size((0, 0), (15, 1));
+        let rect = Rect::from_size_unchecked((0, 0), (15, 1));
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
@@ -401,7 +474,7 @@ mod test {
             "8f524ac ", //
             "",         //
         ];
-        let rect = Rect::from_size((0, 0), (8, 2));
+        let rect = Rect::from_size_unchecked((0, 0), (8, 2));
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
@@ -419,7 +492,7 @@ mod test {
             "…", // row 2
             "",    //
         ];
-        let rect = Rect::from_size((0, 0), (1, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (1, 3));
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
@@ -437,7 +510,7 @@ mod test {
             "…", // row 2
             "",    //
         ];
-        let rect = Rect::from_size((0, 0), (1, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (1, 3));
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
@@ -455,7 +528,7 @@ mod test {
             "18d3290 |…", //
             "",             //
         ];
-        let rect = Rect::from_size((0, 0), (10, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (10, 3));
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
@@ -471,7 +544,7 @@ mod test {
             "commit  |numb…", //
             "",                 //
         ];
-        let rect = Rect::from_size((0, 0), (14, 1));
+        let rect = Rect::from_size_unchecked((0, 0), (14, 1));
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
@@ -488,7 +561,7 @@ mod test {
             " 2|18d3290 |1045…",
             "", //
         ];
-        let rect = Rect::from_size((0, 0), (17, 2));
+        let rect = Rect::from_size_unchecked((0, 0), (17, 2));
         let (table, mut columns) = table_components();
         columns.print_header = false;
         let mut output: Vec<u8> = Vec::new();
@@ -501,7 +574,7 @@ mod test {
     /// Expect no breakage when there are no columns to print
     fn no_visible_columns() {
         let expected = vec!["", "", ""];
-        let rect = Rect::from_size((0, 0), (14, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (14, 3));
         let (table, _) = table_components();
         let columns = Columns::default();
         let mut output: Vec<u8> = Vec::new();
@@ -519,7 +592,7 @@ mod test {
             " 2|18d3290 |     |104525    ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (28, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
             2,
@@ -548,7 +621,7 @@ mod test {
             " 2|18d3290 |Jo…|104525      ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (28, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
             2,
@@ -575,7 +648,7 @@ mod test {
             "  |commit  |branch|number   ", //
             "",                             //
         ];
-        let rect = Rect::from_size((0, 0), (28, 1));
+        let rect = Rect::from_size_unchecked((0, 0), (28, 1));
         let (table, mut columns) = table_components();
         columns.visible.insert(
             2,
@@ -602,7 +675,7 @@ mod test {
             "  |commit  |number     ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 3));
         let (_, columns) = table_components();
         let table = Table {
             rows: Vec::default(),
@@ -621,7 +694,7 @@ mod test {
             " 1|8f524ac |104508     ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 2));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 2));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
@@ -638,7 +711,7 @@ mod test {
             " 2|18d3290 |104525     ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (23, 5)); // note the height 5 !
+        let rect = Rect::from_size_unchecked((0, 0), (23, 5)); // note the height 5 !
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
         draw_table(&mut output, (&rect, &table, &columns, None, None));
@@ -655,7 +728,7 @@ mod test {
             " 2|18d3290 |galaxy    |1045…",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (28, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
             2,
@@ -684,7 +757,7 @@ mod test {
             " 2|18d3290 |     104525",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (table, mut columns) = table_components();
         let last_idx = columns.visible.len() - 1;
         columns.visible[last_idx].alignment = HorizontalAlignment::Right;
@@ -703,7 +776,7 @@ mod test {
             " 2|18d3290 |  104525   ",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (table, mut columns) = table_components();
         let last_idx = columns.visible.len() - 1;
         columns.visible[last_idx].alignment = HorizontalAlignment::Center;
@@ -722,7 +795,7 @@ mod test {
             " 2|18d3290 |Joao Beg…|104525",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (28, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
             2,
@@ -751,7 +824,7 @@ mod test {
             " 2|18d3290 |Joao Beg…|104525",
             "",
         ];
-        let rect = Rect::from_size((0, 0), (28, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (28, 3));
         let (table, mut columns) = table_components();
         columns.visible.insert(
             2,
@@ -783,7 +856,7 @@ mod test {
         let expected_selection = vec![
             " 1|8f524ac |104508     ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (table, columns) = table_components();
         let selection = Selection {
             row_index: 0,
@@ -813,7 +886,7 @@ mod test {
         let expected_selection = vec![
             " 2|18d3290 |104525     ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -851,7 +924,7 @@ mod test {
         let expected_selection = vec![
             " 3|46a003e |104455     ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -886,7 +959,7 @@ mod test {
             " 3|46a003e |104455     ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -912,7 +985,7 @@ mod test {
             " 3|46a003e |104455     ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -937,7 +1010,7 @@ mod test {
             " 3|46a003e |104455     ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -961,7 +1034,7 @@ mod test {
             "  |commit  |number     ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -990,7 +1063,7 @@ mod test {
         let expected_selection = vec![
             " 2|18d3290 |104525     ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 3));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -1027,7 +1100,7 @@ mod test {
         let expected_selection = vec![
             " 2|18d3290 |104525     ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 3));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 3));
         let (mut table, mut columns) = table_components();
         columns.print_header = false;
         let mut row3 = Row::new();
@@ -1062,7 +1135,7 @@ mod test {
             " 2|18d3290 |104525     ", // second row
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 2));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 2));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -1086,7 +1159,7 @@ mod test {
             " 2|18d3290 |104525     ", // second row
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 1));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 1));
         let (mut table, mut columns) = table_components();
         columns.print_header = false;
         let mut row3 = Row::new();
@@ -1113,7 +1186,7 @@ mod test {
             "",                        //
         ];
         let expected_selection: Vec<&str> = vec![]; //empty cause there is no visible selection
-        let rect = Rect::from_size((0, 0), (23, 2));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 2));
         let (mut table, columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -1147,7 +1220,7 @@ mod test {
             " 2", //
             "",   //
         ];
-        let rect = Rect::from_size((0, 0), (2, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (2, 4));
         let (table, mut columns) = table_components();
         columns.visible[0].name = "ln".to_string();
         // remove other columns
@@ -1169,7 +1242,7 @@ mod test {
             "   2", //
             "",     //
         ];
-        let rect = Rect::from_size((0, 0), (4, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (4, 4));
         let (table, mut columns) = table_components();
         columns.visible[0].name = "ln".to_string();
         // remove other columns
@@ -1191,7 +1264,7 @@ mod test {
             "2",   //
             "",    //
         ];
-        let rect = Rect::from_size((0, 0), (1, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (1, 4));
         let (table, mut columns) = table_components();
         columns.visible[0].name = "ln".to_string();
         // remove other columns
@@ -1214,7 +1287,7 @@ mod test {
             "…", //
             "",    //
         ];
-        let rect = Rect::from_size((0, 0), (1, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (1, 4));
         let (mut table, columns) = table_components();
         for _ in table.rows.len()..=12 {
             let mut row3 = Row::new();
@@ -1242,7 +1315,7 @@ mod test {
             "2 |18d3290", //
             "",           //
         ];
-        let rect = Rect::from_size((0, 0), (10, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (10, 4));
         let (table, mut columns) = table_components();
         columns.visible[0].name = "ln".to_string();
         columns.visible[0].alignment = HorizontalAlignment::Left;
@@ -1265,7 +1338,7 @@ mod test {
             "|18d3290 |104525       ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (table, mut columns) = table_components();
         columns.visible[0].width = 0;
         let mut output: Vec<u8> = Vec::new();
@@ -1283,7 +1356,7 @@ mod test {
             "2|18d3290 |104525      ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (table, mut columns) = table_components();
         columns.visible[0].width = 1;
         let mut output: Vec<u8> = Vec::new();
@@ -1301,7 +1374,7 @@ mod test {
             "    2|18d3290 |104525  ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 4));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 4));
         let (table, mut columns) = table_components();
         columns.visible[0].width = 5;
         let mut output: Vec<u8> = Vec::new();
@@ -1326,7 +1399,7 @@ mod test {
         let expected_selection = vec![
             " 3|46a003e |104455     ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 8));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 8));
         let (mut table, mut columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -1373,7 +1446,7 @@ mod test {
             " 6|46a003e |104455     ", //
             "",                        //
         ];
-        let rect = Rect::from_size((0, 0), (23, 8));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 8));
         let (mut table, mut columns) = table_components();
         let mut row3 = Row::new();
         row3.insert(ChangeColumn::Commit as ColumnIndex, String::from("46a003e"));
@@ -1414,7 +1487,7 @@ mod test {
         let expected_selection = vec![
             "100|46a0104 |104554    ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 7));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 7));
         let (mut table, mut columns) = table_components();
         for idx in table.rows.len()..=102 {
             let mut row = Row::new();
@@ -1457,7 +1530,7 @@ mod test {
         let expected_selection = vec![
             "100|46a0104 |104554    ", //
         ];
-        let rect = Rect::from_size((0, 0), (23, 7));
+        let rect = Rect::from_size_unchecked((0, 0), (23, 7));
         let (mut table, mut columns) = table_components();
         for idx in table.rows.len()..=102 {
             let mut row = Row::new();
