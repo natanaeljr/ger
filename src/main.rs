@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 extern crate log;
 extern crate strum;
 #[macro_use]

@@ -7,62 +7,11 @@ use crate::ui::winbox::WinBox;
 use crossterm::style::{ContentStyle, StyledContent};
 use crossterm::{cursor, queue, style};
 
-/// Draw the Window Box widget.
-///
-/// Basically, it just draws window borders.
-pub fn draw_winbox<W>(stdout: &mut W, (rect, uibox): (&Rect, &WinBox)) -> Option<()>
-where
-    W: std::io::Write,
-{
-    // Only draw if we have inner area, that is (rect size is >= 3)
-    let inner = rect.inner()?;
-
-    // Horizontal character string
-    let horizontal = uibox
-        .borders
-        .horizontal
-        .to_string()
-        .repeat(inner.width() as usize);
-
-    // Top border
-    queue!(
-        stdout,
-        cursor::MoveTo(rect.x.0, rect.y.0),
-        style::PrintStyledContent(uibox.style.apply(uibox.borders.upper_left)),
-        style::PrintStyledContent(uibox.style.apply(&horizontal)),
-        style::PrintStyledContent(uibox.style.apply(uibox.borders.upper_right)),
-    )
-    .unwrap();
-
-    // Bottom border
-    queue!(
-        stdout,
-        cursor::MoveTo(rect.x.0, rect.y.1),
-        style::PrintStyledContent(uibox.style.apply(uibox.borders.lower_left)),
-        style::PrintStyledContent(uibox.style.apply(&horizontal)),
-        style::PrintStyledContent(uibox.style.apply(uibox.borders.lower_right)),
-    )
-    .unwrap();
-
-    // Left/Right borders
-    for y in inner.y.0..=inner.y.1 {
-        queue!(
-            stdout,
-            cursor::MoveTo(rect.x.0, y),
-            style::Print(uibox.style.apply(uibox.borders.vertical)),
-            cursor::MoveRight(inner.cols()),
-            style::Print(uibox.style.apply(uibox.borders.vertical))
-        )
-        .unwrap();
-    }
-
-    // Successful return
-    Some(())
-}
-
 /// Draw a Table widget within the Rect space.
 ///
 /// Includes drawing the box, column headers, table rows and line numbers.
+///
+/// It is the entrypoint function of this module.
 pub fn draw_table<W>(
     stdout: &mut W,
     (rect, table, columns, vscroll, selection, winbox): (
@@ -82,7 +31,7 @@ where
 
     // Draw the Window Box borders
     if let Some(winbox) = winbox {
-        draw_winbox(stdout, (&rect, &winbox));
+        super::draw_winbox(stdout, (&rect, &winbox));
         rect = rect.inner()?;
     }
 
