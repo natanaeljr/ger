@@ -344,7 +344,7 @@ mod test {
     fn strip_ansi_escapes(output: Vec<u8>) -> Vec<String> {
         let output = String::from_utf8(output).unwrap();
         let output = output
-            .split("\u{1b}[1E" /* ansi new-line */)
+            .split("\u{1b}[1B" /* ansi move-down 1 line */)
             .map(|row| {
                 let bytes = strip_ansi_escapes::strip(row.as_bytes()).unwrap();
                 String::from_utf8(bytes).unwrap()
@@ -394,7 +394,7 @@ mod test {
         let rect = Rect::from_size_unchecked((0, 0), (23, 3));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -410,7 +410,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -427,7 +427,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -445,7 +445,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -463,7 +463,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -481,7 +481,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -497,7 +497,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible.remove(0); // remove line-number column for this test
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -514,7 +514,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.print_header = false;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -527,7 +527,7 @@ mod test {
         let (table, _) = table_components();
         let columns = Columns::default();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -556,7 +556,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -585,7 +585,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -612,7 +612,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -630,7 +630,7 @@ mod test {
             rows: Vec::default(),
         };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -646,7 +646,7 @@ mod test {
         let rect = Rect::from_size_unchecked((0, 0), (23, 2));
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -663,7 +663,7 @@ mod test {
         let rect = Rect::from_size_unchecked((0, 0), (23, 5)); // note the height 5 !
         let (table, columns) = table_components();
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -692,7 +692,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -711,7 +711,7 @@ mod test {
         let last_idx = columns.visible.len() - 1;
         columns.visible[last_idx].alignment = HorizontalAlignment::Right;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -730,7 +730,7 @@ mod test {
         let last_idx = columns.visible.len() - 1;
         columns.visible[last_idx].alignment = HorizontalAlignment::Center;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -759,7 +759,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -788,7 +788,7 @@ mod test {
             },
         );
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -814,7 +814,7 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, None, Some(&selection)),
+            (&rect, &table, &columns, None, Some(&selection), None),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -852,7 +852,7 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, None, Some(&selection)),
+            (&rect, &table, &columns, None, Some(&selection), None),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -890,7 +890,7 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, None, Some(&selection)),
+            (&rect, &table, &columns, None, Some(&selection), None),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -920,7 +920,10 @@ mod test {
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 0 };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), None, None),
+        );
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -946,7 +949,10 @@ mod test {
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 1 };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), None, None),
+        );
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -971,7 +977,10 @@ mod test {
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 2 };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), None, None),
+        );
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -995,7 +1004,10 @@ mod test {
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 3 };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), None, None),
+        );
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -1030,7 +1042,14 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
+            (
+                &rect,
+                &table,
+                &columns,
+                Some(&vscroll),
+                Some(&selection),
+                None,
+            ),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -1068,7 +1087,14 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
+            (
+                &rect,
+                &table,
+                &columns,
+                Some(&vscroll),
+                Some(&selection),
+                None,
+            ),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -1096,7 +1122,10 @@ mod test {
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 1 };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), None, None),
+        );
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -1121,7 +1150,10 @@ mod test {
         table.rows.push(row3);
         let vscroll = VerticalScroll { top_row: 1 };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), None, None),
+        );
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -1152,7 +1184,7 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, None, Some(&selection)),
+            (&rect, &table, &columns, None, Some(&selection), None),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -1177,7 +1209,7 @@ mod test {
             columns.visible.remove(2);
         }
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -1199,7 +1231,7 @@ mod test {
             columns.visible.remove(1);
         }
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -1221,7 +1253,7 @@ mod test {
             columns.visible.remove(1);
         }
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -1250,7 +1282,10 @@ mod test {
         }
         let vscroll = VerticalScroll { top_row: 8 };
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, Some(&vscroll), None));
+        draw_table(
+            &mut output,
+            (&rect, &table, &columns, Some(&vscroll), None, None),
+        );
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -1273,7 +1308,7 @@ mod test {
             columns.visible.remove(2);
         }
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -1291,7 +1326,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible[0].width = 0;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -1309,7 +1344,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible[0].width = 1;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -1327,7 +1362,7 @@ mod test {
         let (table, mut columns) = table_components();
         columns.visible[0].width = 5;
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let output = strip_ansi_escapes(output);
         assert_eq!(expected, output);
     }
@@ -1374,7 +1409,7 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, None, Some(&selection)),
+            (&rect, &table, &columns, None, Some(&selection), None),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -1415,7 +1450,7 @@ mod test {
             _ => {}
         }
         let mut output: Vec<u8> = Vec::new();
-        draw_table(&mut output, (&rect, &table, &columns, None, None));
+        draw_table(&mut output, (&rect, &table, &columns, None, None, None));
         let actual_output = strip_ansi_escapes(output.clone());
         assert_eq!(expected_output, actual_output);
     }
@@ -1455,7 +1490,14 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
+            (
+                &rect,
+                &table,
+                &columns,
+                Some(&vscroll),
+                Some(&selection),
+                None,
+            ),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
@@ -1506,7 +1548,14 @@ mod test {
         let mut output: Vec<u8> = Vec::new();
         draw_table(
             &mut output,
-            (&rect, &table, &columns, Some(&vscroll), Some(&selection)),
+            (
+                &rect,
+                &table,
+                &columns,
+                Some(&vscroll),
+                Some(&selection),
+                None,
+            ),
         );
         let actual_output = strip_ansi_escapes(output.clone());
         let actual_selection = get_reversed_rows(output.clone());
