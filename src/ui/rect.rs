@@ -64,42 +64,6 @@ impl Rect {
         self.height()
     }
 
-    /// Get Rect with new y.0 value.
-    ///
-    /// Checks that the new rectangle will be valid.
-    pub fn with_y0(&self, y0: u16) -> Option<Self> {
-        self.with_y0_unchecked(y0).checked()
-    }
-
-    /// Get Rect with new y.0 value.
-    ///
-    /// It is assumed current the new y0 value keeps the rectangle valid.
-    /// If unsure, use the "checked" version.
-    pub fn with_y0_unchecked(&self, y0: u16) -> Self {
-        Self {
-            x: self.x,
-            y: (y0, self.y.1),
-        }
-    }
-
-    /// Offset the y.0 value.
-    ///
-    /// Checks that the offset rectangle will be valid.
-    pub fn offset_y0(&self, offset: i16) -> Option<Self> {
-        let y0 = self.y.0 as i32 + offset as i32;
-        y0.to_u16()
-            .and_then(|y0| self.with_y0_unchecked(y0).checked())
-    }
-
-    /// Offset the y.0 value.
-    ///
-    /// It is assumed current the offset value is within the y0 offset range.
-    /// If unsure, use the "checked" version.
-    pub fn offset_y0_unchecked(&self, offset: i16) -> Self {
-        let y0 = self.y.0 as i32 + offset as i32;
-        self.with_y0_unchecked(y0 as u16)
-    }
-
     /// Return an inner Rect.
     ///
     /// Checks that the inner rectangle will be valid.
@@ -119,6 +83,28 @@ impl Rect {
         Self {
             x: (self.x.0 + 1, self.x.1 - 1),
             y: (self.y.0 + 1, self.y.1 - 1),
+        }
+    }
+
+    /// Return an inner X axis Rect.
+    ///
+    /// Checks that the inner rectangle will be valid.
+    pub fn inner_x(&self) -> Option<Self> {
+        if !self.valid() || self.width() < 3 {
+            None
+        } else {
+            Some(self.inner_x_unchecked())
+        }
+    }
+
+    /// Return an inner X axis Rect.
+    ///
+    /// It is assumed current width is at least 3.
+    /// If unsure, use the "checked" version.
+    pub fn inner_x_unchecked(&self) -> Self {
+        Self {
+            x: (self.x.0 + 1, self.x.1 - 1),
+            y: self.y,
         }
     }
 
@@ -156,5 +142,77 @@ impl Rect {
     /// Check if Self is a valid Rect.
     pub fn valid(&self) -> bool {
         self.x.0 <= self.x.1 && self.y.0 <= self.y.1
+    }
+
+    /// Get Rect with new x.0 value.
+    ///
+    /// Checks that the new rectangle will be valid.
+    pub fn with_x0(&self, x0: u16) -> Option<Self> {
+        self.with_x0_unchecked(x0).checked()
+    }
+
+    /// Get Rect with new x.0 value.
+    ///
+    /// It is assumed current the new x0 value keeps the rectangle valid.
+    /// If unsure, use the "checked" version.
+    pub fn with_x0_unchecked(&self, x0: u16) -> Self {
+        Self {
+            x: (x0, self.x.1),
+            y: self.y,
+        }
+    }
+
+    /// Get Rect with new y.0 value.
+    ///
+    /// Checks that the new rectangle will be valid.
+    pub fn with_y0(&self, y0: u16) -> Option<Self> {
+        self.with_y0_unchecked(y0).checked()
+    }
+
+    /// Get Rect with new y.0 value.
+    ///
+    /// It is assumed current the new y0 value keeps the rectangle valid.
+    /// If unsure, use the "checked" version.
+    pub fn with_y0_unchecked(&self, y0: u16) -> Self {
+        Self {
+            x: self.x,
+            y: (y0, self.y.1),
+        }
+    }
+
+    /// Offset the y.0 value.
+    ///
+    /// Checks that the offset rectangle will be valid.
+    pub fn offset_y0(&self, offset: i16) -> Option<Self> {
+        let y0 = self.y.0 as i32 + offset as i32;
+        y0.to_u16()
+            .and_then(|y0| self.with_y0_unchecked(y0).checked())
+    }
+
+    /// Offset the y.0 value.
+    ///
+    /// It is assumed current the offset value is within the y0 offset range.
+    /// If unsure, use the "checked" version.
+    pub fn offset_y0_unchecked(&self, offset: i16) -> Self {
+        let y0 = self.y.0 as i32 + offset as i32;
+        self.with_y0_unchecked(y0 as u16)
+    }
+
+    /// Offset the x.0 value.
+    ///
+    /// Checks that the offset rectangle will be valid.
+    pub fn offset_x0(&self, offset: i16) -> Option<Self> {
+        let x0 = self.x.0 as i32 + offset as i32;
+        x0.to_u16()
+            .and_then(|x0| self.with_x0_unchecked(x0).checked())
+    }
+
+    /// Offset the x.0 value.
+    ///
+    /// It is assumed current the offset value is within the x0 offset range.
+    /// If unsure, use the "checked" version.
+    pub fn offset_x0_unchecked(&self, offset: i16) -> Self {
+        let x0 = self.x.0 as i32 + offset as i32;
+        self.with_x0_unchecked(x0 as u16)
     }
 }

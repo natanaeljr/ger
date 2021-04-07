@@ -1,19 +1,30 @@
+use crate::ui::layout::{HorizontalAlignment, HorizontalMargin};
 use crossterm::style::ContentStyle;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-/// UiBox
-/// Box is a rect with borders, for drawing it to a terminal grid.
+/// WinBox is a rect with borders, for drawing it to a terminal grid.
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct WinBox {
     pub style: ContentStyle,
     pub borders: BorderChars,
+    pub top_hints: Vec<BoxHint>,    // order in the vector means priority
+    pub bottom_hints: Vec<BoxHint>, // order in the vector means priority
+}
+
+/// Box hints can be used to add a title to the window box, or other status around the borders.
+#[derive(Debug, Clone)]
+pub struct BoxHint {
+    pub content: String,
+    pub style: ContentStyle,
+    pub margin: HorizontalMargin,
+    pub alignment: HorizontalAlignment,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Border Chars
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct BorderChars {
     pub upper_left: char,
     pub upper_right: char,

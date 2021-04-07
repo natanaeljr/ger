@@ -1,12 +1,12 @@
 use crate::ui::change::ChangeColumn;
-use crate::ui::layout::{HorizontalAlignment, LineNumberMode};
+use crate::ui::layout::{HorizontalAlignment, HorizontalMargin, LineNumberMode};
 use crate::ui::rect::Rect;
 use crate::ui::table::{
     resolve_line_number_column_width, Column, ColumnBuiltIn, ColumnIndex, ColumnValue, Columns,
     Row, Selection, Table, VerticalScroll,
 };
 use crate::ui::term::TermUSize;
-use crate::ui::winbox::{BorderChars, WinBox};
+use crate::ui::winbox::{BorderChars, BoxHint, WinBox};
 use crossterm::style::{Attribute, Color, ContentStyle};
 use legion::World;
 
@@ -211,6 +211,44 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
     let winbox = WinBox {
         style: ContentStyle::new().foreground(Color::Green),
         borders: BorderChars::simple().clone(),
+        top_hints: vec![
+            BoxHint {
+                content: "change list".to_string(),
+                style: ContentStyle::new(),
+                margin: HorizontalMargin { left: 1, right: 0 },
+                alignment: HorizontalAlignment::Left,
+            },
+            BoxHint {
+                content: "(query)".to_string(),
+                style: ContentStyle::new(),
+                margin: HorizontalMargin { left: 0, right: 1 },
+                alignment: HorizontalAlignment::Right,
+            },
+        ],
+        bottom_hints: vec![
+            BoxHint {
+                content: "nothing".to_string(),
+                style: ContentStyle::new()
+                    .attribute(Attribute::Dim)
+                    .attribute(Attribute::Reverse),
+                margin: HorizontalMargin { left: 1, right: 0 },
+                alignment: HorizontalAlignment::Left,
+            },
+            BoxHint {
+                content: "[stats]".to_string(),
+                style: ContentStyle::new()
+                    .attribute(Attribute::Dim)
+                    .attribute(Attribute::Reverse),
+                margin: HorizontalMargin { left: 0, right: 1 },
+                alignment: HorizontalAlignment::Right,
+            },
+            BoxHint {
+                content: "#".to_string(),
+                style: ContentStyle::new().attribute(Attribute::Dim),
+                margin: HorizontalMargin { left: 0, right: 0 },
+                alignment: HorizontalAlignment::Right,
+            },
+        ],
     };
     let rect = Rect::from_size_unchecked((0, 0), (width, height));
     let components = (rect, winbox, table, columns, vscroll, selection);

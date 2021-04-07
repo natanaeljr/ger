@@ -19,20 +19,20 @@ impl Default for HorizontalAlignment {
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct Margin {
-    top: u16,
-    left: u16,
-    right: u16,
-    bottom: u16,
+    top: usize,
+    left: usize,
+    right: usize,
+    bottom: usize,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct VerticalMargin {
-    top: u16,
-    bottom: u16,
+    top: usize,
+    bottom: usize,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq)]
 pub struct HorizontalMargin {
-    left: u16,
-    right: u16,
+    pub left: usize,
+    pub right: usize,
 }
