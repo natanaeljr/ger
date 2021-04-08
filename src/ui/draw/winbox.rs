@@ -106,23 +106,53 @@ fn foreach_boxhint_compute_and_draw<F>(
 {
     let mut used_left_width = 0;
     let mut used_right_width = 0;
+    let mut used_center_width = 0;
 
     for hint in boxhints {
         let brackets_width = 2;
         let margins = hint.margin.left + hint.margin.right;
+        let minimum_width = margins + brackets_width + 1;
 
         let content_width = match hint.alignment {
             HorizontalAlignment::Left | HorizontalAlignment::Right => {
-                let available_width = rect.width() as usize - used_left_width - used_right_width;
-                let minimum_width = margins + brackets_width + 1;
+                let available_width =
+                    rect.width() as usize - used_left_width - used_right_width - used_center_width;
                 if available_width < minimum_width {
                     break;
                 }
                 let available_hint_width = available_width - brackets_width - margins;
-                let available_hint_width = std::cmp::min(hint.content.len(), available_hint_width);
-                available_hint_width
+                std::cmp::min(hint.content.len(), available_hint_width)
             }
-            HorizontalAlignment::Center => unimplemented!(),
+            HorizontalAlignment::Center => {
+                let half_width = rect.width() as i32 / 2;
+                let available_left_width = half_width - used_left_width as i32;
+                let available_right_width = half_width - used_right_width as i32;
+                let available_center_width = available_left_width + available_right_width;
+                let available_center_width = std::cmp::max(0, available_center_width);
+                let available_width = available_center_width as usize - used_center_width;
+                if available_width < minimum_width {
+                    break;
+                }
+                let available_hint_width = available_width - brackets_width - margins;
+                eprintln!(
+                    "\
+                    rect.width: {}\n\
+                    half_width: {}\n\
+                    available_left_width : {}\n\
+                    available_right_width : {}\n\
+                    available_center_width : {}\n\
+                    available_width : {}\n\
+                    available_hint_width : {}\n",
+                    rect.width(),
+                    half_width,
+                    available_left_width,
+                    available_right_width,
+                    available_center_width,
+                    available_width,
+                    available_hint_width,
+                );
+                std::cmp::min(hint.content.len(), available_hint_width)
+            }
         };
 
         let x_pos = match hint.alignment {
@@ -136,7 +166,25 @@ fn foreach_boxhint_compute_and_draw<F>(
                     - brackets_width
                     - hint.margin.right) as TermUSize
             }
-            HorizontalAlignment::Center => unimplemented!(),
+            HorizontalAlignment::Center => {
+                let half_width = rect.width() as usize / 2;
+                let half_content_width = content_width / 2;
+                let half_used_center_width = used_center_width / 2;
+                let half_brackets_width = brackets_width / 2;
+                let half_margins = margins / 2;
+                let offset = half_width
+                    - half_used_center_width
+                    - half_content_width
+                    - half_brackets_width
+                    - half_margins;
+                let center_x = rect.x.0 as usize + offset;
+                let center_x_end = center_x + content_width + 1 + hint.margin.right;
+                let left_x = rect.x.0 as usize + used_left_width;
+                let left_shift = std::cmp::max(0, left_x as i32 - center_x as i32) as usize;
+                let right_x = rect.x.1 as usize - used_right_width;
+                let right_shift = std::cmp::max(0, center_x_end as i32 - right_x as i32) as usize;
+                (center_x + left_shift - right_shift) as TermUSize
+            }
         };
 
         draw_callback(hint, (x_pos, y_pos), content_width);
@@ -145,7 +193,7 @@ fn foreach_boxhint_compute_and_draw<F>(
         match hint.alignment {
             HorizontalAlignment::Left => used_left_width += used_width,
             HorizontalAlignment::Right => used_right_width += used_width,
-            HorizontalAlignment::Center => unimplemented!(),
+            HorizontalAlignment::Center => used_center_width += used_width,
         }
     }
 }

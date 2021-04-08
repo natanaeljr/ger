@@ -224,6 +224,12 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 margin: HorizontalMargin { left: 0, right: 1 },
                 alignment: HorizontalAlignment::Right,
             },
+            BoxHint {
+                content: "-clock-".to_string(),
+                style: ContentStyle::new(),
+                margin: HorizontalMargin { left: 0, right: 0 },
+                alignment: HorizontalAlignment::Center,
+            },
         ],
         bottom_hints: vec![
             BoxHint {
@@ -243,10 +249,16 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 alignment: HorizontalAlignment::Right,
             },
             BoxHint {
-                content: "#".to_string(),
+                content: "ln".to_string(),
                 style: ContentStyle::new().attribute(Attribute::Dim),
                 margin: HorizontalMargin { left: 0, right: 0 },
                 alignment: HorizontalAlignment::Right,
+            },
+            BoxHint {
+                content: "#comment#".to_string(),
+                style: ContentStyle::new(),
+                margin: HorizontalMargin { left: 0, right: 0 },
+                alignment: HorizontalAlignment::Center,
             },
         ],
     };
