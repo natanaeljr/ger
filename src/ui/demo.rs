@@ -227,7 +227,7 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
             BoxHint {
                 content: "-clock-".to_string(),
                 style: ContentStyle::new(),
-                margin: HorizontalMargin { left: 0, right: 0 },
+                margin: HorizontalMargin { left: 1, right: 1 },
                 alignment: HorizontalAlignment::Center,
             },
         ],
