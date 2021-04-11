@@ -104,15 +104,75 @@ fn foreach_boxhint_compute_and_draw<F>(
 ) where
     F: FnMut(&BoxHint, (TermUSize, TermUSize), usize),
 {
+    let brackets_width = 2; // border brackets around the hint (must be even!)
+    let (
+        hint_content_widths, //
+        total_left_width,    //
+        total_right_width,   //
+        total_center_width,  //
+    ) = compute_boxhint_widths(rect, boxhints);
+
+    let mut used_left_width = 0;
+    let mut used_right_width = 0;
+    let mut used_center_width = 0;
+
+    for (idx, content_width) in hint_content_widths.iter().enumerate() {
+        let hint = &boxhints[idx];
+        let margins = hint.margin.left + hint.margin.right;
+
+        let x_pos = match hint.alignment {
+            HorizontalAlignment::Left => {
+                (rect.x.0 as usize + used_left_width + hint.margin.left) as TermUSize
+            }
+            HorizontalAlignment::Right => {
+                (rect.x.1 as usize + 1
+                    - used_right_width
+                    - content_width
+                    - brackets_width
+                    - hint.margin.right) as TermUSize
+            }
+            HorizontalAlignment::Center => {
+                let half_width = rect.width() as f32 / 2.0;
+                let half_total_center_width = total_center_width as f32 / 2.0;
+                let offset = half_width - half_total_center_width.ceil() + used_center_width as f32;
+                let x_pos = rect.x.0 as usize + offset.round() as usize + hint.margin.left;
+                let center_begin = half_width - half_total_center_width.ceil();
+                let center_end = half_width + half_total_center_width;
+                let center_x0 = rect.x.0 as usize + center_begin.round() as usize;
+                let center_x1 = rect.x.1 as usize - center_end.round() as usize;
+                // Shift is for when the left/right hints have passed over the center so it is shifted
+                let left_x1 = rect.x.0 as usize + total_left_width;
+                let left_shift = std::cmp::max(0, left_x1 as i32 - center_x0 as i32) as usize;
+                let right_x0 = rect.x.1 as usize - total_right_width;
+                let right_shift = std::cmp::max(0, center_x1 as i32 - right_x0 as i32) as usize;
+
+                (x_pos + left_shift - right_shift) as TermUSize
+            }
+        };
+
+        draw_callback(hint, (x_pos, y_pos), *content_width);
+
+        let used_width = content_width + brackets_width + margins;
+        match hint.alignment {
+            HorizontalAlignment::Left => used_left_width += used_width,
+            HorizontalAlignment::Right => used_right_width += used_width,
+            HorizontalAlignment::Center => used_center_width += used_width,
+        }
+    }
+}
+
+fn compute_boxhint_widths(
+    rect: &Rect, boxhints: &Vec<BoxHint>,
+) -> (Vec<usize>, usize, usize, usize) {
+    let brackets_width = 2; // border brackets around the hint (must be even!)
+    let mut hint_content_widths: Vec<usize> = Vec::new();
     let mut used_left_width = 0;
     let mut used_right_width = 0;
     let mut used_center_width = 0;
 
     for hint in boxhints {
-        let brackets_width = 2;
         let margins = hint.margin.left + hint.margin.right;
         let minimum_width = margins + brackets_width + 1;
-
         let content_width = match hint.alignment {
             HorizontalAlignment::Left | HorizontalAlignment::Right => {
                 let available_width =
@@ -138,39 +198,7 @@ fn foreach_boxhint_compute_and_draw<F>(
             }
         };
 
-        let x_pos = match hint.alignment {
-            HorizontalAlignment::Left => {
-                (rect.x.0 as usize + used_left_width + hint.margin.left) as TermUSize
-            }
-            HorizontalAlignment::Right => {
-                (rect.x.1 as usize + 1
-                    - used_right_width
-                    - content_width
-                    - brackets_width
-                    - hint.margin.right) as TermUSize
-            }
-            HorizontalAlignment::Center => {
-                let half_width = rect.width() as f32 / 2.0;
-                let half_content_width = content_width as f32 / 2.0;
-                let half_used_center_width = used_center_width as f32 / 2.0;
-                let half_brackets_width = brackets_width as f32 / 2.0;
-                let offset = half_width
-                    - half_content_width
-                    - half_used_center_width
-                    - half_brackets_width
-                    /* - half_margins */;
-                let center_x = rect.x.0 as usize + offset.round() as usize /* + hint.margin.left */;
-                let center_x_end = center_x + content_width /* + hint.margin.right */ + 1 /* non-inclusive */;
-                // left and right shift, for when the left/right hints have passed over the center already
-                let left_x = rect.x.0 as usize + used_left_width + hint.margin.left;
-                let left_shift = std::cmp::max(0, left_x as i32 - center_x as i32) as usize;
-                let right_x = rect.x.1 as usize - used_right_width - hint.margin.right;
-                let right_shift = std::cmp::max(0, center_x_end as i32 - right_x as i32) as usize;
-                (center_x + left_shift - right_shift) as TermUSize
-            }
-        };
-
-        draw_callback(hint, (x_pos, y_pos), content_width);
+        hint_content_widths.push(content_width);
 
         let used_width = content_width + brackets_width + margins;
         match hint.alignment {
@@ -179,4 +207,11 @@ fn foreach_boxhint_compute_and_draw<F>(
             HorizontalAlignment::Center => used_center_width += used_width,
         }
     }
+
+    (
+        hint_content_widths,
+        used_left_width,
+        used_right_width,
+        used_center_width,
+    )
 }

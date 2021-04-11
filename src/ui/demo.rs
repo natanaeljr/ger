@@ -225,9 +225,21 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
                 alignment: HorizontalAlignment::Right,
             },
             BoxHint {
+                content: "Hi".to_string(),
+                style: ContentStyle::new(),
+                margin: HorizontalMargin { left: 1, right: 0 },
+                alignment: HorizontalAlignment::Center,
+            },
+            BoxHint {
                 content: "-clock-".to_string(),
                 style: ContentStyle::new(),
                 margin: HorizontalMargin { left: 1, right: 1 },
+                alignment: HorizontalAlignment::Center,
+            },
+            BoxHint {
+                content: "Ho".to_string(),
+                style: ContentStyle::new(),
+                margin: HorizontalMargin { left: 0, right: 1 },
                 alignment: HorizontalAlignment::Center,
             },
         ],
