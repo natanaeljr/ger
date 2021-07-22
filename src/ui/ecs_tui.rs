@@ -1,14 +1,17 @@
-use crate::ui::rect::Rect;
-use crate::ui::table::{Columns, Selection, Table, VerticalScroll};
-use crate::ui::term::{TermProps, TermUSize};
-use crate::ui::winbox::WinBox;
 use crossterm::event::KeyModifiers;
 use crossterm::{
+    cursor,
     event::{self, Event, KeyCode},
     queue, style,
     terminal::{self, ClearType},
 };
-use legion::{IntoQuery, World};
+use legion::systems::CommandBuffer;
+use legion::{component, Entity, IntoQuery, Resources, World};
+
+use crate::ui::rect::Rect;
+use crate::ui::table::{Columns, Selection, Table, VerticalScroll};
+use crate::ui::term::{TermProps, TermUSize};
+use crate::ui::winbox::WinBox;
 
 /// Entity Component System
 /// Terminal User Interface
@@ -90,8 +93,13 @@ impl EcsTui {
         if !self.is_canvas_drawable() {
             return;
         }
+
+        let mut resources = Resources::default();
+        let mut commands = CommandBuffer::new(&self.registry);
+
         // Draw Tables
         let mut query = <(
+            Entity,
             &Rect,
             &Table,
             &Columns,
@@ -99,12 +107,77 @@ impl EcsTui {
             Option<&Selection>,
             Option<&WinBox>,
         )>::query();
-        for (rect, table, columns, vscroll, selected, winbox) in query.iter(&self.registry) {
-            super::draw::draw_table(stdout, (rect, table, columns, vscroll, selected, winbox));
+        for (_entity, rect, table, columns, vscroll, selected, winbox) in query.iter(&self.registry)
+        {
+            let components = (rect, table, columns, vscroll, selected, winbox);
+            super::draw::draw_table(stdout, components);
         }
+
+        // Cache Tables
+        let mut query = <(
+            Entity,
+            &Rect,
+            &Table,
+            &Columns,
+            Option<&VerticalScroll>,
+            Option<&Selection>,
+            Option<&WinBox>,
+            &mut Children,
+        )>::query();
+        for (entity, rect, table, columns, vscroll, selected, winbox, children) in
+            query.iter_mut(&mut self.registry)
+        {
+            let components = (rect, table, columns, vscroll, selected, winbox, children);
+            super::draw::cache_table(entity, &mut commands, components);
+        }
+        commands.flush(&mut self.registry, &mut resources);
+
+        // Print entities
+        // queue!(stdout, cursor::MoveTo(0, 10)).unwrap();
+        // let mut query = <(Entity, &Rect)>::query()
+        //     .filter(component::<ColumnHeader>() | component::<ColumnSeparator>());
+        // for (entity, rect) in query.iter_mut(&mut self.registry) {
+        //     queue!(
+        //         stdout,
+        //         style::Print(format!("entity: {:?}, rect: {:?}, width: {}, height {}", entity, rect, rect.width(), rect.height())),
+        //         cursor::MoveToNextLine(1),
+        //     )
+        //     .unwrap();
+        // }
+
+        // Print entities
+        let mut entities : Vec<Entity> = Vec::new();
+        queue!(stdout, cursor::MoveTo(0, 10)).unwrap();
+        let mut query = <(Entity,)>::query();
+        for (entity,) in query.iter(&self.registry) {
+            entities.push(entity.clone());
+        }
+
+        for entt in &entities {
+            let entry = self.registry.entry(entt.clone()).unwrap();
+            queue!(
+                stdout,
+                style::Print(format!("{:?} has {:?}", entt, entry.archetype().layout().component_types())),
+                cursor::MoveToNextLine(1),
+            )
+                .unwrap();
+        }
+
+        // let entry = self.registry.entry(self.registry.push(()))?.archetype().
     }
 
     fn is_canvas_drawable(&self) -> bool {
         self.term_cache.width >= 1 && self.term_cache.height >= 1
     }
 }
+
+pub struct ColumnSeparator {}
+
+pub struct ColumnHeader {}
+
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct Parent(pub Entity);
+
+#[repr(transparent)]
+pub struct Children(pub Vec<Entity>);

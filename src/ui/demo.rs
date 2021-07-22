@@ -9,6 +9,7 @@ use crate::ui::term::TermUSize;
 use crate::ui::winbox::{BorderChars, BoxHint, WinBox};
 use crossterm::style::{Attribute, Color, ContentStyle};
 use legion::World;
+use crate::ui::ecs_tui::Children;
 
 pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut World) {
     let mut row = Row::new();
@@ -275,6 +276,6 @@ pub fn create_table((width, height): (TermUSize, TermUSize), registry: &mut Worl
         ],
     };
     let rect = Rect::from_size_unchecked((0, 0), (width, height));
-    let components = (rect, winbox, table, columns, vscroll, selection);
+    let components = (rect, winbox, table, columns, vscroll, selection, Children(Vec::new()));
     let _entity = registry.push(components);
 }

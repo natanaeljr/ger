@@ -1,11 +1,81 @@
+use crossterm::style::{ContentStyle, StyledContent};
+use crossterm::{cursor, queue, style};
+use legion::systems::CommandBuffer;
+use legion::Entity;
+
+use crate::ui::ecs_tui::{Children, ColumnHeader, ColumnSeparator, Parent};
 use crate::ui::layout::LineNumberMode;
 use crate::ui::rect::Rect;
 use crate::ui::table::{
     Column, ColumnBuiltIn, ColumnValue, Columns, Row, Selection, Table, VerticalScroll,
 };
 use crate::ui::winbox::WinBox;
-use crossterm::style::{ContentStyle, StyledContent};
-use crossterm::{cursor, queue, style};
+
+pub fn cache_table(
+    entity: &Entity, commands: &mut CommandBuffer,
+    (rect, _table, columns, _vscroll, _selection, winbox, children): (
+        &Rect,
+        &Table,
+        &Columns,
+        Option<&VerticalScroll>,
+        Option<&Selection>,
+        Option<&WinBox>,
+        &mut Children,
+    ),
+) -> Option<()> {
+    // Clone the rect as mut because we need to shrink it later to draw sub-parts of the table
+    let mut rect = rect.clone();
+    // Draw the Window Box borders
+    if let Some(_) = winbox {
+        rect = rect.inner()?;
+    }
+
+    for child in &children.0 {
+        commands.remove(child.clone());
+    }
+    children.0.clear();
+
+    // Print the column headers
+    if columns.print_header {
+        cache_table_headers(entity, commands, (&rect, columns, children));
+        // rect = rect.offset_y0(1)?;
+    }
+    // Print table data rows
+    // cache_table_rows((&rect, table, columns, vscroll, selection));
+    // Successful Draw
+    Some(())
+}
+
+fn cache_table_headers(
+    table: &Entity, commands: &mut CommandBuffer,
+    (rect, columns, children): (&Rect, &Columns, &mut Children),
+) {
+    let mut walked_col = 0;
+    let cache_column_header =
+        &mut |_column: &Column, column_separator: &str, available_column_width: usize| {
+            let parent = Parent(table.clone());
+
+            if column_separator.len() > 0 {
+                let x = rect.x.0 + walked_col as u16;
+                let separator_rect = Rect::from_size((x, rect.y.0), (1, 1)).unwrap();
+                walked_col += column_separator.len();
+                let separator_entt =
+                    commands.push((ColumnSeparator {}, parent.clone(), separator_rect));
+                children.0.push(separator_entt);
+            }
+
+            if available_column_width > 0 {
+                let x = rect.x.0 + walked_col as u16;
+                let column_rect =
+                    Rect::from_size((x, rect.y.0), (available_column_width as u16, 1)).unwrap();
+                walked_col += available_column_width;
+                let column_entt = commands.push((ColumnHeader {}, parent.clone(), column_rect));
+                children.0.push(column_entt);
+            }
+        };
+
+    foreach_column_compute_width_and_draw((&rect, columns), cache_column_header);
+}
 
 /// Draw a Table widget within the Rect space.
 ///
@@ -242,14 +312,16 @@ fn resolve_column_builtin_line_number(
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use crossterm::style::Attribute;
+    use itertools::Itertools;
+
     use crate::ui::change::ChangeColumn;
     use crate::ui::layout::HorizontalAlignment;
     use crate::ui::table::{
         resolve_line_number_column_width, Column, ColumnIndex, ColumnValue, Row,
     };
-    use crossterm::style::Attribute;
-    use itertools::Itertools;
+
+    use super::*;
 
     /// Get common set of table components used in the Tests
     fn table_components() -> (Table, Columns) {

@@ -2,6 +2,7 @@
 
 // Exported draw functions:
 pub use table::draw_table;
+pub use table::cache_table;
 pub use winbox::draw_winbox;
 
 mod table;
