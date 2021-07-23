@@ -15,8 +15,8 @@ pub mod ui;
 pub mod util;
 
 fn main() -> Result<(), ExitFailure> {
-    pretty_env_logger::init_custom_env("GER_LOG");
+  pretty_env_logger::init_custom_env("GER_LOG");
 
-    let rv = cli::main(&mut std::env::args_os())?;
-    Ok(rv)
+  let rv = cli::main(&mut std::env::args_os())?;
+  Ok(rv)
 }

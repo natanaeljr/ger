@@ -10,124 +10,117 @@ use toml;
 
 #[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 pub enum Verbosity {
-    Normal,
-    Verbose,
-    High,
-    Debug,
+  Normal,
+  Verbose,
+  High,
+  Debug,
 }
 
 impl From<u64> for Verbosity {
-    fn from(val: u64) -> Self {
-        match val {
-            0 => Verbosity::Normal,
-            1 => Verbosity::Verbose,
-            2 => Verbosity::High,
-            _ => Verbosity::Debug,
-        }
+  fn from(val: u64) -> Self {
+    match val {
+      0 => Verbosity::Normal,
+      1 => Verbosity::Verbose,
+      2 => Verbosity::High,
+      _ => Verbosity::Debug,
     }
+  }
 }
 
 pub struct CliConfig {
-    pub user: UserConfig,
-    pub stdout: StandardStream,
+  pub user: UserConfig,
+  pub stdout: StandardStream,
 }
 
 pub struct UserConfig {
-    pub filepath: PathBuf,
-    pub settings: UserSettings,
+  pub filepath: PathBuf,
+  pub settings: UserSettings,
 }
 
 #[derive(Serialize, Deserialize, Default, PartialEq, Eq, Clone, Debug)]
 #[serde(deny_unknown_fields, default)]
 pub struct UserSettings {
-    default_remote: Option<String>,
-    pub remotes: BTreeMap<String, RemoteOpts>,
+  default_remote: Option<String>,
+  pub remotes: BTreeMap<String, RemoteOpts>,
 }
 
 impl UserConfig {
-    /// Read user config from TOML config file.
-    ///
-    /// If `config_file` path is not passed, the default `$HOME/.ger.toml` is used.
-    /// If file does not exists or is empty, the default `UserConfig` is returned.
-    pub fn from_file(config_file: Option<String>) -> Result<Self, failure::Error> {
-        let config_file = config_file.unwrap_or_else(|| {
-            format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap())
-        });
-        let contents = std::fs::read_to_string(&config_file)
-            .or_else(|error| match error.kind() {
-                std::io::ErrorKind::NotFound => Ok(String::new()),
-                _ => Err(error),
-            })
-            .with_context(|_| format!("failed to open config file: {}", config_file))?;
-        let settings: UserSettings = toml::from_str(&contents)
-            .with_context(|_| format!("failed to parse config file: {}", config_file))?;
-        Ok(UserConfig {
-            filepath: config_file.into(),
-            settings,
-        })
-    }
+  /// Read user config from TOML config file.
+  ///
+  /// If `config_file` path is not passed, the default `$HOME/.ger.toml` is used.
+  /// If file does not exists or is empty, the default `UserConfig` is returned.
+  pub fn from_file(config_file: Option<String>) -> Result<Self, failure::Error> {
+    let config_file = config_file.unwrap_or_else(|| format!("{}/.ger.toml", dirs::home_dir().unwrap().to_str().unwrap()));
+    let contents = std::fs::read_to_string(&config_file)
+      .or_else(|error| match error.kind() {
+        std::io::ErrorKind::NotFound => Ok(String::new()),
+        _ => Err(error),
+      })
+      .with_context(|_| format!("failed to open config file: {}", config_file))?;
+    let settings: UserSettings = toml::from_str(&contents).with_context(|_| format!("failed to parse config file: {}", config_file))?;
+    Ok(UserConfig {
+      filepath: config_file.into(),
+      settings,
+    })
+  }
 
-    /// Write user config to filepath
-    pub fn store(&self) -> Result<(), failure::Error> {
-        let toml = toml::to_string_pretty(&self.settings)?;
-        let mut file = std::fs::File::create(&self.filepath)?;
-        file.set_permissions(std::fs::Permissions::from_mode(0o640))?;
-        file.write(toml.as_bytes())?;
-        Ok(())
-    }
+  /// Write user config to filepath
+  pub fn store(&self) -> Result<(), failure::Error> {
+    let toml = toml::to_string_pretty(&self.settings)?;
+    let mut file = std::fs::File::create(&self.filepath)?;
+    file.set_permissions(std::fs::Permissions::from_mode(0o640))?;
+    file.write(toml.as_bytes())?;
+    Ok(())
+  }
 }
 
 impl UserSettings {
-    /// Get default remote from config or figure out one
-    pub fn default_remote(&self) -> Option<&str> {
-        if let Some(default) = &self.default_remote {
-            Some(default.as_str())
-        } else if self.remotes.len() == 1 {
-            Some(self.remotes.keys().next().unwrap().as_str())
-        } else {
-            None
-        }
+  /// Get default remote from config or figure out one
+  pub fn default_remote(&self) -> Option<&str> {
+    if let Some(default) = &self.default_remote {
+      Some(default.as_str())
+    } else if self.remotes.len() == 1 {
+      Some(self.remotes.keys().next().unwrap().as_str())
+    } else {
+      None
     }
+  }
 
-    /// Get default remote from config or figure out one,
-    /// plus verify that the remote is exists in the map
-    pub fn default_remote_verify(&self) -> Option<&str> {
-        self.default_remote().and_then(|default| {
-            if self.remotes.contains_key(default) {
-                Some(default)
-            } else {
-                None
-            }
-        })
-    }
+  /// Get default remote from config or figure out one,
+  /// plus verify that the remote is exists in the map
+  pub fn default_remote_verify(&self) -> Option<&str> {
+    self
+      .default_remote()
+      .and_then(|default| if self.remotes.contains_key(default) { Some(default) } else { None })
+  }
 
-    /// Set default remote value
-    pub fn set_default_remote(&mut self, default: Option<String>) {
-        self.default_remote = default;
-    }
+  /// Set default remote value
+  pub fn set_default_remote(&mut self, default: Option<String>) {
+    self.default_remote = default;
+  }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(default, deny_unknown_fields)]
 pub struct RemoteOpts {
-    pub url: String,
-    pub username: String,
-    pub http_password: String,
-    pub http_auth: HttpAuthMethod,
-    #[serde(skip_serializing_if = "util::is_false")]
-    pub no_ssl_verify: bool,
+  pub url: String,
+  pub username: String,
+  pub http_password: String,
+  pub http_auth: HttpAuthMethod,
+  #[serde(skip_serializing_if = "util::is_false")]
+  pub no_ssl_verify: bool,
 }
 
 impl Default for RemoteOpts {
-    fn default() -> Self {
-        Self {
-            url: Default::default(),
-            username: Default::default(),
-            http_password: Default::default(),
-            http_auth: HttpAuthMethod::Basic,
-            no_ssl_verify: false,
-        }
+  fn default() -> Self {
+    Self {
+      url: Default::default(),
+      username: Default::default(),
+      http_password: Default::default(),
+      http_auth: HttpAuthMethod::Basic,
+      no_ssl_verify: false,
     }
+  }
 }
 
 /// HTTP Authentication Methods.
@@ -135,28 +128,28 @@ impl Default for RemoteOpts {
 #[serde(rename_all = "snake_case")]
 #[strum(serialize_all = "snake_case")]
 pub enum HttpAuthMethod {
-    /// Basic HTTP authentication scheme.
-    Basic,
-    /// Digest HTTP authentication scheme.
-    Digest,
+  /// Basic HTTP authentication scheme.
+  Basic,
+  /// Digest HTTP authentication scheme.
+  Digest,
 }
 
 impl From<gerlib::HttpAuthMethod> for HttpAuthMethod {
-    fn from(auth: gerlib::HttpAuthMethod) -> Self {
-        match auth {
-            gerlib::HttpAuthMethod::Basic => HttpAuthMethod::Basic,
-            gerlib::HttpAuthMethod::Digest => HttpAuthMethod::Digest,
-        }
+  fn from(auth: gerlib::HttpAuthMethod) -> Self {
+    match auth {
+      gerlib::HttpAuthMethod::Basic => HttpAuthMethod::Basic,
+      gerlib::HttpAuthMethod::Digest => HttpAuthMethod::Digest,
     }
+  }
 }
 
 impl Into<gerlib::HttpAuthMethod> for HttpAuthMethod {
-    fn into(self) -> gerlib::HttpAuthMethod {
-        match self {
-            HttpAuthMethod::Basic => gerlib::HttpAuthMethod::Basic,
-            HttpAuthMethod::Digest => gerlib::HttpAuthMethod::Digest,
-        }
+  fn into(self) -> gerlib::HttpAuthMethod {
+    match self {
+      HttpAuthMethod::Basic => gerlib::HttpAuthMethod::Basic,
+      HttpAuthMethod::Digest => gerlib::HttpAuthMethod::Digest,
     }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
