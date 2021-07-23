@@ -4,8 +4,9 @@ use crossterm::{
   terminal::{self, ClearType},
 };
 use std::io::{BufWriter, Write};
+use crate::config::CliConfig;
 
-pub fn main() {
+pub fn main(config: &mut CliConfig) {
   let mut stdout = BufWriter::new(std::io::stdout()); // BufWriter decreases flickering
 
   terminal::enable_raw_mode().unwrap();
@@ -19,7 +20,7 @@ pub fn main() {
   )
   .unwrap();
 
-  EcsTui::new().main_loop(&mut stdout);
+  EcsTui::new(config).main_loop(&mut stdout);
 
   execute!(
     stdout,

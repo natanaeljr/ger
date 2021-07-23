@@ -20,9 +20,9 @@ pub fn cli() -> App<'static, 'static> {
     .template("{about}\n\nUSAGE:\n    {usage}\n\n{all-args}")
 }
 
-pub fn exec(_config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
+pub fn exec(config: &mut CliConfig, args: Option<&ArgMatches>) -> Result<(), failure::Error> {
   let args = args.unwrap();
   let _verbose: Verbosity = args.occurrences_of("verbose").into();
-  browser::main();
+  browser::main(config);
   Ok(())
 }

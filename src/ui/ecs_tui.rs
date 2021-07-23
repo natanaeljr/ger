@@ -9,6 +9,7 @@ use crossterm::{
   terminal::{self, ClearType},
 };
 use legion::{IntoQuery, World};
+use crate::config::CliConfig;
 
 /// Entity Component System
 /// Terminal User Interface
@@ -18,13 +19,13 @@ pub struct EcsTui {
 }
 
 impl EcsTui {
-  pub fn new() -> Self {
+  pub fn new(config: &mut CliConfig) -> Self {
     let (width, height) = terminal::size().unwrap();
     let mut this = Self {
       term_cache: TermProps { width, height },
       registry: World::default(),
     };
-    super::demo::create_table((width, height), &mut this.registry);
+    super::demo::create_table(config, (width, height), &mut this.registry);
     this
   }
 
