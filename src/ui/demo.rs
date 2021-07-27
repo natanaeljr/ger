@@ -12,9 +12,9 @@ use crate::ui::winbox::{BorderChars, BoxHint, WinBox};
 use crate::util;
 use crossterm::style::{Attribute, Color, ContentStyle};
 use gerlib::changes::{AdditionalOpt, ChangeEndpoints, ChangeInfo, QueryParams};
-use legion::World;
+use legion::{Entity, World};
 
-pub fn create_table(config: &mut CliConfig, (width, height): (TermUSize, TermUSize), registry: &mut World) {
+pub fn create_table(config: &mut CliConfig, (width, height): (TermUSize, TermUSize), registry: &mut World) -> Entity {
   let mut row = Row::new();
   row.insert(ChangeColumn::Commit as ColumnIndex, String::from("8f524ac"));
   row.insert(ChangeColumn::Number as ColumnIndex, String::from("104508"));
@@ -68,7 +68,6 @@ pub fn create_table(config: &mut CliConfig, (width, height): (TermUSize, TermUSi
         style: ContentStyle::new()
           .foreground(Color::Green)
           .attribute(Attribute::Dim)
-          .attribute(Attribute::Reverse)
           .attribute(Attribute::Bold),
         alignment: HorizontalAlignment::Right,
         value: ColumnValue::BuiltIn {
@@ -262,7 +261,24 @@ pub fn create_table(config: &mut CliConfig, (width, height): (TermUSize, TermUSi
   };
   let rect = Rect::from_size_unchecked((0, 0), (width, height));
   let components = (rect, winbox, table, columns, vscroll, selection);
-  let _entity = registry.push(components);
+  let entity = registry.push(components);
+  entity
+
+  // DEMO CONSOLE WINDOW:
+  // let rect2 = Rect::from_size_unchecked((0, height - 3), (width, 3));
+  // let winbox2 = WinBox {
+  //   style: Default::default(),
+  //   borders: BorderChars::simple().clone(),
+  //   top_hints: vec![BoxHint {
+  //     content: "console".to_string(),
+  //     style: ContentStyle::new().attribute(Attribute::Reverse),
+  //     margin: HorizontalMargin { left: 1, right: 1 },
+  //     alignment: HorizontalAlignment::Left,
+  //   }],
+  //   bottom_hints: vec![],
+  // };
+  // let components = (rect2, winbox2);
+  // let _entity = registry.push(components);
 }
 
 pub fn real_table(config: &mut CliConfig) -> Table {
@@ -270,7 +286,7 @@ pub fn real_table(config: &mut CliConfig) -> Table {
   let query_param = QueryParams {
     search_queries: None,
     additional_opts: Some(vec![AdditionalOpt::DetailedAccounts, AdditionalOpt::CurrentRevision]),
-    limit: Some(80),
+    limit: Some(50),
     start: None,
   };
   let changes_list: Vec<Vec<ChangeInfo>> = rest.query_changes(&query_param).unwrap();
@@ -284,10 +300,9 @@ pub fn real_table(config: &mut CliConfig) -> Table {
   for changes in &changes_list {
     for change in changes {
       let mut row = Row::new();
-      row.insert(
-        ChangeColumn::Commit as ColumnIndex,
-        change.current_revision.as_ref().unwrap()[..7].to_owned(),
-      );
+      if let Some(current_revision) = change.current_revision.as_ref() {
+        row.insert(ChangeColumn::Commit as ColumnIndex, current_revision[..7].to_owned());
+      }
       row.insert(ChangeColumn::Number as ColumnIndex, change.number.to_string());
       row.insert(
         ChangeColumn::Owner as ColumnIndex,

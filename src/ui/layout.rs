@@ -1,3 +1,6 @@
+use crate::ui::rect::Rect;
+use std::collections::HashMap;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum LineNumberMode {
   Normal,

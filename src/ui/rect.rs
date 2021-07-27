@@ -144,6 +144,11 @@ impl Rect {
     self.x.0 <= self.x.1 && self.y.0 <= self.y.1
   }
 
+  /// Check if Self is an invalid Rect.
+  pub fn invalid(&self) -> bool {
+    self.x.0 > self.x.1 || self.y.0 > self.y.1
+  }
+
   /// Get Rect with new x.0 value.
   ///
   /// Checks that the new rectangle will be valid.
@@ -212,5 +217,41 @@ impl Rect {
   pub fn offset_x0_unchecked(&self, offset: i16) -> Self {
     let x0 = self.x.0 as i32 + offset as i32;
     self.with_x0_unchecked(x0 as u16)
+  }
+
+  /// Vertically split current Rect into two.
+  ///
+  /// In case the current width is odd, the left Rect takes the larger width.
+  pub fn vsplit(self) -> Option<(Rect, Rect)> {
+    if self.invalid() || self.width() < 2 {
+      return None;
+    }
+    let left = Rect {
+      x: (self.x.0, self.x.1 / 2),
+      y: self.y.clone(),
+    };
+    let right = Rect {
+      x: (left.x.1 + 1, self.x.1),
+      y: self.y.clone(),
+    };
+    Some((left, right))
+  }
+
+  /// Horizontally split current Rect into two.
+  ///
+  /// In case the current height is odd, the first/top Rect takes the larger height.
+  pub fn hsplit(self) -> Option<(Rect, Rect)> {
+    if self.invalid() || self.height() < 2 {
+      return None;
+    }
+    let top = Rect {
+      x: self.x.clone(),
+      y: (self.y.0, self.y.1 / 2),
+    };
+    let bottom = Rect {
+      x: self.x.clone(),
+      y: (top.y.1 + 1, self.y.1),
+    };
+    Some((top, bottom))
   }
 }
