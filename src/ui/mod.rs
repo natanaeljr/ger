@@ -3,7 +3,6 @@ use clap::{App, AppSettings, ArgMatches, SubCommand};
 
 mod browser;
 mod change;
-mod demo;
 mod draw;
 mod ecs_tui;
 mod layout;
@@ -12,6 +11,7 @@ mod scroll;
 mod table;
 mod term;
 mod winbox;
+mod main;
 
 pub fn cli() -> App<'static, 'static> {
   SubCommand::with_name("ui")

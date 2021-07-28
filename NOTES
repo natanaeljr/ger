@@ -1,0 +1,8 @@
+Make Window Manager so that a call to API:
+
+window.left(),
+window.right(),
+window.top(),
+window.bottom()
+
+returns the next window id -> Option<Entity>

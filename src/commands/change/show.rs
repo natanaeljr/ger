@@ -6,7 +6,7 @@ use gerlib::changes::{AdditionalOpt, ChangeInfo, FileStatus};
 use gerlib::changes::{ChangeEndpoints, ChangeMessageInfo};
 use git2::Repository;
 use std::io::Write;
-use termcolor::{Color, ColorSpec, WriteColor};
+use termcolor::{Color, ColorSpec, StandardStreamLock, WriteColor};
 
 /// Build the CLI
 pub fn cli() -> App<'static, 'static> {

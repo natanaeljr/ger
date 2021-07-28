@@ -20,7 +20,7 @@ pub fn main(config: &mut CliConfig) {
   )
   .unwrap();
 
-  EcsTui::new(config).main_loop(&mut stdout);
+  EcsTui::new(config).main_loop(&mut stdout, config);
 
   execute!(
     stdout,
